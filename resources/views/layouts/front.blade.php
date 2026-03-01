@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ config('app.name', 'Laravel代購') }} - 全球好物輕鬆買</title>
+    
+    <!-- Bootstrap 5 CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+    <style>
+        :root {
+            --primary-color: #5A9E8E; 
+            --secondary-color: #F3F7F5;
+            --text-color: #333333;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+        }
+
+        .navbar {
+            background-color: #ffffff;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            padding: 15px 0;
+        }
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--primary-color) !important;
+            font-size: 1.5rem;
+        }
+        .nav-link {
+            color: #555;
+            font-weight: 500;
+            margin: 0 10px;
+        }
+        .nav-link:hover { color: var(--primary-color); }
+
+        .btn-primary-custom {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+            border-radius: 50px;
+            padding: 8px 25px;
+        }
+        .btn-primary-custom:hover {
+            background-color: #488275;
+            color: white;
+        }
+
+        .card-custom {
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+            background: white;
+            transition: transform 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.03);
+        }
+        .card-custom:hover {
+            transform: translateY(-5px);
+        }
+
+        footer {
+            background-color: #2C3E50;
+            color: #ecf0f1;
+            padding: 50px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="{{ route('home') }}">
+                <i class="bi bi-globe-americas me-2"></i>GlobalBuy
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav mx-auto">
+                    <li class="nav-item"><a class="nav-link active" href="{{ route('home') }}">首頁</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">找代購</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">許願池</a></li>
+                </ul>
+                <div class="d-flex">
+                    @if (Route::has('login'))
+                        @auth
+                            <a href="{{ url('/dashboard') }}" class="btn btn-outline-secondary me-2 rounded-pill">會員中心</a>
+                        @else
+                            <a href="{{ route('login') }}" class="btn btn-outline-secondary me-2 rounded-pill px-4">登入</a>
+                            @if (Route::has('register'))
+                                <a href="{{ route('register') }}" class="btn btn-primary-custom">註冊</a>
+                            @endif
+                        @endauth
+                    @endif
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Content -->
+    <main style="margin-top: 80px;">
+        @yield('content')
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5 class="fw-bold mb-3">GlobalBuy</h5>
+                    <p class="text-white-50">連結全球好物，讓購物沒有國界。</p>
+                </div>
+                <div class="col-md-8 text-md-end">
+                    <p class="text-white-50">&copy; {{ date('Y') }} GlobalBuy Platform.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
