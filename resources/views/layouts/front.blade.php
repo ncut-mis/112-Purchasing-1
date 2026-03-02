@@ -93,11 +93,12 @@
                 <div class="d-flex">
                     @if (Route::has('login'))
                         @auth
-                            <a href="{{ url('/dashboard') }}" class="btn btn-outline-secondary me-2 rounded-pill">會員中心</a>
+                            <a href="{{ url('/dashboard') }}" class="btn btn-outline-dark rounded-pill px-4">進入控制台</a>
                         @else
-                            <a href="{{ route('login') }}" class="btn btn-outline-secondary me-2 rounded-pill px-4">登入</a>
+                            <a href="{{ route('login') }}" class="btn btn-outline-dark rounded-pill px-4">登入</a>
+
                             @if (Route::has('register'))
-                                <a href="{{ route('register') }}" class="btn btn-primary-custom">註冊</a>
+                                <a href="{{ route('register') }}" class="btn btn-success rounded-pill px-4 text-white" style="background-color: #56ab91;">註冊</a>
                             @endif
                         @endauth
                     @endif
