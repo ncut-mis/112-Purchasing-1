@@ -2,9 +2,12 @@
 
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ShopController;
 use App\Models\Post;
 use App\Models\PurchasingRequest;
 
+
+Route::get('/store', [ShopController::class, 'store'])->name('store');
 Route::get('/', function () {
     // 抓取代購貼文
     $posts = Post::all(); 
@@ -30,5 +33,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+
 
 require __DIR__.'/auth.php';

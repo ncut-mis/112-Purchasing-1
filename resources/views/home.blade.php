@@ -18,9 +18,14 @@
                     連結數千位優質代購人，無論是日本藥妝、歐洲精品還是韓國服飾，我們都能幫您帶回家。
                 </p>
                 <div class="d-flex gap-3">
-                    <a href="#" class="btn btn-primary-custom btn-lg shadow-sm">
-                        <i class="bi bi-search me-2"></i>搜尋代購
-                    </a>
+                <form action="{{ route('store') }}" method="GET" class="d-flex gap-3">
+                    <input type="text" name="search" class="form-control shadow-sm" 
+                        placeholder="輸入商品關鍵字" value="{{ request('search') }}" 
+                        style="min-width: 250px;">
+                    <button type="submit" class="btn btn-primary-custom btn-lg shadow-sm">
+                        <i class="bi bi-search me-2"></i>
+                    </button>
+                </form> 
                     <a href="#" class="btn btn-white bg-white text-dark btn-lg shadow-sm rounded-pill border">
                         <i class="bi bi-pencil-square me-2"></i>發布許願
                     </a>
