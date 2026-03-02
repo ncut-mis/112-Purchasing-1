@@ -34,12 +34,12 @@
     </div>
 </section>
 
-<!-- Section 1: 熱門代購貼文 (Card Style) -->
+<!-- Agent Posts Section (最新代購連線) -->
 <section class="py-5">
     <div class="container">
-        <div class="d-flex justify-content-between align-items-end mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
-                <h6 class="text-success fw-bold text-uppercase ls-1">Agent Posts</h6>
+                <h6 class="text-success fw-bold text-uppercase mb-1">Agent Posts</h6>
                 <h2 class="fw-bold">最新代購連線</h2>
             </div>
             <a href="#" class="text-decoration-none text-muted">查看全部 <i class="bi bi-arrow-right"></i></a>
@@ -48,38 +48,43 @@
         <div class="row g-4">
             @foreach($posts as $post)
             <div class="col-md-6 col-lg-4">
-                <div class="card card-custom h-100">
-                    <!-- 圖片區塊：若沒圖則用 Unsplash 隨機圖 -->
-                    <div class="position-relative">
-                        <img src="https://source.unsplash.com/random/400x250/?shopping,{{ $post->country }}" 
-                             class="card-img-top" 
-                             alt="{{ $post->title }}"
-                             style="height: 200px; object-fit: cover; filter: brightness(0.95);"
-                             onerror="this.src='https://via.placeholder.com/400x250?text=No+Image'">
-                        <span class="position-absolute top-0 end-0 bg-warning text-dark badge m-3 rounded-pill">
-                            {{ $post->country }}
-                        </span>
-                    </div>
+                <div class="card h-100 border-0 shadow-sm rounded-4 position-relative hover-shadow transition">
+                    <!-- 地區標籤 -->
+                    <span class="position-absolute top-0 end-0 m-3 badge rounded-pill bg-warning text-dark">
+                        {{ $post->region }}
+                    </span>
                     
-                    <div class="card-body">
-                        <div class="d-flex align-items-center mb-2">
-                            <img src="https://ui-avatars.com/api/?name={{ $post->user->name }}&background=random" class="rounded-circle me-2" width="30" height="30">
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <!-- 預設圖片或是佔位圖 -->
+                            <div class="rounded-4 bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                <i class="bi bi-box-seam text-secondary display-4"></i>
+                            </div>
+                        </div>
+
+                        <!-- 標題 -->
+                        <h5 class="card-title fw-bold mb-2">{{ $post->title }}</h5>
+                        <p class="card-text text-muted small mb-4 text-truncate-2">
+                            {{ $post->description ?? '暫無詳細說明...' }}
+                        </p>
+
+                        <!-- 代購人資訊 -->
+                        <div class="d-flex align-items-center mb-3">
+                            <img src="https://ui-avatars.com/api/?name={{ urlencode($post->user->name) }}&background=random" class="rounded-circle me-2" width="32" height="32" alt="Avatar">
                             <small class="text-muted">{{ $post->user->name }}</small>
                         </div>
-                        <h5 class="card-title text-truncate">
-                            <a href="#" class="text-decoration-none text-dark stretched-link">{{ $post->title }}</a>
-                        </h5>
-                        <p class="card-text text-muted small text-truncate">{{ $post->description }}</p>
-                        
-                        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
-                            <div class="text-muted small">
-                                <i class="bi bi-calendar-event me-1"></i> {{ $post->end_date->format('m/d') }} 截止
+
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                            <div class="small text-muted">
+                                <i class="bi bi-calendar-event me-1"></i> {{ $post->deadline ? $post->deadline->format('m/d') : 'TBA' }} 截止
                             </div>
-                            <div class="text-success fw-bold">
-                                進行中
-                            </div>
+                            <span class="text-success fw-bold small">
+                                <i class="bi bi-circle-fill me-1" style="font-size: 8px;"></i> 進行中
+                            </span>
                         </div>
                     </div>
+                    <!-- 點擊整張卡片進入詳情 -->
+                    <a href="#" class="stretched-link"></a>
                 </div>
             </div>
             @endforeach
