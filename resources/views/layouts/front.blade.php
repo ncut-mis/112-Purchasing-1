@@ -75,33 +75,55 @@
 </head>
 <body>
 
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg fixed-top">
+    <!-- Navigation (從第 78 行開始替換) -->
+    <nav class="navbar navbar-expand-lg fixed-top bg-white shadow-sm">
         <div class="container">
-            <a class="navbar-brand" href="{{ route('home') }}">
-                <i class="bi bi-globe-americas me-2"></i>GlobalBuy
+            <a class="navbar-brand d-flex align-items-center" href="{{ route('home') }}">
+                <i class="bi bi-globe-americas me-2 text-success"></i>
+                <span class="fw-bold">GlobalBuy</span>
             </a>
+            
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
+            
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav mx-auto">
-                    <li class="nav-item"><a class="nav-link active" href="{{ route('home') }}">首頁</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">找代購</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">許願池</a></li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}" href="{{ route('home') }}">首頁</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">找代購</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">許願池</a>
+                    </li>
+                    
+                    <!-- 新增：會員專區 (僅登入後顯示於主選單) -->
+                    @auth
+                    <li class="nav-item">
+                        <a class="nav-link fw-bold text-success" href="{{ route('dashboard') }}">
+                            <i class="bi bi-person-badge me-1"></i>會員專區
+                        </a>
+                    </li>
+                    @endauth
                 </ul>
-                <div class="d-flex">
-                    @if (Route::has('login'))
-                        @auth
-                            <a href="{{ url('/dashboard') }}" class="btn btn-outline-dark rounded-pill px-4">進入控制台</a>
-                        @else
-                            <a href="{{ route('login') }}" class="btn btn-outline-dark rounded-pill px-4">登入</a>
-
-                            @if (Route::has('register'))
-                                <a href="{{ route('register') }}" class="btn btn-success rounded-pill px-4 text-white" style="background-color: #56ab91;">註冊</a>
-                            @endif
-                        @endauth
-                    @endif
+                
+                <div class="d-flex align-items-center gap-2">
+                    @auth
+                        <!-- 已登入：顯示進入控制台與登出 -->
+                        <a href="{{ url('/dashboard') }}" class="btn btn-outline-dark rounded-pill px-4">控制台</a>
+                        <form method="POST" action="{{ route('logout') }}" class="m-0">
+                            @csrf
+                            <button type="submit" class="btn btn-link text-danger text-decoration-none">登出</button>
+                        </form>
+                    @else
+                        <!-- 未登入：顯示登入與註冊 -->
+                        <a href="{{ route('login') }}" class="btn btn-outline-dark rounded-pill px-4">登入</a>
+                        @if (Route::has('register'))
+                            <a href="{{ route('register') }}" class="btn btn-success rounded-pill px-4 text-white" style="background-color: #56ab91;">註冊</a>
+                        @endif
+                    @endauth
                 </div>
             </div>
         </div>
