@@ -37,12 +37,12 @@
                     </form> 
                     
                     @auth
-                        <a href="{{ route('posts.create') }}" class="btn btn-white bg-white text-dark btn-lg shadow-sm rounded-pill border">
-                            <i class="bi bi-pencil-square me-2"></i>發布許願
+                        <a href="{{ route('store') }}" class="btn btn-white bg-white text-dark btn-lg shadow-sm rounded-pill border">
+                            <i class="bi bi-pencil-square me-2"></i>建立清單
                         </a>
                     @else
                         <a href="{{ route('login') }}" class="btn btn-white bg-white text-dark btn-lg shadow-sm rounded-pill border">
-                            <i class="bi bi-pencil-square me-2"></i>發布許願
+                            <i class="bi bi-pencil-square me-2"></i>建立清單
                         </a>
                     @endauth
                 </div>

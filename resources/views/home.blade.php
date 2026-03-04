@@ -28,11 +28,11 @@
                 </form> 
                     @auth
                         <a href="#" class="btn btn-white bg-white text-dark btn-lg shadow-sm rounded-pill border">
-                            <i class="bi bi-pencil-square me-2"></i>發布許願
+                            <i class="bi bi-pencil-square me-2"></i>建立清單
                         </a>
                     @else
                         <a href="{{ route('login') }}" class="btn btn-white bg-white text-dark btn-lg shadow-sm rounded-pill border">
-                            <i class="bi bi-pencil-square me-2"></i>發布許願
+                            <i class="bi bi-pencil-square me-2"></i>建立清單
                         </a>
                     @endauth
                 </div>
@@ -53,7 +53,7 @@
                 <h6 class="text-success fw-bold text-uppercase mb-1">Agent Posts</h6>
                 <h2 class="fw-bold">最新代購連線</h2>
             </div>
-            <a href="#" class="text-decoration-none text-muted">查看全部 <i class="bi bi-arrow-right"></i></a>
+            <a href="{{ route('store') }}" class="text-decoration-none text-muted">查看全部 <i class="bi bi-arrow-right"></i></a>
         </div>
 
         <div class="row g-4">
@@ -142,7 +142,7 @@
         </div>
         
         <div class="text-center mt-5">
-            <a href="#" class="btn btn-outline-dark rounded-pill px-5 py-2">瀏覽所有許願</a>
+            <a href="{{ route('store') }}" class="btn btn-outline-dark rounded-pill px-5 py-2">瀏覽所有貼文</a>
         </div>
     </div>
 </section>

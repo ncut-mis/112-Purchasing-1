@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ShopController;
 use App\Models\Post;
 use App\Models\PurchasingRequest;
+use App\Http\Controllers\CartController;
 
 
 Route::get('/store', [ShopController::class, 'store'])->name('store');
@@ -34,6 +35,24 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+Route::middleware(['auth'])->group(function () {
+    // 顯示購物車頁面
+    Route::get('/shoppingcart', [CartController::class, 'index'])->name('cart.index');
+    
+    // 加入購物車
+    Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
+    
+    // 更新購物車數量
+    Route::patch('/cart/update/{id}', [CartController::class, 'update'])->name('cart.update');
+    
+    // 移除購物車項目
+    Route::delete('/cart/remove/{id}', [CartController::class, 'remove'])->name('cart.remove');
+    
+    // 清空購物車（可選）
+    Route::delete('/cart/empty', [CartController::class, 'empty'])->name('cart.empty');
+});
 
-
+Route::middleware(['auth'])->group(function () {
+    Route::get('/shoppingcart', [CartController::class, 'index'])->name('cart.index');
+});
 require __DIR__.'/auth.php';
