@@ -26,9 +26,15 @@
                         <i class="bi bi-search me-2"></i>
                     </button>
                 </form> 
-                    <a href="#" class="btn btn-white bg-white text-dark btn-lg shadow-sm rounded-pill border">
-                        <i class="bi bi-pencil-square me-2"></i>發布許願
-                    </a>
+                    @auth
+                        <a href="#" class="btn btn-white bg-white text-dark btn-lg shadow-sm rounded-pill border">
+                            <i class="bi bi-pencil-square me-2"></i>發布許願
+                        </a>
+                    @else
+                        <a href="{{ route('login') }}" class="btn btn-white bg-white text-dark btn-lg shadow-sm rounded-pill border">
+                            <i class="bi bi-pencil-square me-2"></i>發布許願
+                        </a>
+                    @endauth
                 </div>
             </div>
             <div class="col-lg-6 text-center d-none d-lg-block">
