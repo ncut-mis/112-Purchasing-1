@@ -66,7 +66,7 @@
                     <div class="bg-white rounded-xl shadow-sm p-4">
                         <div class="text-sm font-bold text-gray-700 mb-3 text-center">其他功能</div>
                         <div class="grid grid-cols-3 gap-2 text-center">
-                            <a href="#" class="p-2 hover:bg-gray-50 rounded-lg">
+                            <a href="{{ route('chat.index') }}" class="p-2 hover:bg-blue-50 rounded-lg transition">
                                 <i class="bi bi-chat-dots text-xl text-blue-500"></i>
                                 <div class="text-[10px] mt-1">聊天</div>
                             </a>

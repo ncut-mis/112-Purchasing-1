@@ -34,6 +34,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('dashboard');
     })->name('dashboard');
 
+
+
+        // 聊天頁面
+    Route::get('/chat', function () {
+        return view('chat.index');
+    })->name('chat.index');
+
+    // 代購人申請功能
+
     Route::get('/agent/apply', [AgentApplicationController::class, 'create'])->name('agent.apply');
     Route::post('/agent/apply', [AgentApplicationController::class, 'store'])->name('agent.store');
 });
