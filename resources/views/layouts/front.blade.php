@@ -103,7 +103,7 @@
                     </li>
                     <li class="nav-item">
                         @auth
-                        <a href="#" class="nav-link">
+                        <a href="{{ route('request-list.create') }}" class="nav-link">
                             建立清單
                         </a>
                     @else

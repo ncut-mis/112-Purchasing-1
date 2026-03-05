@@ -27,7 +27,7 @@
                     </button>
                 </form> 
                     @auth
-                        <a href="#" class="btn btn-white bg-white text-dark btn-lg shadow-sm rounded-pill border">
+                        <a href="{{ route('request-list.create') }}" class="btn btn-white bg-white text-dark btn-lg shadow-sm rounded-pill border">
                             <i class="bi bi-pencil-square me-2"></i>建立清單
                         </a>
                     @else
