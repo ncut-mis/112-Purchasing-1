@@ -15,12 +15,13 @@
                         <form action="#" method="POST" enctype="multipart/form-data">
                             @csrf
 
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h5 class="fw-semibold mb-0">商品清單</h5>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="fw-semibold mb-0">商品清單（最多 3 筆）</h5>
                                 <button type="button" class="btn btn-outline-success" id="add-item-btn">
                                     <i class="bi bi-plus-lg me-1"></i>新增商品
                                 </button>
                             </div>
+                            <p class="text-muted small mb-3" id="item-limit-hint">可再新增 2 筆商品。</p>
 
                             <div id="item-list">
                                 <div class="row g-3 align-items-end mb-3 item-row" data-index="0">
@@ -35,9 +36,6 @@
                                     <div class="col-md-3">
                                         <label class="form-label fw-semibold">商品圖片</label>
                                         <input type="file" class="form-control" name="items[0][item_image]" accept="image/*">
-                                    </div>
-                                    <div class="col-md-2">
-                                        <button type="button" class="btn btn-outline-dark w-100">編輯</button>
                                     </div>
                                     <div class="col-md-1">
                                         <button type="button" class="btn btn-outline-danger w-100 remove-item-btn" disabled>刪除</button>
@@ -86,11 +84,18 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        const maxItems = 3;
         const itemList = document.getElementById('item-list');
         const addItemBtn = document.getElementById('add-item-btn');
+        const itemLimitHint = document.getElementById('item-limit-hint');
 
         addItemBtn.addEventListener('click', function () {
-            const index = itemList.querySelectorAll('.item-row').length;
+            const count = itemList.querySelectorAll('.item-row').length;
+            if (count >= maxItems) {
+                return;
+            }
+
+            const index = count;
             const row = document.createElement('div');
             row.className = 'row g-3 align-items-end mb-3 item-row';
             row.setAttribute('data-index', index);
@@ -107,22 +112,19 @@
                     <label class="form-label fw-semibold">商品圖片</label>
                     <input type="file" class="form-control" name="items[${index}][item_image]" accept="image/*">
                 </div>
-                <div class="col-md-2">
-                    <button type="button" class="btn btn-outline-dark w-100">編輯</button>
-                </div>
                 <div class="col-md-1">
                     <button type="button" class="btn btn-outline-danger w-100 remove-item-btn">刪除</button>
                 </div>
             `;
             itemList.appendChild(row);
-            updateRemoveButtons();
+            updateUiState();
         });
 
         itemList.addEventListener('click', function (event) {
             if (event.target.classList.contains('remove-item-btn')) {
                 event.target.closest('.item-row').remove();
                 updateIndexes();
-                updateRemoveButtons();
+                updateUiState();
             }
         });
 
@@ -135,15 +137,22 @@
             });
         }
 
-        function updateRemoveButtons() {
+        function updateUiState() {
             const rows = itemList.querySelectorAll('.item-row');
+            const remaining = maxItems - rows.length;
+
             rows.forEach((row) => {
                 const removeBtn = row.querySelector('.remove-item-btn');
                 removeBtn.disabled = rows.length === 1;
             });
+
+            addItemBtn.disabled = rows.length >= maxItems;
+            itemLimitHint.textContent = remaining > 0
+                ? `可再新增 ${remaining} 筆商品。`
+                : '已達商品上限（最多 3 筆）。';
         }
 
-        updateRemoveButtons();
+        updateUiState();
     });
 </script>
 @endsection
