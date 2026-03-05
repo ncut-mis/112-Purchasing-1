@@ -54,17 +54,23 @@
             color: white;
         }
 
-        .card-custom {
-            border: none;
-            border-radius: 15px;
-            overflow: hidden;
-            background: white;
-            transition: transform 0.3s;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.03);
+        .user-btn-custom {
+            border: 2px solid #28a745 !important;
+            background: linear-gradient(135deg, #f8fff9 0%, white 100%) !important;
+            color: #28a745 !important;
+            transition: all 0.3s ease;
         }
-        .card-custom:hover {
-            transform: translateY(-5px);
+
+        .user-btn-custom:hover {
+             background: #28a745 !important;
+            transform: scale(1.05);
         }
+
+        .user-btn-custom img {
+             filter: brightness(0) saturate(100%) invert(25%) sepia(100%) saturate(1000%) hue-rotate(120deg);
+        }
+
+
 
         footer {
             background-color: #2C3E50;
@@ -93,12 +99,20 @@
                         <a class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}" href="{{ route('home') }}">首頁</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">找代購</a>
+                        <a class="nav-link" href="{{ route('store') }}">找代購</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">許願池</a>
+                        @auth
+                        <a href="#" class="nav-link">
+                            建立清單
+                        </a>
+                    @else
+                        <a href="{{ route('login') }}" class="nav-link">
+                            建立清單
+                        </a>
+                    @endauth
                     </li>
-                    
+
                     <!-- 新增：會員專區 (僅登入後顯示於主選單) -->
                     @auth
                     <li class="nav-item">
@@ -112,6 +126,13 @@
                 <div class="d-flex align-items-center gap-2">
                     @auth
                         <!-- 已登入：顯示進入控制台與登出 -->
+                        <a href="{{ url('/dashboard') }}" class="btn btn-success rounded-pill px-4">
+                            <img src="{{ auth()->user()->avatar ?? asset('images/user.svg') }}" 
+                                alt="用戶頭像" width="24" height="24" class="rounded-circle" 
+                                style="filter: brightness(0) invert(1);">
+                        </a>
+
+
                         <form method="POST" action="{{ route('logout') }}" class="m-0">
                             @csrf
                             <button type="submit" class="btn btn-link text-danger text-decoration-none">登出</button>

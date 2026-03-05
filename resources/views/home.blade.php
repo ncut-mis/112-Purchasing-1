@@ -18,12 +18,23 @@
                     連結數千位優質代購人，無論是日本藥妝、歐洲精品還是韓國服飾，我們都能幫您帶回家。
                 </p>
                 <div class="d-flex gap-3">
-                    <a href="#" class="btn btn-primary-custom btn-lg shadow-sm">
-                        <i class="bi bi-search me-2"></i>搜尋代購
-                    </a>
-                    <a href="#" class="btn btn-white bg-white text-dark btn-lg shadow-sm rounded-pill border">
-                        <i class="bi bi-pencil-square me-2"></i>發布許願
-                    </a>
+                <form action="{{ route('store') }}" method="GET" class="d-flex gap-3">
+                    <input type="text" name="search" class="form-control shadow-sm" 
+                        placeholder="輸入商品關鍵字" value="{{ request('search') }}" 
+                        style="min-width: 250px;">
+                    <button type="submit" class="btn btn-primary-custom btn-lg shadow-sm">
+                        <i class="bi bi-search me-2"></i>
+                    </button>
+                </form> 
+                    @auth
+                        <a href="#" class="btn btn-white bg-white text-dark btn-lg shadow-sm rounded-pill border">
+                            <i class="bi bi-pencil-square me-2"></i>建立清單
+                        </a>
+                    @else
+                        <a href="{{ route('login') }}" class="btn btn-white bg-white text-dark btn-lg shadow-sm rounded-pill border">
+                            <i class="bi bi-pencil-square me-2"></i>建立清單
+                        </a>
+                    @endauth
                 </div>
             </div>
             <div class="col-lg-6 text-center d-none d-lg-block">
@@ -42,7 +53,7 @@
                 <h6 class="text-success fw-bold text-uppercase mb-1">Agent Posts</h6>
                 <h2 class="fw-bold">最新代購連線</h2>
             </div>
-            <a href="#" class="text-decoration-none text-muted">查看全部 <i class="bi bi-arrow-right"></i></a>
+            <a href="{{ route('store') }}" class="text-decoration-none text-muted">查看全部 <i class="bi bi-arrow-right"></i></a>
         </div>
 
         <div class="row g-4">
@@ -131,7 +142,7 @@
         </div>
         
         <div class="text-center mt-5">
-            <a href="#" class="btn btn-outline-dark rounded-pill px-5 py-2">瀏覽所有許願</a>
+            <a href="{{ route('store') }}" class="btn btn-outline-dark rounded-pill px-5 py-2">瀏覽所有貼文</a>
         </div>
     </div>
 </section>
