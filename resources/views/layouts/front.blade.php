@@ -112,7 +112,6 @@
                 <div class="d-flex align-items-center gap-2">
                     @auth
                         <!-- 已登入：顯示進入控制台與登出 -->
-                        <a href="{{ url('/dashboard') }}" class="btn btn-outline-dark rounded-pill px-4">控制台</a>
                         <form method="POST" action="{{ route('logout') }}" class="m-0">
                             @csrf
                             <button type="submit" class="btn btn-link text-danger text-decoration-none">登出</button>
