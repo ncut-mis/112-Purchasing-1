@@ -11,6 +11,15 @@ use App\Http\Controllers\AgentApplicationController;
 use App\Http\Controllers\CartController;
 
 
+Route::get('/agent/member', function() { 
+    return view('agent.member'); 
+})->name('agent.member');
+
+Route::get('/agent/dashboard', function () {
+    return view('agent.dashboard');
+})->name('agent.dashboard');
+// **權限控制**：您應該在路由或控制中加入檢查，確保只有 `status == 'approved'` 的使用者才能進入此頁面。
+
 Route::get('/store', [ShopController::class, 'store'])->name('store');
 Route::get('/', function () {
     // 抓取代購貼文
