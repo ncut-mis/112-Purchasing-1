@@ -3,9 +3,11 @@
 use App\Http\Controllers\AgentApplicationController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RequestListController;
 use App\Http\Controllers\ShopController;
 use App\Models\Post;
 use App\Models\PurchasingRequest;
+use App\Models\RequestList;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/agent/member', function() { 
@@ -31,7 +33,12 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
-        return view('dashboard');
+        $requestLists = RequestList::with('items')
+            ->where('user_id', auth()->id())
+            ->latest()
+            ->get();
+
+        return view('dashboard', compact('requestLists'));
     })->name('dashboard');
 
 
@@ -48,9 +55,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/request-list/create', function () {
-        return view('request-list.create');
-    })->name('request-list.create');
+    Route::get('/request-list/create', [RequestListController::class, 'create'])->name('request-list.create');
+    Route::post('/request-list', [RequestListController::class, 'store'])->name('request-list.store');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

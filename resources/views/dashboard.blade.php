@@ -56,15 +56,11 @@
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path></svg>
                                 <span class="font-bold">申請代購人</span>
                             </a>
-                            <a href="#" class="flex items-center space-x-3 p-3 rounded-lg text-gray-600 hover:bg-gray-50 transition border-t mt-2 pt-4">
-                                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                                <span class="font-bold text-green-600">發布許願</span>
-                            </a>
                         </nav>
                     </div>
 
                     <div class="bg-white rounded-xl shadow-sm p-4">
-                        <div class="text-sm font-bold text-gray-700 mb-3 text-center">其他功能</div>
+<div class="text-sm font-bold text-gray-700 mb-3 text-center">其他功能</div>
                         <div class="grid grid-cols-3 gap-2 text-center">
                             <a href="{{ route('chat.index') }}" class="p-2 hover:bg-blue-50 rounded-lg transition">
                                 <i class="bi bi-chat-dots text-xl text-blue-500"></i>
@@ -89,43 +85,83 @@
                     <div class="bg-white rounded-xl shadow-sm p-6">
                         <div class="flex justify-between items-center mb-6">
                             <h3 class="text-lg font-bold text-gray-800">目前請購清單</h3>
-                            <button class="text-sm text-green-600 hover:underline">+ 新增許願</button>
+                            <a href="{{ route('request-list.create') }}" class="text-sm text-green-600 hover:underline">+ 建立請購清單</a>
                         </div>
                         
                         <div class="overflow-x-auto">
                             <table class="w-full text-left">
                                 <thead>
                                     <tr class="text-gray-400 text-sm border-b">
-                                        <th class="pb-3 font-medium">項目名稱</th>
-                                        <th class="pb-3 font-medium">地點</th>
-                                        <th class="pb-3 font-medium">預算</th>
+                                        <th class="pb-3 font-medium">商品</th>
+                                        <th class="pb-3 font-medium">國家</th>
+                                        <th class="pb-3 font-medium">截止日</th>
                                         <th class="pb-3 font-medium">狀態</th>
                                         <th class="pb-3 font-medium text-right">操作</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y">
-                                    <tr class="text-sm">
-                                        <td class="py-4 font-medium text-gray-800">日本限定 PS5 手把</td>
-                                        <td class="py-4 text-gray-500">日本</td>
-                                        <td class="py-4 text-gray-800">$2,400</td>
-                                        <td class="py-4">
-                                            <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-[10px]">募集中</span>
-                                        </td>
-                                        <td class="py-4 text-right">
-                                            <button class="text-blue-500 hover:underline">編輯</button>
-                                        </td>
-                                    </tr>
-                                    <tr class="text-sm">
-                                        <td class="py-4 font-medium text-gray-800">LV 零錢包 (黑色)</td>
-                                        <td class="py-4 text-gray-500">歐洲</td>
-                                        <td class="py-4 text-gray-800">$18,500</td>
-                                        <td class="py-4">
-                                            <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-[10px]">已接單</span>
-                                        </td>
-                                        <td class="py-4 text-right">
-                                            <button class="text-gray-400 cursor-not-allowed">檢視</button>
-                                        </td>
-                                    </tr>
+                                    @forelse($requestLists ?? [] as $requestList)
+                                        @php
+                                            $items = $requestList->items ?? collect();
+                                            $firstItem = optional($items->first())->name ?? $requestList->title;
+                                            $extraItems = $items->slice(1);
+                                            $countryLabel = [
+                                                'jp' => '日本',
+                                                'kr' => '韓國',
+                                                'us' => '美國',
+                                                'gb' => '英國',
+                                            ][$requestList->country] ?? $requestList->country;
+                                            $statusLabel = [
+                                                'pending' => '等待接單',
+                                                'offered' => '代購人已關注',
+                                                'matched' => '已確認代購人',
+                                                'completed' => '訂單已完成',
+                                                'cancelled' => '訂單已取消',
+                                            ][$requestList->status] ?? $requestList->status;
+                                            $statusClass = [
+                                                'pending' => 'bg-yellow-100 text-yellow-700',
+                                                'offered' => 'bg-blue-100 text-blue-700',
+                                                'matched' => 'bg-green-100 text-green-700',
+                                                'completed' => 'bg-emerald-100 text-emerald-700',
+                                                'cancelled' => 'bg-gray-200 text-gray-600',
+                                            ][$requestList->status] ?? 'bg-gray-100 text-gray-700';
+                                        @endphp
+                                        <tr class="text-sm align-top">
+                                            <td class="py-4 font-medium text-gray-800">
+                                                @if($extraItems->isNotEmpty())
+                                                    <details class="group">
+                                                        <summary class="cursor-pointer select-none hover:text-blue-600">
+                                                            {{ $firstItem }}
+                                                            <span class="text-xs text-gray-400">（另有 {{ $extraItems->count() }} 項）</span>
+                                                        </summary>
+                                                        <ul class="mt-2 ml-4 list-disc text-gray-500 text-xs space-y-1">
+                                                            @foreach($extraItems as $item)
+                                                                <li>{{ $item->name }}</li>
+                                                            @endforeach
+                                                        </ul>
+                                                    </details>
+                                                @else
+                                                    {{ $firstItem }}
+                                                @endif
+                                            </td>
+                                            <td class="py-4 text-gray-500">{{ $countryLabel }}</td>
+                                            <td class="py-4 text-gray-800">{{ optional($requestList->deadline)->format('Y-m-d') ?? '-' }}</td>
+                                            <td class="py-4">
+                                                <span class="px-2 py-1 rounded-full text-[10px] {{ $statusClass }}">{{ $statusLabel }}</span>
+                                            </td>
+                                            <td class="py-4 text-right">
+                                                @if($requestList->status === 'matched')
+                                                    <button class="text-gray-500 hover:underline">檢視</button>
+                                                @else
+                                                    <button class="text-blue-500 hover:underline">編輯</button>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr class="text-sm">
+                                            <td colspan="5" class="py-6 text-center text-gray-400">目前尚未建立請購清單</td>
+                                        </tr>
+                                    @endforelse
                                 </tbody>
                             </table>
                         </div>

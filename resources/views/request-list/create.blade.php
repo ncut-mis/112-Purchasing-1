@@ -12,7 +12,23 @@
                             <a href="{{ route('home') }}" class="btn btn-outline-secondary rounded-pill px-4">返回首頁</a>
                         </div>
 
-                        <form action="#" method="POST" enctype="multipart/form-data">
+                        @if (session('status'))
+                            <div class="alert alert-success" role="alert">
+                                {{ session('status') }}
+                            </div>
+                        @endif
+
+                        @if ($errors->any())
+                            <div class="alert alert-danger" role="alert">
+                                <ul class="mb-0 ps-3">
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+
+                        <form action="{{ route('request-list.store') }}" method="POST" enctype="multipart/form-data">
                             @csrf
 
                             <div class="d-flex justify-content-between align-items-center mb-2">
@@ -27,11 +43,11 @@
                                 <div class="row g-3 align-items-end mb-3 item-row" data-index="0">
                                     <div class="col-md-4">
                                         <label class="form-label fw-semibold">商品名稱</label>
-                                        <input type="text" class="form-control" name="items[0][item_name]" placeholder="請輸入商品名稱">
+                                        <input type="text" class="form-control" name="items[0][item_name]" placeholder="請輸入商品名稱" required>
                                     </div>
                                     <div class="col-md-2">
                                         <label class="form-label fw-semibold">數量</label>
-                                        <input type="number" class="form-control" name="items[0][quantity]" min="1" value="1">
+                                        <input type="number" class="form-control" name="items[0][quantity]" min="1" value="1" required>
                                     </div>
                                     <div class="col-md-3">
                                         <label class="form-label fw-semibold">商品圖片</label>
@@ -46,28 +62,28 @@
                             <div class="row g-3 mb-4">
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold">選擇國家</label>
-                                    <select class="form-select" name="country">
+                                    <select class="form-select" name="country" required>
                                         <option value="">請選擇國家</option>
-                                        <option value="jp">日本</option>
-                                        <option value="kr">韓國</option>
-                                        <option value="us">美國</option>
-                                        <option value="gb">英國</option>
+                                        <option value="日本">日本</option>
+                                        <option value="韓國">韓國</option>
+                                        <option value="美國">美國</option>
+                                        <option value="英國">英國</option>
                                     </select>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold">商品截止日</label>
-                                    <input type="date" class="form-control" name="deadline">
+                                    <input type="date" class="form-control" name="deadline" required>
                                 </div>
                             </div>
 
                             <div class="row g-3 mb-4">
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold">店家</label>
-                                    <input type="text" class="form-control" name="store_name" placeholder="請輸入店家名稱">
+                                    <input type="text" class="form-control" name="store_name" placeholder="請輸入店家名稱" value="{{ old('store_name') }}">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold">詳細地址</label>
-                                    <input type="text" class="form-control" name="address_detail" placeholder="請輸入詳細地址">
+                                    <input type="text" class="form-control" name="address_detail" placeholder="請輸入詳細地址" value="{{ old('address_detail') }}">
                                 </div>
                             </div>
 
@@ -102,11 +118,11 @@
             row.innerHTML = `
                 <div class="col-md-4">
                     <label class="form-label fw-semibold">商品名稱</label>
-                    <input type="text" class="form-control" name="items[${index}][item_name]" placeholder="請輸入商品名稱">
+                    <input type="text" class="form-control" name="items[${index}][item_name]" placeholder="請輸入商品名稱" required>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label fw-semibold">數量</label>
-                    <input type="number" class="form-control" name="items[${index}][quantity]" min="1" value="1">
+                    <input type="number" class="form-control" name="items[${index}][quantity]" min="1" value="1" required>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">商品圖片</label>

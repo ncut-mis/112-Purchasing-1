@@ -21,6 +21,10 @@ return new class extends Migration
             $table->string('country')->index();
             $table->string('city')->nullable();
 
+            // 建立請購清單時輸入的購買店家資訊
+            $table->string('store_name')->nullable();
+            $table->string('address_detail')->nullable();
+
             // 希望收到的截止日期 (過期就自動失效)
             $table->date('deadline');
 
@@ -38,6 +42,9 @@ return new class extends Migration
 
             // 備註說明
             $table->text('note')->nullable();
+
+            // 保留建立請購清單時使用者輸入/選擇的完整欄位快照
+            $table->json('form_snapshot')->nullable();
 
             $table->timestamps();
             $table->softDeletes();

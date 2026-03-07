@@ -101,17 +101,6 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{{ route('store') }}">找代購</a>
                     </li>
-                    <li class="nav-item">
-                        @auth
-                        <a href="{{ route('request-list.create') }}" class="nav-link">
-                            建立清單
-                        </a>
-                    @else
-                        <a href="{{ route('login') }}" class="nav-link">
-                            建立清單
-                        </a>
-                    @endauth
-                    </li>
 
                     <!-- 新增：會員專區 (僅登入後顯示於主選單) -->
                     @auth
