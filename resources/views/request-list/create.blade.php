@@ -28,7 +28,7 @@
                             </div>
                         @endif
 
-                        <form action="{{ route('request-list.store') }}" method="POST" enctype="multipart/form-data">
+                       <form action="{{ route('request-list.store') }}" method="POST" enctype="multipart/form-data">
                             @csrf
 
                             <div class="d-flex justify-content-between align-items-center mb-2">

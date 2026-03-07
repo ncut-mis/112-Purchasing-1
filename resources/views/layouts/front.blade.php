@@ -128,7 +128,7 @@
                         </form>
                     @else
                         <!-- 未登入：顯示登入與註冊 -->
-                        <a href="{{ route('login') }}" class="btn btn-outline-dark rounded-pill px-4">登入</a>
+                        <a href="#" class="btn btn-outline-dark rounded-pill px-4 js-login-choice" data-user-login="{{ route('login') }}" data-admin-login="{{ route('admin.login') }}">登入</a>
                         @if (Route::has('register'))
                             <a href="{{ route('register') }}" class="btn btn-success rounded-pill px-4 text-white" style="background-color: #56ab91;">註冊</a>
                         @endif
@@ -142,6 +142,26 @@
     <main style="margin-top: 80px;">
         @yield('content')
     </main>
+
+    @guest
+    <div class="modal fade" id="loginChoiceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold">請選擇登入身分</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body pt-2">
+                    <p class="text-muted">請選擇要使用「一般使用者」或「管理員」登入。</p>
+                    <div class="d-grid gap-2">
+                        <a id="userLoginBtn" href="{{ route('login') }}" class="btn btn-success rounded-pill">一般使用者登入</a>
+                        <a id="adminLoginBtn" href="{{ route('admin.login') }}" class="btn btn-outline-dark rounded-pill">管理員登入</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endguest
 
     <!-- Footer -->
     <footer class="mt-5">
@@ -159,5 +179,34 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+
+ @guest
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const loginChoiceModalEl = document.getElementById('loginChoiceModal');
+            if (!loginChoiceModalEl) return;
+
+            const loginChoiceModal = new bootstrap.Modal(loginChoiceModalEl);
+            const userLoginBtn = document.getElementById('userLoginBtn');
+            const adminLoginBtn = document.getElementById('adminLoginBtn');
+
+            document.querySelectorAll('.js-login-choice').forEach((trigger) => {
+                trigger.addEventListener('click', function (event) {
+                    event.preventDefault();
+
+                    const userLoginUrl = this.dataset.userLogin || '{{ route('login') }}';
+                    const adminLoginUrl = this.dataset.adminLogin || '{{ route('admin.login') }}';
+
+                    userLoginBtn.setAttribute('href', userLoginUrl);
+                    adminLoginBtn.setAttribute('href', adminLoginUrl);
+
+                    loginChoiceModal.show();
+                });
+            });
+        });
+    </script>
+    @endguest
+
 </body>
 </html>
