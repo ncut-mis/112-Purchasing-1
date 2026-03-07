@@ -57,6 +57,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/request-list/create', [RequestListController::class, 'create'])->name('request-list.create');
     Route::post('/request-list', [RequestListController::class, 'store'])->name('request-list.store');
+    Route::put('/request-list/{requestList}', [RequestListController::class, 'update'])->name('request-list.update');
+    Route::get('/request-item-image/{requestItem}', [RequestListController::class, 'image'])->name('request-item.image');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

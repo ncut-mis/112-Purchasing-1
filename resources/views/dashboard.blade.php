@@ -60,7 +60,7 @@
                     </div>
 
                     <div class="bg-white rounded-xl shadow-sm p-4">
-<div class="text-sm font-bold text-gray-700 mb-3 text-center">其他功能</div>
+                        <div class="text-sm font-bold text-gray-700 mb-3 text-center">其他功能</div>
                         <div class="grid grid-cols-3 gap-2 text-center">
                             <a href="{{ route('chat.index') }}" class="p-2 hover:bg-blue-50 rounded-lg transition">
                                 <i class="bi bi-chat-dots text-xl text-blue-500"></i>
@@ -81,6 +81,7 @@
                 <!-- 右側主內容區 -->
                 <div class="flex-1 space-y-6">
                     
+
                     <!-- 請購清單區塊 (範例) -->
                     <div class="bg-white rounded-xl shadow-sm p-6">
                         <div class="flex justify-between items-center mb-6">
@@ -153,7 +154,7 @@
                                                 @if($requestList->status === 'matched')
                                                     <button class="text-gray-500 hover:underline">檢視</button>
                                                 @else
-                                                    <button class="text-blue-500 hover:underline">編輯</button>
+                                                    <button type="button" class="text-blue-500 hover:underline" onclick="openEditModal({{ $requestList->id }})">編輯</button>
                                                 @endif
                                             </td>
                                         </tr>
@@ -166,6 +167,80 @@
                             </table>
                         </div>
                     </div>
+
+
+
+                        @foreach($requestLists ?? [] as $requestList)
+                            @if($requestList->status !== 'matched')
+                                <div id="edit-modal-{{ $requestList->id }}" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+                                    <div class="bg-white w-full max-w-3xl rounded-xl shadow-lg max-h-[90vh] overflow-y-auto">
+                                        <div class="flex justify-between items-center border-b px-6 py-4">
+                                            <h4 class="text-lg font-bold text-gray-800">編輯請購清單</h4>
+                                            <button type="button" class="text-gray-400 hover:text-gray-600" onclick="closeEditModal({{ $requestList->id }})">✕</button>
+                                        </div>
+                                        <form action="{{ route('request-list.update', $requestList) }}" method="POST" enctype="multipart/form-data" class="px-6 py-5 space-y-4">
+                                            @csrf
+                                            @method('PUT')
+
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">國家</label>
+                                                    <select name="country" class="w-full border-gray-300 rounded-lg">
+                                                        <option value="jp" @selected($requestList->country === 'jp')>日本</option>
+                                                        <option value="kr" @selected($requestList->country === 'kr')>韓國</option>
+                                                        <option value="us" @selected($requestList->country === 'us')>美國</option>
+                                                        <option value="gb" @selected($requestList->country === 'gb')>英國</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">商品截止日</label>
+                                                    <input type="date" name="deadline" value="{{ optional($requestList->deadline)->format('Y-m-d') }}" class="w-full border-gray-300 rounded-lg">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">店家</label>
+                                                    <input type="text" name="store_name" value="{{ $requestList->title }}" class="w-full border-gray-300 rounded-lg" placeholder="請輸入店家名稱">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">詳細地址</label>
+                                                    <input type="text" name="address_detail" value="{{ $requestList->note }}" class="w-full border-gray-300 rounded-lg" placeholder="請輸入詳細地址">
+                                                </div>
+                                            </div>
+
+                                            <div class="space-y-4 pt-2">
+                                                <h5 class="font-semibold text-gray-800">商品資料</h5>
+                                                @foreach($requestList->items->take(3) as $index => $item)
+                                                    <div class="border rounded-lg p-3 space-y-2 edit-item-card">
+                                                        <input type="hidden" name="items[{{ $index }}][id]" value="{{ $item->id }}">
+                                                        <input type="hidden" name="items[{{ $index }}][quantity]" value="{{ $item->quantity }}">
+                                                        <input type="hidden" name="items[{{ $index }}][remove]" value="0" class="remove-flag">
+                                                        <div class="flex items-center justify-between">
+                                                            <label class="block text-sm font-medium text-gray-700">商品名稱</label>
+                                                            <button type="button" class="text-xs text-red-500 hover:underline" onclick="removeEditItem(this)">刪除此商品</button>
+                                                        </div>
+                                                        <div>
+                                                            <input type="text" name="items[{{ $index }}][item_name]" value="{{ $item->name }}" class="w-full border-gray-300 rounded-lg">
+                                                        </div>
+                                                        <div>
+                                                            <label class="block text-sm font-medium text-gray-700 mb-1">商品圖片</label>
+                                                            @if($item->reference_image)
+                                                                <img src="{{ url('/request-item-image/' . $item->id) }}" alt="商品圖片" class="w-24 h-24 object-cover rounded border mb-2">
+                                                                <p class="text-xs text-gray-500 mb-2">未重新上傳會保留原圖片</p>
+                                                            @endif
+                                                            <input type="file" name="items[{{ $index }}][item_image]" class="w-full border-gray-300 rounded-lg" accept="image/*">
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+
+                                            <div class="flex justify-end gap-2 pt-2">
+                                                <button type="button" class="px-4 py-2 rounded-lg border text-gray-600" onclick="closeEditModal({{ $requestList->id }})">取消</button>
+                                                <button type="submit" class="px-4 py-2 rounded-lg bg-green-600 text-white">確認</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            @endif
+                        @endforeach
 
                     <!-- 聊天訊息預覽 (範例) -->
                     <div class="bg-white rounded-xl shadow-sm p-6">
@@ -189,4 +264,40 @@
             </div>
         </div>
     </div>
+    <script>
+        function openEditModal(id) {
+            const modal = document.getElementById(`edit-modal-${id}`);
+            if (modal) {
+                modal.classList.remove('hidden');
+                document.body.classList.add('overflow-hidden');
+            }
+        }
+
+        function removeEditItem(button) {
+            const card = button.closest('.edit-item-card');
+            if (!card) return;
+
+            const container = card.parentElement;
+            const visibleCards = container.querySelectorAll('.edit-item-card:not(.hidden)');
+            if (visibleCards.length <= 1) {
+                alert('至少需保留一項商品');
+                return;
+            }
+
+            const flag = card.querySelector('.remove-flag');
+            if (flag) {
+                flag.value = '1';
+            }
+
+            card.classList.add('hidden');
+        }
+
+        function closeEditModal(id) {
+            const modal = document.getElementById(`edit-modal-${id}`);
+            if (modal) {
+                modal.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
+            }
+        }
+    </script>
 </x-app-layout>

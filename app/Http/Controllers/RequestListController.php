@@ -6,6 +6,7 @@ use App\Models\RequestItem;
 use App\Models\RequestList;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class RequestListController extends Controller
 {
@@ -59,5 +60,81 @@ class RequestListController extends Controller
         }
 
         return redirect()->route('dashboard')->with('status', '請購清單建立成功');
+    }
+
+    public function update(Request $request, RequestList $requestList)
+    {
+        abort_unless($requestList->user_id === Auth::id(), 403);
+
+        $validated = $request->validate([
+            'country' => ['required', 'string', 'max:255'],
+            'deadline' => ['required', 'date'],
+            'store_name' => ['nullable', 'string', 'max:255'],
+            'address_detail' => ['nullable', 'string', 'max:1000'],
+            'items' => ['required', 'array', 'min:1', 'max:3'],
+            'items.*.id' => ['required', 'integer'],
+            'items.*.item_name' => ['required', 'string', 'max:255'],
+            'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.item_image' => ['nullable', 'image', 'max:2048'],
+            'items.*.remove' => ['nullable', 'boolean'],
+        ]);
+
+        $itemsMap = $requestList->items()->get()->keyBy('id');
+        $remainingItems = collect($validated['items'])->reject(fn ($item) => !empty($item['remove']));
+
+        if ($remainingItems->isEmpty()) {
+            return back()->withErrors(['items' => '至少需保留一項商品'])->withInput();
+        }
+
+        $firstItemName = $remainingItems->first()['item_name'] ?? '未命名商品';
+
+        $requestList->update([
+            'title' => $validated['store_name'] ?: $firstItemName,
+            'country' => $validated['country'],
+            'deadline' => $validated['deadline'],
+            'note' => $validated['address_detail'] ?? null,
+        ]);
+
+        foreach ($validated['items'] as $index => $itemData) {
+            $item = $itemsMap->get((int) $itemData['id']);
+            if (! $item) {
+                continue;
+            }
+
+            if (!empty($itemData['remove'])) {
+                if ($item->reference_image) {
+                    Storage::disk('public')->delete($item->reference_image);
+                }
+                $item->delete();
+                continue;
+            }
+
+            $imagePath = $item->reference_image;
+            if ($request->hasFile("items.$index.item_image")) {
+                if ($imagePath) {
+                    Storage::disk('public')->delete($imagePath);
+                }
+                $imagePath = $request->file("items.$index.item_image")->store('request-items', 'public');
+            }
+
+            $item->update([
+                'name' => $itemData['item_name'],
+                'quantity' => $itemData['quantity'],
+                'reference_image' => $imagePath,
+            ]);
+        }
+
+        return redirect()->route('dashboard')->with('status', '請購清單更新成功');
+    }
+
+    public function image(RequestItem $requestItem)
+    {
+        abort_unless($requestItem->list && $requestItem->list->user_id === Auth::id(), 403);
+
+        if (! $requestItem->reference_image || ! Storage::disk('public')->exists($requestItem->reference_image)) {
+            abort(404);
+        }
+
+        return response()->file(Storage::disk('public')->path($requestItem->reference_image));
     }
 }
