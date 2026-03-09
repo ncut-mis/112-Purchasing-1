@@ -50,6 +50,10 @@ class AdminAuthController extends Controller
 
     public function approveAgentApplication(AgentApplication $agentApplication)
     {
+        if ($agentApplication->status !== 'pending') {
+            return redirect()->route('admin.dashboard')->with('status', '此申請已完成審核');
+        }
+
         $agentApplication->update(['status' => 'approved']);
 
         return redirect()->route('admin.dashboard')->with('status', '已審核通過代購人申請');
@@ -57,6 +61,10 @@ class AdminAuthController extends Controller
 
     public function rejectAgentApplication(AgentApplication $agentApplication)
     {
+        if ($agentApplication->status !== 'pending') {
+            return redirect()->route('admin.dashboard')->with('status', '此申請已完成審核');
+        }
+
         $agentApplication->update(['status' => 'rejected']);
 
         return redirect()->route('admin.dashboard')->with('status', '已審核不通過代購人申請');

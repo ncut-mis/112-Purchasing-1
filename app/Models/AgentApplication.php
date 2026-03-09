@@ -15,6 +15,8 @@ class AgentApplication extends Model
         'name',
         'country',
         'phone',
+        'main_region',
+        'experience',
         'id_number',
         'id_image_front',
         'id_image_back',

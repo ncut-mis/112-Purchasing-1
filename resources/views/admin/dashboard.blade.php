@@ -37,6 +37,7 @@
                                     <th>國家</th>
                                     <th>電話號碼</th>
                                     <th>身份證字號</th>
+                                    <th>狀態</th>
                                     <th class="text-end">操作</th>
                                 </tr>
                             </thead>
@@ -53,24 +54,35 @@
                                         <td>{{ $country }}</td>
                                         <td>{{ $application->phone ?? '未提供' }}</td>
                                         <td>{{ $idNumber }}</td>
+                                        <td>
+                                            @if ($status === 'approved')
+                                                <span class="badge text-bg-success">通過</span>
+                                            @elseif ($status === 'rejected')
+                                                <span class="badge text-bg-danger">不通過</span>
+                                            @else
+                                                <span class="badge text-bg-secondary">待審核</span>
+                                            @endif
+                                        </td>
                                         <td class="text-end">
                                             <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#agentViewModal-{{ $application->id }}">檢視</button>
 
-                                            <form method="POST" action="{{ route('admin.agent-applications.approve', $application) }}" class="d-inline">
-                                                @csrf
-                                                @method('PATCH')
-                                                <button type="submit" class="btn btn-sm btn-outline-success" {{ $status === 'approved' ? 'disabled' : '' }}>審核通過</button>
-                                            </form>
+                                            @if ($status === 'pending')
+                                                <form method="POST" action="{{ route('admin.agent-applications.approve', $application) }}" class="d-inline">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button type="submit" class="btn btn-sm btn-outline-success">審核通過</button>
+                                                </form>
 
-                                            <form method="POST" action="{{ route('admin.agent-applications.reject', $application) }}" class="d-inline">
-                                                @csrf
-                                                @method('PATCH')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" {{ $status === 'rejected' ? 'disabled' : '' }}>審核不通過</button>
-                                            </form>
+                                                <form method="POST" action="{{ route('admin.agent-applications.reject', $application) }}" class="d-inline">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">審核不通過</button>
+                                                </form>
+                                            @endif
                                         </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="5" class="text-center text-muted">目前沒有代購人申請資料</td></tr>
+                                    <tr><td colspan="6" class="text-center text-muted">目前沒有代購人申請資料</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -85,8 +97,8 @@
                     $idNumber = $application->id_number ?? $application->ID_Card ?? '未提供';
                     $statusLabel = [
                         'pending' => '待審核',
-                        'approved' => '已通過',
-                        'rejected' => '未通過',
+                        'approved' => '通過',
+                        'rejected' => '不通過',
                     ][$application->status] ?? $application->status;
                 @endphp
                 <div class="modal fade" id="agentViewModal-{{ $application->id }}" tabindex="-1" aria-hidden="true">
