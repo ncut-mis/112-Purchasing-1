@@ -99,7 +99,7 @@
                         <a class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}" href="{{ route('home') }}">首頁</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ route('store') }}">找代購</a>
+                        <a class="nav-link" href="{{ route('store') }}">尋找代購人</a>
                     </li>
 
                     <!-- 新增：會員專區 (僅登入後顯示於主選單) -->

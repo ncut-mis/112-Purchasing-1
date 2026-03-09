@@ -6,19 +6,21 @@
             </h2>
             
             <div class="flex items-center gap-3">
-                <!-- 搜尋功能：讓代購人快速鎖定關鍵字 -->
-                <div class="relative">
-                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
-                        <i class="bi bi-search"></i>
-                    </span>
-                    <input type="text" class="pl-10 pr-4 py-2 border-gray-200 rounded-full text-sm focus:ring-indigo-500 focus:border-indigo-500 shadow-sm w-64" placeholder="搜尋商品名稱或關鍵字...">
+                <!-- 強化版搜尋功能：更明顯且圖示在右側 -->
+                <div class="relative w-full md:w-96 group">
+                    <input type="text" 
+                        class="w-full pl-5 pr-12 py-3 bg-white border-2 border-indigo-50 rounded-2xl text-sm focus:ring-indigo-500 focus:border-indigo-500 shadow-md transition-all duration-300 group-hover:border-indigo-200" 
+                        placeholder="搜尋商品名稱、國家或關鍵字...">
+                    
+                    <!-- 右側搜尋圖示按鈕 -->
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-1">
+                        <button class="bg-indigo-600 text-white p-2 rounded-xl hover:bg-indigo-700 transition shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
-
-                <!-- 返回請購人主頁面 -->
-                <a href="{{ route('home') }}" class="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-sm font-medium text-gray-600 hover:bg-gray-50 transition shadow-sm">
-                    <i class="bi bi-arrow-left-right text-indigo-500"></i>
-                    <span>返回買家模式</span>
-                </a>
 
                 <!-- 會員專區按鈕 (從 Dashboard 進入管理核心) -->
                 <a href="{{ route('agent.member') }}" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 border border-transparent rounded-full text-sm font-bold text-white hover:bg-indigo-700 transition shadow-md">

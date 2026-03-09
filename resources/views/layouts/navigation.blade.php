@@ -12,12 +12,24 @@
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        {{ __('Dashboard') }}
-                    </x-nav-link>
-                    <x-nav-link href="{{ route('home') }}">
-                        回首頁
-                    </x-nav-link>
+                    <!-- 判斷目前是否在代購人相關路由 (以 agent. 開頭) -->
+                    @if(request()->routeIs('agent.*'))
+                        <!-- 代購人看到的文字 -->
+                        <x-nav-link :href="route('agent.dashboard')" :active="request()->routeIs('agent.dashboard')">
+                            {{ __('接單大廳') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('home')">
+                            {{ __('返回買家模式') }}
+                        </x-nav-link>
+                    @else
+                        <!-- 一般請購人 (買家) 看到的文字保持不變 -->
+                        <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                            {{ __('會員專區') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('home')">
+                            {{ __('返回首頁') }}
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 
@@ -37,8 +49,15 @@
                     </x-slot>
 
                     <x-slot name="content">
+                        <!-- 若是代購人，下拉選單也可以增加跳轉選項 -->
+                        @if(request()->routeIs('agent.*'))
+                            <x-dropdown-link :href="route('agent.member')">
+                                {{ __('代購管理中心') }}
+                            </x-dropdown-link>
+                        @endif
+
                         <x-dropdown-link :href="route('profile.edit')">
-                            {{ __('Profile') }}
+                            {{ __('個人資料') }}
                         </x-dropdown-link>
 
                         <!-- Authentication -->
@@ -47,7 +66,7 @@
                             <x-dropdown-link :href="route('logout')"
                                     onclick="event.preventDefault();
                                                 this.closest('form').submit();">
-                                {{ __('Log Out') }}
+                                {{ __('登出') }}
                             </x-dropdown-link>
                         </form>
                     </x-slot>
@@ -66,12 +85,24 @@
         </div>
     </div>
 
-    <!-- Responsive Navigation Menu -->
+    <!-- Responsive Navigation Menu (手機版同步判斷) -->
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                {{ __('Dashboard') }}
-            </x-responsive-nav-link>
+            @if(request()->routeIs('agent.*'))
+                <x-responsive-nav-link :href="route('agent.dashboard')" :active="request()->routeIs('agent.dashboard')">
+                    {{ __('接單大廳') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link href="{{ route('home') }}">
+                    {{ __('返回買家模式') }}
+                </x-responsive-nav-link>
+            @else
+                <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                    {{ __('會員專區') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link href="{{ route('home') }}">
+                    {{ __('返回首頁') }}
+                </x-responsive-nav-link>
+            @endif
         </div>
 
         <!-- Responsive Settings Options -->
@@ -83,7 +114,7 @@
 
             <div class="mt-3 space-y-1">
                 <x-responsive-nav-link :href="route('profile.edit')">
-                    {{ __('Profile') }}
+                    {{ __('個人資料') }}
                 </x-responsive-nav-link>
 
                 <!-- Authentication -->
@@ -92,7 +123,7 @@
                     <x-responsive-nav-link :href="route('logout')"
                             onclick="event.preventDefault();
                                         this.closest('form').submit();">
-                        {{ __('Log Out') }}
+                        {{ __('登出') }}
                     </x-responsive-nav-link>
                 </form>
             </div>
