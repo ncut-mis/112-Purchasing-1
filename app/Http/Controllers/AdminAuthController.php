@@ -3,8 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Admin;
+use App\Models\AgentApplication;
+use App\Models\Post;
+use App\Models\RequestList;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 class AdminAuthController extends Controller
 {
@@ -37,8 +41,27 @@ class AdminAuthController extends Controller
     public function dashboard(Request $request)
     {
         $adminName = $request->session()->get('admin_auth_name');
+        $agentApplications = AgentApplication::latest()->take(10)->get();
+        $requestLists = RequestList::with('items')->latest()->take(10)->get();
+        $posts = Post::latest()->take(10)->get();
 
-        return view('admin.dashboard', compact('adminName'));
+        return view('admin.dashboard', compact('adminName', 'agentApplications', 'requestLists', 'posts'));
+    }
+
+
+    public function deleteRequestList(RequestList $requestList)
+    {
+        $requestList->load('items');
+
+        foreach ($requestList->items as $item) {
+            if ($item->reference_image) {
+                Storage::disk('public')->delete($item->reference_image);
+            }
+        }
+
+        $requestList->forceDelete();
+
+        return redirect()->route('admin.dashboard')->with('status', '請購清單已刪除');
     }
 
     public function logout(Request $request)

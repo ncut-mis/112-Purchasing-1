@@ -12,23 +12,7 @@
                             <a href="{{ route('home') }}" class="btn btn-outline-secondary rounded-pill px-4">返回首頁</a>
                         </div>
 
-                        @if (session('status'))
-                            <div class="alert alert-success" role="alert">
-                                {{ session('status') }}
-                            </div>
-                        @endif
-
-                        @if ($errors->any())
-                            <div class="alert alert-danger" role="alert">
-                                <ul class="mb-0 ps-3">
-                                    @foreach ($errors->all() as $error)
-                                        <li>{{ $error }}</li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                        @endif
-
-                       <form action="{{ route('request-list.store') }}" method="POST" enctype="multipart/form-data">
+                        <form action="{{ route('request-list.store') }}" method="POST" enctype="multipart/form-data">
                             @csrf
 
                             <div class="d-flex justify-content-between align-items-center mb-2">
@@ -43,11 +27,11 @@
                                 <div class="row g-3 align-items-end mb-3 item-row" data-index="0">
                                     <div class="col-md-4">
                                         <label class="form-label fw-semibold">商品名稱</label>
-                                        <input type="text" class="form-control" name="items[0][item_name]" placeholder="請輸入商品名稱" required>
+                                        <input type="text" class="form-control" name="items[0][item_name]" placeholder="請輸入商品名稱">
                                     </div>
                                     <div class="col-md-2">
                                         <label class="form-label fw-semibold">數量</label>
-                                        <input type="number" class="form-control" name="items[0][quantity]" min="1" value="1" required>
+                                        <input type="number" class="form-control" name="items[0][quantity]" min="1" value="1">
                                     </div>
                                     <div class="col-md-3">
                                         <label class="form-label fw-semibold">商品圖片</label>

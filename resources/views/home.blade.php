@@ -6,7 +6,7 @@
 <section class="hero-section position-relative d-flex align-items-center" style="min-height: 500px; background: linear-gradient(135deg, #e0f7fa 0%, #f3f7f5 100%);">
     <div class="container">
         <div class="row align-items-center">
-            <div class="col-lg-6">
+           <div class="col-lg-6">
                 <span class="badge bg-white text-success shadow-sm px-3 py-2 rounded-pill mb-3">
                     <i class="bi bi-star-fill me-1"></i> 全球連線中
                 </span>
@@ -25,7 +25,7 @@
                     <button type="submit" class="btn btn-primary-custom btn-lg shadow-sm">
                         <i class="bi bi-search me-2"></i>
                     </button>
-                </form>
+                </form> 
                 </div>
             </div>
             <div class="col-lg-6 text-center d-none d-lg-block">

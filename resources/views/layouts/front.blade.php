@@ -143,6 +143,8 @@
         @yield('content')
     </main>
 
+
+
     @guest
     <div class="modal fade" id="loginChoiceModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -179,9 +181,7 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-
- @guest
+    @guest
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const loginChoiceModalEl = document.getElementById('loginChoiceModal');
