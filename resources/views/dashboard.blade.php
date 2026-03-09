@@ -34,6 +34,11 @@
                 <div class="w-full md:w-64 space-y-2">
                     <div class="bg-white rounded-xl shadow-sm overflow-hidden">
                         <div class="p-4 border-b bg-gray-50 font-bold text-gray-700">功能列表</div>
+
+                        @php
+                            // 取得當前使用者的代購申請紀錄
+                            $app = Auth::user()->agentApplication;
+                        @endphp
                         <nav class="p-2 space-y-1">
                             <a href="#" class="flex items-center space-x-3 p-3 rounded-lg bg-green-50 text-green-700 font-medium">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
@@ -69,11 +74,36 @@
                                 <span>評價中心</span>
                             </a>
 
-                            <!-- 申請代購人 (置底強調) -->
-                            <a href="{{ route('agent.apply') }}" class="flex items-center space-x-3 p-3 rounded-lg text-indigo-600 hover:bg-indigo-50 transition border-t mt-2 pt-4 group">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path></svg>
-                                <span class="font-bold group-hover:underline">申請代購人</span>
-                            </a>
+                            <!-- 動態身分判斷區域 -->
+                            <div class="border-t mt-2 pt-2">
+                                @if($app && $app->status == 'approved')
+                                    <!-- 1. 審核通過：顯示進入代購大廳入口 -->
+                                    <a href="{{ route('agent.dashboard') }}" class="flex items-center space-x-3 p-3 rounded-lg text-indigo-700 bg-indigo-50 font-bold transition group">
+                                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                                        </svg>
+                                        <span class="group-hover:underline">代購人頁面</span>
+                                    </a>
+
+                                @elseif($app && $app->status == 'pending')
+                                    <!-- 2. 審核中：顯示狀態提示，導向進度頁面 -->
+                                    <a href="{{ route('agent.status') }}" class="flex items-center space-x-3 p-3 rounded-lg text-amber-600 bg-amber-50 transition group">
+                                        <svg class="w-5 h-5 text-amber-500 animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <span class="font-medium group-hover:underline">申請審核中...</span>
+                                    </a>
+
+                                @else
+                                    <!-- 3. 未申請或被拒絕：顯示申請按鈕 -->
+                                    <a href="{{ route('agent.apply') }}" class="flex items-center space-x-3 p-3 rounded-lg text-gray-600 hover:bg-gray-50 transition group">
+                                        <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                        </svg>
+                                        <span class="font-medium group-hover:underline">申請代購人</span>
+                                    </a>
+                                @endif
+                            </div>
                         </nav>
                     </div>
                 </div>

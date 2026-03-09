@@ -50,9 +50,27 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('dashboard', compact('requestLists'));
     })->name('dashboard');
 
+    // 代購人會員專區
+    Route::get('/agent/member', function () {
+        return view('agent.member');
+    })->name('agent.member');
 
+     // 1. 申請頁面
+    Route::get('/agent/apply', [AgentApplicationController::class, 'create'])->name('agent.apply');
+    Route::post('/agent/apply', [AgentApplicationController::class, 'store'])->name('agent.store');
 
-        // 聊天頁面
+    // 2. 關鍵：新增申請進度查詢路由
+    Route::get('/agent/status', [AgentApplicationController::class, 'status'])->name('agent.status');
+    
+    // 顯示個人資訊編輯頁面 (GET)
+    Route::get('/agent/profile', function () {
+        return view('agent.profile');
+    })->name('agent.profile.edit'); 
+
+    // 處理個人資訊更新 (POST)
+    Route::post('/agent/profile', [AgentApplicationController::class, 'updateProfile'])->name('agent.profile.update');
+
+    // 聊天頁面
     Route::get('/chat', function () {
         return view('chat.index');
     })->name('chat.index');

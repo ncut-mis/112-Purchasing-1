@@ -45,4 +45,20 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+    /**
+     * 取得使用者的代購申請紀錄
+     */
+    public function agentApplication()
+    {
+        return $this->hasOne(AgentApplication::class);
+    }
+
+    /**
+     * 檢查使用者是否為已認證的代購人
+     */
+    public function isApprovedAgent(): bool
+    {
+        // 檢查是否有申請紀錄，且狀態為 'approved'
+        return $this->agentApplication()->where('status', 'approved')->exists();
+    }
 }
