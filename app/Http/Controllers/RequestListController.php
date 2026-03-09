@@ -30,17 +30,19 @@ class RequestListController extends Controller
 
         $firstItemName = $validated['items'][0]['item_name'] ?? '未命名商品';
 
-        $requestList = RequestList::create([
-            'user_id' => Auth::id(),
-            'title' => $validated['store_name'] ?: $firstItemName,
-            'country' => $validated['country'],
-            'city' => null,
-            'deadline' => $validated['deadline'],
-            'budget_total' => null,
-            'currency' => 'TWD',
-            'status' => 'pending',
-            'note' => $validated['address_detail'] ?? null,
+        $requestList = RequestList::create([  // ← 只改第一個字
+        'user_id' => Auth::id(),
+        'title' => $validated['store_name'] ?: $firstItemName,
+        'items' => json_encode($validated['items'] ?? []),  // ← 加這行
+        'country' => $validated['country'],
+        'city' => null,
+        'deadline' => $validated['deadline'],
+        'budget_total' => null,
+        'currency' => 'TWD',
+        'status' => 'pending',
+        'note' => $validated['address_detail'] ?? null,
         ]);
+
 
         foreach ($validated['items'] as $index => $item) {
             $imagePath = null;

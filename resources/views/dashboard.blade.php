@@ -113,11 +113,35 @@
                     
 
                     <!-- 請購清單區塊 (範例) -->
-                    <div class="bg-white rounded-xl shadow-sm p-6">
-                        <div class="flex justify-between items-center mb-6">
+                                            <div class="flex justify-between items-center mb-6">
                             <h3 class="text-lg font-bold text-gray-800">目前請購清單</h3>
-                            <a href="{{ route('request-list.create') }}" class="text-sm text-green-600 hover:underline">+ 建立請購清單</a>
+                            
+                            <div class="flex items-center gap-4">                         
+                                <!-- 搜尋框 -->
+                                <form method="GET" action="{{ route('dashboard') }}" style="display: flex; gap: 8px; min-width: 280px;">
+                                    <input 
+                                        type="search" 
+                                        name="request_search" 
+                                        placeholder="搜尋標題、描述、狀態..." 
+                                        value="{{ request('request_search') }}" 
+                                        style="padding: 8px 12px; border: 2px solid #0e0e0f; border-radius: 8px; font-size: 14px; min-width: 220px; flex: 1;"
+                                    >
+                                    <button type="submit" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                                        🔍
+                                    </button>
+                                </form>
+                                   <a href="{{ route('request-list.create') }}" class="text-sm text-green-600 hover:underline">+ 建立請購清單</a>
+                            </div>
                         </div>
+
+                        <!-- 搜尋結果提示 -->
+                        @if(request('request_search'))
+                            <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+                                🔍 搜尋「{{ request('request_search') }}」找到 {{ $requestLists->total() ?? 0 }} 筆清單
+                                <a href="{{ route('dashboard') }}" class="text-blue-600 hover:underline ml-2">清除搜尋</a>
+                            </div>
+                        @endif
+
                         
                         <div class="overflow-x-auto">
                             <table class="w-full text-left">
@@ -189,8 +213,14 @@
                                             </td>
                                         </tr>
                                     @empty
-                                        <tr class="text-sm">
-                                            <td colspan="5" class="py-6 text-center text-gray-400">目前尚未建立請購清單</td>
+                                        <tr>
+                                            <td colspan="5" class="py-6 text-center text-gray-400">
+                                                @if(request('request_search'))
+                                                    沒有找到「{{ request('request_search') }}」相關的請購清單
+                                                @else
+                                                    目前尚未建立請購清單
+                                                @endif
+                                            </td>
                                         </tr>
                                     @endforelse
                                 </tbody>

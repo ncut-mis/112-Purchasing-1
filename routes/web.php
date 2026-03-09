@@ -10,6 +10,7 @@ use App\Models\Post;
 use App\Models\PurchasingRequest;
 use App\Models\RequestList;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\DashboardController;
 
 Route::get('/agent/member', function() { 
     return view('agent.member'); 
@@ -97,5 +98,10 @@ Route::middleware('auth')->group(function () {
     Route::delete('/cart/remove/{id}', [CartController::class, 'remove'])->name('cart.remove');
     Route::delete('/cart/empty', [CartController::class, 'empty'])->name('cart.empty');
 });
+    //建立搜尋自己清單的路由
+Route::middleware('auth')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+});
+
 
 require __DIR__.'/auth.php';
