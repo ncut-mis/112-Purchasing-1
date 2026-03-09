@@ -76,6 +76,9 @@ class AgentApplicationController extends Controller
     $user->name = $request->nickname;
     $user->bio = $request->bio; 
 
+    // 處理可代購國家 (轉成 JSON 存入)
+    $user->purchasable_countries = json_encode($request->input('countries', []));
+    
     // 處理頭像上傳 (如果有上傳新圖片)
     if ($request->hasFile('avatar')) {
         $path = $request->file('avatar')->store('avatars', 'public');

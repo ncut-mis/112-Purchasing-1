@@ -64,7 +64,33 @@
                                 <p class="text-[10px] text-gray-400 mt-1">這段文字會顯示在您的個人名片下方。</p>
                             </div>
                         </div>
+                            <!-- 可代購國家 (新增區塊) -->
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-3">可代購國家 (複選)</label>
+                                <div class="flex flex-wrap gap-3">
+                                    @php
+                                        // 從資料庫解析 JSON
+                                        $selectedCountries = json_decode(Auth::user()->purchasable_countries ?? '[]', true) ?: [];
+                                    @endphp
+                                    
+                                    <!-- 日本選項 -->
+                                    <label class="relative cursor-pointer">
+                                        <input type="checkbox" name="countries[]" value="日本" class="peer hidden" {{ in_array('日本', $selectedCountries) ? 'checked' : '' }}>
+                                        <div class="px-6 py-2 rounded-xl border border-gray-200 text-sm font-bold text-gray-500 peer-checked:bg-indigo-50 peer-checked:border-indigo-500 peer-checked:text-indigo-600 transition">
+                                            🇯🇵 日本
+                                        </div>
+                                    </label>
 
+                                    <!-- 韓國選項 -->
+                                    <label class="relative cursor-pointer">
+                                        <input type="checkbox" name="countries[]" value="韓國" class="peer hidden" {{ in_array('韓國', $selectedCountries) ? 'checked' : '' }}>
+                                        <div class="px-6 py-2 rounded-xl border border-gray-200 text-sm font-bold text-gray-500 peer-checked:bg-indigo-50 peer-checked:border-indigo-500 peer-checked:text-indigo-600 transition">
+                                            🇰🇷 韓國
+                                        </div>
+                                    </label>
+                                </div>
+                                <p class="text-[10px] text-gray-400 mt-2 italic">* 選取的國家將會以標籤形式顯示在您的名片上。</p>
+                            </div>
                         <div class="mt-10">
                             <button type="submit" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition transform hover:scale-[1.02]">
                                 儲存個人資訊

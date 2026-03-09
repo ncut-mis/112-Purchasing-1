@@ -114,11 +114,26 @@
                         <h6 class="font-bold text-gray-800 text-sm">{{ Auth::user()->nickname ?? Auth::user()->name }}</h6>
                         <p class="text-[10px] text-gray-400 mt-1 uppercase tracking-widest font-bold text-indigo-500">認證代購職人</p>
                         
+                        <!-- 新增：顯示可代購國家標籤 -->
+                        @php
+                            $countries = json_decode(Auth::user()->purchasable_countries ?? '[]', true);
+                        @endphp
+                        @if(!empty($countries))
+                            <div class="flex flex-wrap justify-center gap-1 mt-3">
+                                @foreach($countries as $country)
+                                    <span class="px-2 py-0.5 bg-indigo-100 text-indigo-600 rounded text-[9px] font-bold">
+                                        {{ $country == '日本' ? '🇯🇵' : '🇰🇷' }} {{ $country }}
+                                    </span>
+                                @endforeach
+                            </div>
+                        @endif
+
                         @if(Auth::user()->bio)
                             <p class="text-[10px] text-gray-500 mt-3 text-center line-clamp-2 px-2 italic leading-relaxed">
                                 "{{ Auth::user()->bio }}"
                             </p>
                         @endif
+
                     </div>
                 </div>
             </div>
