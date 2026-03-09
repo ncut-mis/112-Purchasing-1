@@ -48,18 +48,11 @@
                         </button>
                     </x-slot>
 
-                    <x-slot name="content">
-                        <!-- 若是代購人，下拉選單也可以增加跳轉選項 -->
-                        @if(request()->routeIs('agent.*'))
-                            <x-dropdown-link :href="route('agent.member')">
-                                {{ __('代購管理中心') }}
-                            </x-dropdown-link>
-                        @endif
-
+                    <x-slot name="content">                       
                         <x-dropdown-link :href="route('profile.edit')">
                             {{ __('個人資料') }}
                         </x-dropdown-link>
-
+                        
                         <!-- Authentication -->
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
