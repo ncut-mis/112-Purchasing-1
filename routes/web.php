@@ -47,6 +47,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('dashboard', compact('requestLists'));
     })->name('dashboard');
 
+    // 1. 代購人會員專區首頁
+    Route::get('/agent/member', function () {
+        return view('agent.member');
+    })->name('agent.member');
+
+    // 2. 顯示編輯個人資訊頁面 (GET)
+    Route::get('/agent/profile', function () {
+        return view('agent.profile');
+    })->name('agent.profile.edit');
+
+    // 3. 接收並處理更新後的資訊 (POST)
+    // 這裡我們直接導向 Controller 來處理圖片與文字儲存
+    Route::post('/agent/profile', [AgentApplicationController::class, 'updateProfile'])->name('agent.profile.update');
 
 
         // 聊天頁面

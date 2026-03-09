@@ -6,7 +6,6 @@
             </h2>
             
             <div class="flex items-center gap-3">
-                <!-- 返回代購人主頁 (Dashboard) -->
                 <a href="{{ route('agent.dashboard') }}" class="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-sm font-medium text-indigo-600 hover:bg-indigo-50 transition shadow-sm">
                     <i class="bi bi-speedometer2"></i>
                     <span>返回接單大廳</span>
@@ -58,37 +57,30 @@
                             <i class="bi bi-person-badge"></i>
                         </div>
                         <nav class="p-2 space-y-1">
-                            <!-- 訂單管理 -->
                             <a href="#" class="flex items-center gap-3 p-3 rounded-xl text-gray-600 hover:bg-gray-50 transition">
-                                <i class="bi bi-receipt"></i>
+                                <i class="bi bi-receipt text-indigo-500"></i>
                                 <span>訂單管理</span>
                             </a>
-                            <!-- 我的代購連線 -->
                             <a href="#connections" class="flex items-center gap-3 p-3 rounded-xl text-gray-600 hover:bg-gray-50 transition">
-                                <i class="bi bi-megaphone"></i>
+                                <i class="bi bi-megaphone text-orange-500"></i>
                                 <span>我的代購連線</span>
                             </a>
-                            <!-- 新增：代購商品管理 -->
                             <a href="#" class="flex items-center gap-3 p-3 rounded-xl text-gray-600 hover:bg-gray-50 transition">
                                 <i class="bi bi-box-seam text-blue-500"></i>
                                 <span>代購商品管理</span>
                             </a>
-                            <!-- 撥款紀錄 -->
                             <a href="#payments" class="flex items-center gap-3 p-3 rounded-xl text-gray-600 hover:bg-gray-50 transition">
-                                <i class="bi bi-wallet2"></i>
+                                <i class="bi bi-wallet2 text-emerald-500"></i>
                                 <span>撥款紀錄</span>
                             </a>
-                            <!-- 收藏請購清單 -->
                             <a href="#" class="flex items-center gap-3 p-3 rounded-xl text-gray-600 hover:bg-gray-50 transition">
                                 <i class="bi bi-bookmark-heart text-pink-500"></i>
                                 <span>收藏請購清單</span>
                             </a>
-                            <!-- 新增：評價中心 -->
                             <a href="#" class="flex items-center gap-3 p-3 rounded-xl text-gray-600 hover:bg-gray-50 transition">
                                 <i class="bi bi-chat-heart text-yellow-500"></i>
                                 <span>評價中心</span>
                             </a>
-                            <!-- 新增：物流設定 -->
                             <a href="#" class="flex items-center gap-3 p-3 rounded-xl text-gray-600 hover:bg-gray-50 transition">
                                 <i class="bi bi-truck text-indigo-500"></i>
                                 <span>物流設定</span>
@@ -96,39 +88,50 @@
 
                             <div class="border-t border-gray-50 my-2 pt-2"></div>
                             
-                            <!-- 發布按鈕 -->
                             <a href="#" class="flex items-center gap-3 p-3 rounded-xl text-indigo-600 font-bold hover:bg-indigo-50 transition">
                                 <i class="bi bi-plus-circle-fill"></i>
                                 <span>發布新的連線</span>
                             </a>
-                            <a href="{{ route('profile.edit') }}" class="flex items-center gap-3 p-3 rounded-xl text-gray-600 hover:bg-gray-50 transition">
-                                <i class="bi bi-gear"></i>
-                                <span>帳號設定</span>
-                            </a>
                         </nav>
                     </div>
                     
-                    <!-- 個人名片 -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-                        <div class="flex flex-col items-center p-4 bg-gray-50 rounded-2xl">
-                            <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background=6366f1&color=fff" class="w-16 h-16 rounded-full border-4 border-white shadow-sm mb-3">
-                            <h6 class="font-bold text-gray-800">{{ Auth::user()->name }}</h6>
-                            <p class="text-[10px] text-gray-400 mt-1 uppercase tracking-widest font-bold text-indigo-500">認證代購職人</p>
-                        </div>
+                    <!-- 個人名片預覽  -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+                    <h5 class="font-bold text-gray-800 mb-4 text-sm">個人名片預覽</h5>
+                    <div class="flex flex-col items-center p-4 bg-gray-50 rounded-2xl">
+                        <a href="{{ route('agent.profile.edit') }}" class="relative group cursor-pointer mb-3">
+                            <!-- 頭像主體 -->
+                            <img src="{{ Auth::user()->avatar ? asset('storage/' . Auth::user()->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode(Auth::user()->name) . '&background=6366f1&color=fff' }}" 
+                                 class="w-20 h-20 rounded-full border-4 border-white shadow-sm transition duration-300 group-hover:brightness-50 object-cover">
+                            
+                            <!-- 懸停顯示的淺淺 "設定" 文字與圖示 -->
+                            <div class="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
+                                <i class="bi bi-gear-fill text-white text-xs mb-1"></i>
+                                <span class="text-white text-[10px] font-bold tracking-widest">設定</span>
+                            </div>
+                        </a>
+                        
+                        <h6 class="font-bold text-gray-800 text-sm">{{ Auth::user()->nickname ?? Auth::user()->name }}</h6>
+                        <p class="text-[10px] text-gray-400 mt-1 uppercase tracking-widest font-bold text-indigo-500">認證代購職人</p>
+                        
+                        @if(Auth::user()->bio)
+                            <p class="text-[10px] text-gray-500 mt-3 text-center line-clamp-2 px-2 italic leading-relaxed">
+                                "{{ Auth::user()->bio }}"
+                            </p>
+                        @endif
                     </div>
                 </div>
+            </div>
 
                 <!-- 右側主管理區 -->
                 <div class="w-full lg:w-3/4 space-y-8">
-                    
-                    <!-- 我的代購連線 (原訂單管理已移除) -->
+                    <!-- 我的代購連線 -->
                     <section id="connections" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                         <div class="flex justify-between items-center mb-6">
-                            <h3 class="text-lg font-bold text-gray-800">代購連線貼文</h3>
+                            <h3 class="text-lg font-bold text-gray-800">我的活躍連線</h3>
                             <button class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-700 transition">+ 發布連線</button>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- 範例貼文 -->
                             <div class="p-4 border border-gray-100 rounded-2xl flex gap-4 hover:border-indigo-200 transition">
                                 <div class="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-gray-300">
                                     <i class="bi bi-image text-xl"></i>
@@ -166,7 +169,6 @@
                             </div>
                         </div>
                     </section>
-
                 </div>
             </div>
         </div>

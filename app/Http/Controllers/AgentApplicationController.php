@@ -59,4 +59,31 @@ class AgentApplicationController extends Controller
         // 4. 導向回申請頁面並顯示成功訊息
         return redirect()->route('agent.apply')->with('success', '申請已成功提交！我們將在 3-5 個工作天內完成審核。');
     }
+
+    public function updateProfile(Request $request)
+    {
+    $user = Auth::user();
+
+    // 驗證輸入
+    $request->validate([
+        'nickname' => 'required|string|max:255',
+        'bio' => 'nullable|string|max:500',
+        'avatar' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+    ]);
+
+    // 更新暱稱與簡介 (假設你之後會加欄位到 users 表)
+    // 目前我們先用 name 代替暱稱
+    $user->name = $request->nickname;
+    $user->bio = $request->bio; 
+
+    // 處理頭像上傳 (如果有上傳新圖片)
+    if ($request->hasFile('avatar')) {
+        $path = $request->file('avatar')->store('avatars', 'public');
+        $user->avatar = $path; // 記得之後在資料庫補 avatar 欄位
+    }
+
+    $user->save();
+
+    return redirect()->route('agent.member')->with('success', '個人資訊已成功更新！');
+    }
 }
