@@ -34,25 +34,79 @@
                             <thead>
                                 <tr>
                                     <th>申請人</th>
-                                    <th>狀態</th>
-                                    <th>申請時間</th>
+                                    <th>國家</th>
+                                    <th>電話號碼</th>
+                                    <th>身份證字號</th>
+                                    <th class="text-end">操作</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse($agentApplications as $application)
+                                    @php
+                                        $applicantName = $application->name ?? optional($application->user)->name ?? '未提供';
+                                        $country = $application->country ?? $application->main_region ?? '未提供';
+                                        $idNumber = $application->id_number ?? $application->ID_Card ?? '未提供';
+                                        $status = $application->status ?? 'pending';
+                                    @endphp
                                     <tr>
-                                        <td>{{ $application->name }}</td>
-                                        <td>{{ $application->status }}</td>
-                                        <td>{{ optional($application->created_at)->format('Y-m-d H:i') }}</td>
+                                        <td>{{ $applicantName }}</td>
+                                        <td>{{ $country }}</td>
+                                        <td>{{ $application->phone ?? '未提供' }}</td>
+                                        <td>{{ $idNumber }}</td>
+                                        <td class="text-end">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#agentViewModal-{{ $application->id }}">檢視</button>
+
+                                            <form method="POST" action="{{ route('admin.agent-applications.approve', $application) }}" class="d-inline">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit" class="btn btn-sm btn-outline-success" {{ $status === 'approved' ? 'disabled' : '' }}>審核通過</button>
+                                            </form>
+
+                                            <form method="POST" action="{{ route('admin.agent-applications.reject', $application) }}" class="d-inline">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" {{ $status === 'rejected' ? 'disabled' : '' }}>審核不通過</button>
+                                            </form>
+                                        </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="3" class="text-center text-muted">目前沒有代購人申請資料</td></tr>
+                                    <tr><td colspan="5" class="text-center text-muted">目前沒有代購人申請資料</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
+
+            @foreach($agentApplications as $application)
+                @php
+                    $applicantName = $application->name ?? optional($application->user)->name ?? '未提供';
+                    $country = $application->country ?? $application->main_region ?? '未提供';
+                    $idNumber = $application->id_number ?? $application->ID_Card ?? '未提供';
+                    $statusLabel = [
+                        'pending' => '待審核',
+                        'approved' => '已通過',
+                        'rejected' => '未通過',
+                    ][$application->status] ?? $application->status;
+                @endphp
+                <div class="modal fade" id="agentViewModal-{{ $application->id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content rounded-4">
+                            <div class="modal-header">
+                                <h5 class="modal-title">代購人申請檢視</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="mb-1"><strong>申請人：</strong>{{ $applicantName }}</p>
+                                <p class="mb-1"><strong>國家：</strong>{{ $country }}</p>
+                                <p class="mb-1"><strong>電話號碼：</strong>{{ $application->phone ?? '未提供' }}</p>
+                                <p class="mb-1"><strong>身份證字號：</strong>{{ $idNumber }}</p>
+                                <p class="mb-0"><strong>狀態：</strong>{{ $statusLabel }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
         </div>
 
         <div class="tab-pane fade" id="request-pane" role="tabpanel">

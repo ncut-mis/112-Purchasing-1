@@ -41,13 +41,26 @@ class AdminAuthController extends Controller
     public function dashboard(Request $request)
     {
         $adminName = $request->session()->get('admin_auth_name');
-        $agentApplications = AgentApplication::latest()->take(10)->get();
+        $agentApplications = AgentApplication::with('user')->latest()->take(10)->get();
         $requestLists = RequestList::with('items')->latest()->take(10)->get();
         $posts = Post::latest()->take(10)->get();
 
         return view('admin.dashboard', compact('adminName', 'agentApplications', 'requestLists', 'posts'));
     }
 
+    public function approveAgentApplication(AgentApplication $agentApplication)
+    {
+        $agentApplication->update(['status' => 'approved']);
+
+        return redirect()->route('admin.dashboard')->with('status', '已審核通過代購人申請');
+    }
+
+    public function rejectAgentApplication(AgentApplication $agentApplication)
+    {
+        $agentApplication->update(['status' => 'rejected']);
+
+        return redirect()->route('admin.dashboard')->with('status', '已審核不通過代購人申請');
+    }
 
     public function deleteRequestList(RequestList $requestList)
     {

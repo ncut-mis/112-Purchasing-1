@@ -12,9 +12,16 @@ class AgentApplication extends Model
 
     protected $fillable = [
         'user_id',
+        'name',
+        'country',
         'phone',
-        'ID_Card',
+        'main_region',
+        'experience',
+        'id_number',
+        'id_image_front',
+        'id_image_back',
         'status',
+        'admin_remark',
     ];
 
     /**
