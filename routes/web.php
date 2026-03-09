@@ -26,6 +26,8 @@ Route::get('/admin/login', [AdminAuthController::class, 'showLoginForm'])->name(
 Route::post('/admin/login', [AdminAuthController::class, 'login'])->name('admin.login.submit');
 Route::get('/admin/dashboard', [AdminAuthController::class, 'dashboard'])->middleware('admin.auth')->name('admin.dashboard');
 Route::post('/admin/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
+Route::patch('/admin/agent-applications/{agentApplication}/approve', [AdminAuthController::class, 'approveAgentApplication'])->middleware('admin.auth')->name('admin.agent-applications.approve');
+Route::patch('/admin/agent-applications/{agentApplication}/reject', [AdminAuthController::class, 'rejectAgentApplication'])->middleware('admin.auth')->name('admin.agent-applications.reject');
 Route::delete('/admin/request-lists/{requestList}', [AdminAuthController::class, 'deleteRequestList'])->middleware('admin.auth')->name('admin.request-lists.delete');
 
 Route::get('/', function () {
@@ -48,19 +50,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('dashboard', compact('requestLists'));
     })->name('dashboard');
 
-    // 1. 代購人會員專區首頁
-    Route::get('/agent/member', function () {
-        return view('agent.member');
-    })->name('agent.member');
-
-    // 2. 顯示編輯個人資訊頁面 (GET)
-    Route::get('/agent/profile', function () {
-        return view('agent.profile');
-    })->name('agent.profile.edit');
-
-    // 3. 接收並處理更新後的資訊 (POST)
-    // 這裡我們直接導向 Controller 來處理圖片與文字儲存
-    Route::post('/agent/profile', [AgentApplicationController::class, 'updateProfile'])->name('agent.profile.update');
 
 
         // 聊天頁面
