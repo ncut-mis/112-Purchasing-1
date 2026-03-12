@@ -6,6 +6,7 @@ use App\Models\AgentApplication;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 
 class AgentApplicationController extends Controller
 {
@@ -74,5 +75,39 @@ class AgentApplicationController extends Controller
         $application->save();
 
         return redirect()->route('agent.apply')->with('success', '申請已成功提交！我們將在 3-5 個工作天內完成審核。');
+    }
+    //更新個人檔案
+    public function updateProfile(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'nickname' => 'required|string|max:255',
+            'bio' => 'nullable|string|max:500',
+            'countries' => 'nullable|array',
+            'avatar' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        // 更新暱稱與簡介 (注意：這會修改 users 資料表的 name 欄位)
+        $user->name = $request->nickname;
+        $user->bio = $request->bio;
+        
+        // 處理可代購國家 (轉成 JSON 存入)
+        $user->purchasable_countries = json_encode($request->input('countries', []));
+
+        // 處理頭像上傳
+        if ($request->hasFile('avatar')) {
+            // 如果原本有舊頭像，先刪除
+            if ($user->avatar) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+            
+            $path = $request->file('avatar')->store('avatars', 'public');
+            $user->avatar = $path;
+        }
+
+        $user->save();
+
+        return redirect()->route('agent.member')->with('success', '個人資訊已成功更新！');
     }
 }
