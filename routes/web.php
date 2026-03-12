@@ -72,9 +72,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/agent/profile', [AgentApplicationController::class, 'updateProfile'])->name('agent.profile.update');
 
     // 聊天頁面
-    Route::get('/chat', function () {
-        return view('chat.index');
-    })->name('chat.index');
+    Route::get('/messages', function () {
+        return view('messages.index');
+    })->name('messages.index');
 
     // 代購人申請功能
 
