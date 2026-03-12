@@ -22,6 +22,7 @@ class RequestListController extends Controller
             'deadline' => ['required', 'date'],
             'store_name' => ['nullable', 'string', 'max:255'],
             'address_detail' => ['nullable', 'string', 'max:1000'],
+            'note' => ['nullable', 'string', 'max:1000'],
             'items' => ['required', 'array', 'min:1', 'max:3'],
             'items.*.item_name' => ['required', 'string', 'max:255'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
@@ -40,7 +41,7 @@ class RequestListController extends Controller
         'budget_total' => null,
         'currency' => 'TWD',
         'status' => 'pending',
-        'note' => $validated['address_detail'] ?? null,
+        'note' => $validated['note'] ?? ($validated['address_detail'] ?? null),
         ]);
 
 
@@ -73,6 +74,7 @@ class RequestListController extends Controller
             'deadline' => ['required', 'date'],
             'store_name' => ['nullable', 'string', 'max:255'],
             'address_detail' => ['nullable', 'string', 'max:1000'],
+            'note' => ['nullable', 'string', 'max:1000'],
             'items' => ['required', 'array', 'min:1', 'max:3'],
             'items.*.id' => ['required', 'integer'],
             'items.*.item_name' => ['required', 'string', 'max:255'],
@@ -94,7 +96,7 @@ class RequestListController extends Controller
             'title' => $validated['store_name'] ?: $firstItemName,
             'country' => $validated['country'],
             'deadline' => $validated['deadline'],
-            'note' => $validated['address_detail'] ?? null,
+            'note' => $validated['note'] ?? ($validated['address_detail'] ?? null),
         ]);
 
         foreach ($validated['items'] as $index => $itemData) {

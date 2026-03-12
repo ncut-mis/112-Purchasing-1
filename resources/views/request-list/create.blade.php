@@ -44,7 +44,7 @@
                             </div>
 
                             <div class="row g-3 mb-4">
-                                <div class="col-md-6">
+                               <div class="col-md-6">
                                     <label class="form-label fw-semibold">選擇國家</label>
                                     <select class="form-select" name="country" required>
                                         <option value="">請選擇國家</option>
@@ -68,6 +68,10 @@
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold">詳細地址</label>
                                     <input type="text" class="form-control" name="address_detail" placeholder="請輸入詳細地址" value="{{ old('address_detail') }}">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold">備註</label>
+                                    <textarea class="form-control" name="note" rows="3" placeholder="可填寫代購需求補充、規格、交付注意事項等">{{ old('note') }}</textarea>
                                 </div>
                             </div>
 
