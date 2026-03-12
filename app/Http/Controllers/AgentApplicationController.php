@@ -76,6 +76,20 @@ class AgentApplicationController extends Controller
 
         return redirect()->route('agent.apply')->with('success', '申請已成功提交！我們將在 3-5 個工作天內完成審核。');
     }
+
+    /**
+     * 顯示申請進度 (解決目前報錯的關鍵方法)
+     */
+    public function status()
+    {
+        $application = Auth::user()->agentApplication;
+
+        if (!$application) {
+            return redirect()->route('agent.apply');
+        }
+        return view('agent.status', compact('application'));
+    }
+
     //更新個人檔案
     public function updateProfile(Request $request)
     {
