@@ -17,7 +17,7 @@ class DashboardController extends Controller
         if ($request_search = $request->get('request_search')) {
             $query->where(function($q) use ($request_search) {
                 $q->where('title', 'like', "%{$request_search}%")
-                  ->orWhere('description', 'like', "%{$request_search}%")
+                  ->orWhere('note', 'like', "%{$request_search}%")
                   ->orWhere('status', 'like', "%{$request_search}%");
             });
         }
