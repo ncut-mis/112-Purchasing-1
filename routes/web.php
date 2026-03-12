@@ -25,6 +25,7 @@ Route::get('/', function () {
 
 Route::get('/store', [ShopController::class, 'store'])->name('store');
 
+<<<<<<< Updated upstream
 // 管理員登入相關
 Route::prefix('admin')->group(function () {
     Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
@@ -37,6 +38,22 @@ Route::prefix('admin')->group(function () {
         Route::patch('/agent-applications/{agentApplication}/reject', [AdminAuthController::class, 'rejectAgentApplication'])->name('admin.agent-applications.reject');
         Route::delete('/request-lists/{requestList}', [AdminAuthController::class, 'deleteRequestList'])->name('admin.request-lists.delete');
     });
+=======
+        return view('dashboard', compact('requestLists'));
+    })->name('dashboard');
+
+
+
+        // 聊天頁面
+    Route::get('/messages', function () {
+        return view('messages.index');
+    })->name('messages.index');
+
+    // 代購人申請功能
+
+    Route::get('/agent/apply', [AgentApplicationController::class, 'create'])->name('agent.apply');
+    Route::post('/agent/apply', [AgentApplicationController::class, 'store'])->name('agent.store');
+>>>>>>> Stashed changes
 });
 
 /*
