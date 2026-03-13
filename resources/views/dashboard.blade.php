@@ -183,7 +183,16 @@
 
                                             $items = $requestList->items ?? collect();
 
-                                            $firstItem = optional($items->first())->name ?? $requestList->title;
+                                            $formatItemLabel = function ($item) {
+                                                $name = $item->name ?? '未命名商品';
+                                                $qty = (int) ($item->quantity ?? 1);
+
+                                                return $name . '×' . $qty;
+                                            };
+
+                                            $firstItem = $items->isNotEmpty()
+                                                ? $formatItemLabel($items->first())
+                                                : $requestList->title;
 
                                             $extraItems = $items->slice(1);
 
@@ -239,7 +248,7 @@
                                                         </summary>
                                                         <ul class="mt-2 ml-4 list-disc text-gray-500 text-xs space-y-1">
                                                             @foreach($extraItems as $item)
-                                                                <li>{{ $item->name }}</li>
+                                                                <li>{{ $formatItemLabel($item) }}</li>
                                                             @endforeach
                                                         </ul>
                                                     </details>
@@ -254,11 +263,21 @@
                                                 <span class="px-2 py-1 rounded-full text-[10px] {{ $statusClass }}">{{ $statusLabel }}</span>
                                             </td>
                                             <td class="py-4 text-right">
-                                                @if($requestList->status === 'matched')
-                                                    <button class="text-gray-500 hover:underline">檢視</button>
-                                                @else
-                                                    <button type="button" class="text-blue-500 hover:underline" onclick="openEditModal({{ $requestList->id }})">編輯</button>
-                                                @endif
+                                              <div class="inline-flex items-center gap-3">
+                                                    @if($requestList->status === 'matched')
+                                                        <button class="text-gray-500 hover:underline">檢視</button>
+                                                    @else
+                                                        <button type="button" class="text-blue-500 hover:underline" onclick="openEditModal({{ $requestList->id }})">編輯</button>
+                                                    @endif
+
+                                                    @if($requestList->status === 'pending')
+                                                        <form method="POST" action="{{ route('request-list.destroy', $requestList) }}" onsubmit="return confirm('確定要刪除此請購清單嗎？');">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="text-red-500 hover:underline">刪除</button>
+                                                        </form>
+                                                    @endif
+                                                </div>
                                             </td>
                                         </tr>
 
@@ -341,6 +360,11 @@
 
                                                         <div>
                                                             <input type="text" name="items[{{ $index }}][item_name]" value="{{ $item->name }}" class="w-full border-gray-300 rounded-lg">
+                                                        </div>
+
+                                                        <div>
+                                                            <label class="block text-sm font-medium text-gray-700 mb-1">數量</label>
+                                                            <input type="number" name="items[{{ $index }}][quantity]" value="{{ $item->quantity }}" min="1" step="1" class="w-full border-gray-300 rounded-lg">
                                                         </div>
 
                                                         <div>

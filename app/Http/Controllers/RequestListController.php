@@ -131,6 +131,26 @@ class RequestListController extends Controller
         return redirect()->route('dashboard')->with('status', '請購清單更新成功');
     }
 
+    public function destroy(RequestList $requestList)
+    {
+        abort_unless($requestList->user_id === Auth::id(), 403);
+
+        if ($requestList->status !== 'pending') {
+            return redirect()->route('dashboard')->with('status', '僅等待接單的請購清單可刪除');
+        }
+
+        foreach ($requestList->items as $item) {
+            if ($item->reference_image) {
+                Storage::disk('public')->delete($item->reference_image);
+            }
+        }
+
+        $requestList->delete();
+
+        return redirect()->route('dashboard')->with('status', '請購清單已刪除');
+    }
+
+
     public function image(RequestItem $requestItem)
     {
         abort_unless($requestItem->list && $requestItem->list->user_id === Auth::id(), 403);

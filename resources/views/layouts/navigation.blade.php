@@ -1,4 +1,8 @@
 <nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
+    @php
+        $canEnterAgentLobby = Auth::user()?->isApprovedAgent();
+    @endphp
+
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
@@ -15,9 +19,19 @@
                     <!-- 判斷目前是否在代購人相關路由 (以 agent. 開頭) -->
                     @if(request()->routeIs('agent.*'))
                         <!-- 代購人看到的文字 -->
-                        <x-nav-link :href="route('agent.dashboard')" :active="request()->routeIs('agent.dashboard')">
-                            {{ __('接單大廳') }}
-                        </x-nav-link>
+                        @if($canEnterAgentLobby)
+                            <x-nav-link :href="route('agent.dashboard')" :active="request()->routeIs('agent.dashboard')">
+                                {{ __('接單大廳') }}
+                            </x-nav-link>
+                        @else
+                            <button
+                                type="button"
+                                class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 transition duration-150 ease-in-out"
+                                onclick="openAgentLobbyModal()"
+                            >
+                                {{ __('接單大廳') }}
+                            </button>
+                        @endif
                         <x-nav-link :href="route('home')">
                             {{ __('返回買家模式') }}
                         </x-nav-link>
@@ -57,7 +71,7 @@
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
                             <x-dropdown-link :href="route('logout')"
-                                    onclick="event.preventDefault();
+                                   onclick="event.preventDefault();
                                                 this.closest('form').submit();">
                                 {{ __('登出') }}
                             </x-dropdown-link>
@@ -82,9 +96,19 @@
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
             @if(request()->routeIs('agent.*'))
-                <x-responsive-nav-link :href="route('agent.dashboard')" :active="request()->routeIs('agent.dashboard')">
-                    {{ __('接單大廳') }}
-                </x-responsive-nav-link>
+                @if($canEnterAgentLobby)
+                    <x-responsive-nav-link :href="route('agent.dashboard')" :active="request()->routeIs('agent.dashboard')">
+                        {{ __('接單大廳') }}
+                    </x-responsive-nav-link>
+                @else
+                    <button
+                        type="button"
+                        class="block w-full ps-3 pe-4 py-2 border-l-4 border-transparent text-start text-base font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300 transition duration-150 ease-in-out"
+                        onclick="openAgentLobbyModal()"
+                    >
+                        {{ __('接單大廳') }}
+                    </button>
+                @endif
                 <x-responsive-nav-link href="{{ route('home') }}">
                     {{ __('返回買家模式') }}
                 </x-responsive-nav-link>
@@ -122,4 +146,40 @@
             </div>
         </div>
     </div>
+
+    @if(request()->routeIs('agent.*') && ! $canEnterAgentLobby)
+        <div id="agent-lobby-block-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+            <div class="w-full max-w-md rounded-xl bg-white shadow-lg p-6">
+                <h3 class="text-lg font-bold text-gray-900">暫時無法進入接單大廳</h3>
+                <p class="mt-3 text-sm text-gray-600 leading-relaxed">您目前尚未申請代購人，或審核尚未通過，因此無法進入代購人接單大廳。</p>
+                <div class="mt-6 flex justify-end">
+                    <button
+                        type="button"
+                        class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
+                        onclick="closeAgentLobbyModal()"
+                    >
+                        我知道了
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function openAgentLobbyModal() {
+                const modal = document.getElementById('agent-lobby-block-modal');
+                if (!modal) return;
+
+                modal.classList.remove('hidden');
+                document.body.classList.add('overflow-hidden');
+            }
+
+            function closeAgentLobbyModal() {
+                const modal = document.getElementById('agent-lobby-block-modal');
+                if (!modal) return;
+
+                modal.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
+            }
+        </script>
+    @endif
 </nav>

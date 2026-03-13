@@ -48,10 +48,10 @@
                                     <label class="form-label fw-semibold">選擇國家</label>
                                     <select class="form-select" name="country" required>
                                         <option value="">請選擇國家</option>
-                                        <option value="日本">日本</option>
-                                        <option value="韓國">韓國</option>
-                                        <option value="美國">美國</option>
-                                        <option value="英國">英國</option>
+                                        <option value="jp">日本</option>
+                                        <option value="kr">韓國</option>
+                                        <option value="us">美國</option>
+                                        <option value="gb">英國</option>
                                     </select>
                                 </div>
                                 <div class="col-md-6">

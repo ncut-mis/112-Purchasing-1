@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AgentApplicationController;
+use App\Http\Controllers\AgentDashboardController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RequestListController;
@@ -16,9 +17,9 @@ Route::get('/agent/member', function() {
     return view('agent.member'); 
 })->name('agent.member');
 
-Route::get('/agent/dashboard', function () {
-    return view('agent.dashboard');
-})->name('agent.dashboard');
+Route::get('/agent/dashboard', [AgentDashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('agent.dashboard');
 // **權限控制**：您應該在路由或控制中加入檢查，確保只有 `status == 'approved'` 的使用者才能進入此頁面。
 
 Route::get('/store', [ShopController::class, 'store'])->name('store');
@@ -86,6 +87,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/request-list/create', [RequestListController::class, 'create'])->name('request-list.create');
     Route::post('/request-list', [RequestListController::class, 'store'])->name('request-list.store');
     Route::put('/request-list/{requestList}', [RequestListController::class, 'update'])->name('request-list.update');
+    Route::delete('/request-list/{requestList}', [RequestListController::class, 'destroy'])->name('request-list.destroy');
     Route::get('/request-item-image/{requestItem}', [RequestListController::class, 'image'])->name('request-item.image');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

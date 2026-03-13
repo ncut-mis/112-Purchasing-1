@@ -34,7 +34,7 @@ class AgentApplicationController extends Controller
             'country' => 'required|string|max:100',
             'phone' => 'required|string|max:20',
             'id_number' => 'required|string|max:50',
-            'id_image_front' => 'required|image|max:2048',
+'id_image_front' => 'required|image|max:2048',
             'id_image_back' => 'required|image|max:2048',
         ], [
             'name.required' => '請填寫真實姓名',
@@ -59,8 +59,16 @@ class AgentApplicationController extends Controller
         $application->name = $request->name;
         $application->country = $request->country;
         $application->phone = $request->phone;
-        $application->main_region = $request->country;
-        $application->experience = '由身分驗證申請流程建立';
+
+        // 相容舊結構：僅在欄位存在時才寫入，避免 Unknown column 錯誤
+        if (Schema::hasColumn('agent_applications', 'main_region')) {
+            $application->main_region = $request->country;
+        }
+
+        if (Schema::hasColumn('agent_applications', 'experience')) {
+            $application->experience = '由身分驗證申請流程建立';
+        }
+
         $application->id_number = $request->id_number;
         $application->id_image_front = $frontImagePath;
         $application->id_image_back = $backImagePath;
