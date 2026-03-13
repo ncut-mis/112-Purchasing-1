@@ -127,6 +127,18 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <button
+                                    type="button"
+                                    class="favorite-toggle w-9 h-9 rounded-full bg-gray-100 text-gray-400 hover:bg-pink-50 hover:text-pink-400 transition flex items-center justify-center"
+                                    data-request-list-id="{{ $requestList->id }}"
+                                    aria-label="收藏請購清單"
+                                    aria-pressed="false"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                                        <path d="M12.001 4.529c2.349-2.532 6.15-2.533 8.498-.001 2.41 2.6 2.41 6.815 0 9.416l-7.66 8.266a1.14 1.14 0 0 1-1.677 0l-7.66-8.266c-2.41-2.601-2.41-6.817 0-9.416 2.348-2.532 6.149-2.531 8.499.001Z"/>
+                                    </svg>
+                                </button>
                             </div>
 
                             <div class="mb-5">
@@ -167,4 +179,22 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const favoriteButtons = document.querySelectorAll('.favorite-toggle');
+
+            favoriteButtons.forEach(function (button) {
+                button.addEventListener('click', function () {
+                    const isActive = button.classList.contains('text-pink-500');
+
+                    button.classList.toggle('text-pink-500', !isActive);
+                    button.classList.toggle('bg-pink-50', !isActive);
+                    button.classList.toggle('text-gray-400', isActive);
+                    button.classList.toggle('bg-gray-100', isActive);
+                    button.setAttribute('aria-pressed', String(!isActive));
+                });
+            });
+        });
+    </script>
 </x-app-layout>
