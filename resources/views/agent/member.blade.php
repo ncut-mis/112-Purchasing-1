@@ -173,24 +173,42 @@
                 <div class="w-full lg:w-3/4 space-y-8">
                     <!-- 我的代購連線 -->
                     <section id="connections" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+
+                        @php
+                            $myAgentPosts = \App\Models\AgentPost::withCount('products')->where('user_id', Auth::id())
+                                ->latest()
+                                ->take(6)
+                                ->get();
+                        @endphp
+
                         <div class="flex justify-between items-center mb-6">
                             <h3 class="text-lg font-bold text-gray-800">我的代購貼文</h3>
-                            <button class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-700 transition">+ 發布貼文</button>
+                            <a href="{{ route('agent.posts.create') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-700 transition">+發布貼文</a>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="p-4 border border-gray-100 rounded-2xl flex gap-4 hover:border-indigo-200 transition">
-                                <div class="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-gray-300">
-                                    <i class="bi bi-image text-xl"></i>
-                                </div>
-                                <div class="flex-1">
-                                    <h6 class="font-bold text-gray-800 text-sm">【日本】吉伊卡哇三月代購</h6>
-                                    <p class="text-[10px] text-gray-400">發布於: 2025-02-20</p>
-                                    <div class="mt-2 flex gap-2">
-                                        <span class="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded">12 人跟單</span>
-                                        <span class="text-[10px] text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded">進行中</span>
+                            @forelse($myAgentPosts as $post)
+                                <div class="p-4 border border-gray-100 rounded-2xl flex gap-4 hover:border-indigo-200 transition">
+                                    <div class="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-gray-300 overflow-hidden">
+                                        @if($post->cover_image)
+                                            <img src="{{ asset('storage/'.$post->cover_image) }}" alt="{{ $post->title }}" class="w-full h-full object-cover">
+                                        @else
+                                            <i class="bi bi-image text-xl"></i>
+                                        @endif
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <h6 class="font-bold text-gray-800 text-sm truncate">【{{ $post->country }}】{{ $post->title }}</h6>
+                                        <p class="text-[10px] text-gray-400">銷售期間: {{ optional($post->start_date)->format('Y-m-d') }} ~ {{ optional($post->end_date)->format('Y-m-d') }}</p>
+                                        <div class="mt-2 flex gap-2">
+                                            <span class="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded">{{ $post->products_count }} 項商品</span>
+                                            <span class="text-[10px] text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded">{{ $post->status === 'open' ? '進行中' : $post->status }}</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                             @empty
+                                <div class="col-span-2 p-8 border border-dashed border-gray-200 rounded-2xl text-center text-sm text-gray-400">
+                                    尚未發布代購貼文,點擊右上角「+發布貼文」開始建立。
+                                </div>
+                            @endforelse
                         </div>
                     </section>
 

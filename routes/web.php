@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AgentApplicationController;
 use App\Http\Controllers\AgentDashboardController;
+use App\Http\Controllers\AgentPostController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RequestListController;
@@ -81,6 +82,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/agent/apply', [AgentApplicationController::class, 'create'])->name('agent.apply');
     Route::post('/agent/apply', [AgentApplicationController::class, 'store'])->name('agent.store');
+
+    // 代購人貼文建立
+    Route::get('/agent/posts/create', [AgentPostController::class, 'create'])->name('agent.posts.create');
+    Route::post('/agent/posts', [AgentPostController::class, 'store'])->name('agent.posts.store');
 });
 
 Route::middleware('auth')->group(function () {
