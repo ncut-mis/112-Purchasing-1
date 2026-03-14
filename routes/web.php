@@ -106,4 +106,7 @@ Route::middleware('auth')->group(function () {
 });
 
 
+// 收藏/取消收藏請購清單
+Route::middleware(['auth'])->post('/favorite/toggle', [\App\Http\Controllers\FavoriteController::class, 'toggle'])->name('favorite.toggle');
+
 require __DIR__.'/auth.php';

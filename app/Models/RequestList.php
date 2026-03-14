@@ -10,8 +10,8 @@ class RequestList extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'user_id', 'title', 'country', 'city', 'deadline', 
-        'budget_total', 'currency', 'status', 'note'
+        'user_id', 'title', 'country', 'city', 'deadline',
+        'budget_total', 'currency', 'status', 'detail_address', 'note'
     ];
 
     protected $casts = [

@@ -21,7 +21,7 @@ class RequestListController extends Controller
             'country' => ['required', 'string', 'max:255'],
             'deadline' => ['required', 'date'],
             'store_name' => ['nullable', 'string', 'max:255'],
-            'address_detail' => ['nullable', 'string', 'max:1000'],
+            'detail_address' => ['nullable', 'string', 'max:1000'],
             'note' => ['nullable', 'string', 'max:1000'],
             'items' => ['required', 'array', 'min:1', 'max:3'],
             'items.*.item_name' => ['required', 'string', 'max:255'],
@@ -31,17 +31,18 @@ class RequestListController extends Controller
 
         $firstItemName = $validated['items'][0]['item_name'] ?? '未命名商品';
 
-        $requestList = RequestList::create([  // ← 只改第一個字
-        'user_id' => Auth::id(),
-        'title' => $validated['store_name'] ?: $firstItemName,
-        'items' => json_encode($validated['items'] ?? []),  // ← 加這行
-        'country' => $validated['country'],
-        'city' => null,
-        'deadline' => $validated['deadline'],
-        'budget_total' => null,
-        'currency' => 'TWD',
-        'status' => 'pending',
-        'note' => $validated['note'] ?? ($validated['address_detail'] ?? null),
+        $requestList = RequestList::create([
+            'user_id' => Auth::id(),
+            'title' => $validated['store_name'] ?: $firstItemName,
+            'items' => json_encode($validated['items'] ?? []),
+            'country' => $validated['country'],
+            'city' => null,
+            'deadline' => $validated['deadline'],
+            'budget_total' => null,
+            'currency' => 'TWD',
+            'status' => 'pending',
+            'detail_address' => $validated['detail_address'] ?? null,
+            'note' => $validated['note'] ?? null,
         ]);
 
 
@@ -73,7 +74,7 @@ class RequestListController extends Controller
             'country' => ['required', 'string', 'max:255'],
             'deadline' => ['required', 'date'],
             'store_name' => ['nullable', 'string', 'max:255'],
-            'address_detail' => ['nullable', 'string', 'max:1000'],
+            'detail_address' => ['nullable', 'string', 'max:1000'],
             'note' => ['nullable', 'string', 'max:1000'],
             'items' => ['required', 'array', 'min:1', 'max:3'],
             'items.*.id' => ['required', 'integer'],
@@ -96,7 +97,8 @@ class RequestListController extends Controller
             'title' => $validated['store_name'] ?: $firstItemName,
             'country' => $validated['country'],
             'deadline' => $validated['deadline'],
-            'note' => $validated['note'] ?? ($validated['address_detail'] ?? null),
+            'detail_address' => $validated['detail_address'] ?? null,
+            'note' => $validated['note'] ?? null,
         ]);
 
         foreach ($validated['items'] as $index => $itemData) {
@@ -153,7 +155,10 @@ class RequestListController extends Controller
 
     public function image(RequestItem $requestItem)
     {
-        abort_unless($requestItem->list && $requestItem->list->user_id === Auth::id(), 403);
+        // 只要登入即可存取圖片
+        if (!auth()->check()) {
+            abort(403);
+        }
 
         if (! $requestItem->reference_image || ! Storage::disk('public')->exists($requestItem->reference_image)) {
             abort(404);

@@ -9,6 +9,24 @@ use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
+    /**
+     * 取得使用者的所有收藏（多型）
+     */
+    public function favorites()
+    {
+        return $this->hasMany(Favorite::class);
+    }
+
+    /**
+     * 判斷是否已收藏指定請購清單
+     */
+    public function hasFavoritedRequestList($requestListId)
+    {
+        return $this->favorites()
+            ->where('favoriteable_type', 'App\\Models\\RequestList')
+            ->where('favoriteable_id', $requestListId)
+            ->exists();
+    }
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 

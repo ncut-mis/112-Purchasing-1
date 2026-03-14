@@ -339,15 +339,18 @@
 
                                                 <div>
                                                     <label class="block text-sm font-medium text-gray-700 mb-1">詳細地址</label>
-                                                    <input type="text" name="address_detail" value="{{ $requestList->note }}" class="w-full border-gray-300 rounded-lg" placeholder="請輸入詳細地址">
+                                                    <input type="text" name="detail_address" value="{{ $requestList->detail_address }}" class="w-full border-gray-300 rounded-lg" placeholder="請輸入詳細地址">
                                                 </div>
                                             </div>
 
 
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-1">備註</label>
+                                                <textarea name="note" class="w-full border-gray-300 rounded-lg" rows="2" placeholder="可填寫代購需求補充、規格、交付注意事項等">{{ $requestList->note }}</textarea>
+                                            </div>
+
                                             <div class="space-y-4 pt-2">
-
                                                 <h5 class="font-semibold text-gray-800">商品資料</h5>
-
                                                 @foreach($requestList->items->take(3) as $index => $item)
                                                     <div class="border rounded-lg p-3 space-y-2 edit-item-card">
                                                         <input type="hidden" name="items[{{ $index }}][id]" value="{{ $item->id }}">

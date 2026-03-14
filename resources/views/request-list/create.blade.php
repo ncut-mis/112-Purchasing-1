@@ -67,7 +67,7 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold">詳細地址</label>
-                                    <input type="text" class="form-control" name="address_detail" placeholder="請輸入詳細地址" value="{{ old('address_detail') }}">
+                                    <input type="text" class="form-control" name="detail_address" placeholder="請輸入詳細地址" value="{{ old('detail_address') }}">
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label fw-semibold">備註</label>

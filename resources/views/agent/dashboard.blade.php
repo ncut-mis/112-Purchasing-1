@@ -128,12 +128,15 @@
                                     </div>
                                 </div>
 
+                                @php
+                                    $isFavorited = auth()->check() && auth()->user()->hasFavoritedRequestList($requestList->id);
+                                @endphp
                                 <button
                                     type="button"
-                                    class="favorite-toggle w-9 h-9 rounded-full bg-gray-100 text-gray-400 hover:bg-pink-50 hover:text-pink-400 transition flex items-center justify-center"
+                                    class="favorite-toggle w-9 h-9 rounded-full transition flex items-center justify-center {{ $isFavorited ? 'bg-pink-50 text-pink-500' : 'bg-gray-100 text-gray-400' }} hover:bg-pink-50 hover:text-pink-400"
                                     data-request-list-id="{{ $requestList->id }}"
                                     aria-label="收藏請購清單"
-                                    aria-pressed="false"
+                                    aria-pressed="{{ $isFavorited ? 'true' : 'false' }}"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
                                         <path d="M12.001 4.529c2.349-2.532 6.15-2.533 8.498-.001 2.41 2.6 2.41 6.815 0 9.416l-7.66 8.266a1.14 1.14 0 0 1-1.677 0l-7.66-8.266c-2.41-2.601-2.41-6.817 0-9.416 2.348-2.532 6.149-2.531 8.499.001Z"/>
@@ -153,15 +156,69 @@
                             @if($requestList->note)
                                 <p class="text-sm text-gray-500 mb-6 leading-relaxed line-clamp-2">備註：{{ $requestList->note }}</p>
                             @endif
+                            @if($requestList->detail_address)
+                                <p class="text-sm text-gray-500 mb-6 leading-relaxed line-clamp-2">地址：{{ $requestList->detail_address }}</p>
+                            @endif
 
                             <div class="flex items-center justify-between pt-4 border-t border-gray-50">
                                 <div class="flex items-center gap-2 min-w-0">
                                     <img src="https://ui-avatars.com/api/?name={{ urlencode($requestList->user->name ?? 'User') }}&background=f3f4f6" class="w-6 h-6 rounded-full" alt="user-avatar">
                                     <span class="text-xs text-gray-500 truncate">請購人：{{ $requestList->user->name ?? '未知使用者' }}</span>
                                 </div>
-                                <button type="button" class="px-8 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm opacity-70 cursor-not-allowed flex items-center gap-2" disabled>
-                                    <i class="bi bi-cart-plus"></i> 我要接單
-                                </button>
+                                @if(auth()->check() && $requestList->user_id === auth()->id())
+                                    <span class="text-xs text-red-500 font-bold flex items-center gap-1">
+                                        <i class="bi bi-emoji-frown"></i> 您不能代購自己發布的請購清單😅
+                                    </span>
+                                @else
+                                    @php
+                                        $orderData = [
+                                            "id" => $requestList->id,
+                                            "title" => $title,
+                                            "detail_address" => $requestList->detail_address ?: '未填寫',
+                                            "deadline" => optional($requestList->deadline)->format("Y-m-d"),
+                                            "note" => $requestList->note,
+                                            "items" => $requestList->items->map(function($item) {
+                                                $img = null;
+                                                if ($item->reference_image) {
+                                                    $img = url('/request-item-image/' . $item->id);
+                                                }
+                                                return [
+                                                    "name" => $item->name,
+                                                    "quantity" => $item->quantity,
+                                                    "image" => $img
+                                                ];
+                                            })->values()->toArray(),
+                                        ];
+                                    @endphp
+                                    <button type="button"
+                                        class="accept-order-btn px-8 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-indigo-700 transition"
+                                        data-request-list='@json($orderData)'
+                                    >
+                                        <i class="bi bi-cart-plus"></i> 我要接單
+                                    </button>
+                                @endif
+                                <!-- 接單詳情 Modal -->
+                                <div id="order-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 hidden">
+                                    <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-2xl text-left relative">
+                                        <button id="order-modal-close" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                                        <div class="mb-4">
+                                            <h3 class="text-xl font-bold text-indigo-700 mb-2" id="order-modal-title"></h3>
+                                            <div class="text-sm text-gray-500 mb-1"><span class="font-bold">地址：</span><span id="order-modal-address"></span></div>
+                                            <div class="text-sm text-gray-500 mb-1"><span class="font-bold">截止日期：</span><span id="order-modal-deadline"></span></div>
+                                        </div>
+                                        <div class="mb-4">
+                                            <div class="font-bold text-gray-700 mb-2">商品明細</div>
+                                            <div id="order-modal-items" class="space-y-2"></div>
+                                        </div>
+                                        <div class="mb-4">
+                                            <div class="font-bold text-gray-700 mb-1">備註</div>
+                                            <div id="order-modal-note" class="text-gray-600 text-sm"></div>
+                                        </div>
+                                        <div class="flex justify-end">
+                                            <button class="px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition">確定接單</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     @empty
@@ -182,17 +239,83 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // 接單詳情 Modal
+            const orderModal = document.getElementById('order-modal');
+            const orderModalClose = document.getElementById('order-modal-close');
+            const orderModalTitle = document.getElementById('order-modal-title');
+            const orderModalAddress = document.getElementById('order-modal-address');
+            const orderModalDeadline = document.getElementById('order-modal-deadline');
+            const orderModalItems = document.getElementById('order-modal-items');
+            const orderModalNote = document.getElementById('order-modal-note');
+            document.querySelectorAll('.accept-order-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    const data = JSON.parse(btn.getAttribute('data-request-list'));
+                    orderModalTitle.textContent = data.title || '';
+                    orderModalAddress.textContent = data.detail_address || '-';
+                    orderModalDeadline.textContent = data.deadline || '-';
+                    orderModalNote.textContent = data.note || '-';
+                    // 商品明細
+                    orderModalItems.innerHTML = '';
+                    (data.items || []).forEach(function(item) {
+                        const div = document.createElement('div');
+                        div.className = 'flex items-center gap-4';
+                        if (item.image) {
+                            div.innerHTML += `<img src="${item.image}" class="w-24 h-24 rounded-xl object-cover border border-gray-200">`;
+                        } else {
+                            div.innerHTML += `<div class="w-24 h-24 rounded-xl bg-gray-100 flex items-center justify-center text-gray-300 border border-gray-200"><i class='bi bi-image'></i></div>`;
+                        }
+                        div.innerHTML += `<div><div class='font-bold text-gray-800'>${item.name}</div><div class='text-xs text-gray-500'>數量：${item.quantity}</div></div>`;
+                        orderModalItems.appendChild(div);
+                    });
+                    orderModal.classList.remove('hidden');
+                });
+            });
+            orderModalClose.addEventListener('click', function() {
+                orderModal.classList.add('hidden');
+            });
             const favoriteButtons = document.querySelectorAll('.favorite-toggle');
+            // 監聽本地取消收藏同步
+            const syncFavoriteRemoved = () => {
+                const removedId = window.localStorage.getItem('favorite-removed');
+                if (removedId) {
+                    favoriteButtons.forEach(function (button) {
+                        if (button.getAttribute('data-request-list-id') === removedId) {
+                            button.classList.remove('text-pink-500', 'bg-pink-50');
+                            button.classList.add('text-gray-400', 'bg-gray-100');
+                            button.setAttribute('aria-pressed', 'false');
+                        }
+                    });
+                    window.localStorage.removeItem('favorite-removed');
+                }
+            };
+            syncFavoriteRemoved();
+            window.addEventListener('focus', syncFavoriteRemoved);
 
             favoriteButtons.forEach(function (button) {
                 button.addEventListener('click', function () {
-                    const isActive = button.classList.contains('text-pink-500');
-
-                    button.classList.toggle('text-pink-500', !isActive);
-                    button.classList.toggle('bg-pink-50', !isActive);
-                    button.classList.toggle('text-gray-400', isActive);
-                    button.classList.toggle('bg-gray-100', isActive);
-                    button.setAttribute('aria-pressed', String(!isActive));
+                    const requestListId = button.getAttribute('data-request-list-id');
+                    fetch("{{ route('favorite.toggle') }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content'),
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({ request_list_id: requestListId })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        const isActive = button.classList.contains('text-pink-500');
+                        if (data.status === 'added') {
+                            button.classList.add('text-pink-500', 'bg-pink-50');
+                            button.classList.remove('text-gray-400', 'bg-gray-100');
+                            button.setAttribute('aria-pressed', 'true');
+                        } else if (data.status === 'removed') {
+                            button.classList.remove('text-pink-500', 'bg-pink-50');
+                            button.classList.add('text-gray-400', 'bg-gray-100');
+                            button.setAttribute('aria-pressed', 'false');
+                        }
+                    });
                 });
             });
         });
