@@ -12,12 +12,14 @@
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
         <!-- Scripts & Styles -->
-
-        <!-- 2. 補上 Tailwind CSS CDN (解決框框與樣式問題) -->
+        <!-- 1. 補上 Tailwind CSS CDN -->
         <script src="https://cdn.tailwindcss.com"></script>
 
-        <!-- 3. 補上 Alpine.js CDN (解決後台下拉選單沒反應的問題) -->
+        <!-- 2. 補上 Alpine.js CDN -->
         <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+        <!-- 3. 補上 Bootstrap Icons CDN (這是讓圖案顯示的關鍵) -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     </head>
     <body class="font-sans antialiased">
         <div class="min-h-screen bg-gray-100">
