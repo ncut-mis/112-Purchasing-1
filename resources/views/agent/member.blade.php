@@ -79,7 +79,7 @@
                                 <span>聊天訊息</span>
                             </a>
                             <!-- 5. 撥款紀錄 -->
-                            <a href="#" class="flex items-center gap-3 p-3 rounded-xl text-gray-600 hover:bg-gray-50 transition">
+                             <a href="#" @click.prevent="activeTab = 'payouts'" :class="activeTab === 'payouts' ? 'bg-emerald-50 text-emerald-600 font-bold' : 'text-gray-600'" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition">
                                 <i class="bi bi-wallet2 text-emerald-500 text-lg"></i>
                                 <span>撥款紀錄</span>
                             </a>
@@ -403,105 +403,10 @@
                             });
                         });
                      </script>
-                     <!-- 我的收藏請購清單 -->
-                     <section id="favorites" class="bg-white rounded-2xl shadow-sm border border-pink-100 p-6">
-                        <h3 class="text-lg font-bold text-pink-600 mb-6">我的收藏請購清單</h3>
-                        <div class="space-y-4" id="favorite-list-block">
-                            @php
-                                $favoriteRequestLists = Auth::user()->favorites
-                                    ->where('favoriteable_type', 'App\\Models\\RequestList')
-                                    ->load('favoriteable')
-                                    ->pluck('favoriteable')
-                                    ->filter();
-                            @endphp
-                            @forelse($favoriteRequestLists as $favList)
-                                <div class="favorite-list-item flex items-center gap-4 p-4 bg-pink-50 rounded-xl border border-pink-100" data-request-list-id="{{ $favList->id }}">
-                                    <button type="button"
-                                        class="favorite-remove-btn w-10 h-10 rounded-full bg-white text-pink-500 flex items-center justify-center shadow-sm border border-pink-100 transition hover:bg-pink-100"
-                                        data-request-list-id="{{ $favList->id }}"
-                                        aria-label="取消收藏"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
-                                            <path d="M12.001 4.529c2.349-2.532 6.15-2.533 8.498-.001 2.41 2.6 2.41 6.815 0 9.416l-7.66 8.266a1.14 1.14 0 0 1-1.677 0l-7.66-8.266c-2.41-2.601-2.41-6.817 0-9.416 2.348-2.532 6.149-2.531 8.499.001Z"/>
-                                        </svg>
-                                    </button>
-                                    <div class="flex-1 min-w-0">
-                                        <div class="font-bold text-gray-800 truncate">{{ $favList->title ?? '未命名請購' }}</div>
-                                        <div class="text-xs text-gray-400">截止：{{ optional($favList->deadline)->format('Y-m-d') ?? '-' }}</div>
-                                    </div>
-                                    <a href="{{ route('agent.dashboard', ['q' => $favList->title]) }}" class="text-xs text-pink-600 font-bold hover:underline">前往接單大廳</a>
-                                </div>
-                            @empty
-                                <div class="text-gray-400 text-sm text-center py-8">尚未收藏任何請購清單</div>
-                            @endforelse
-                        </div>
-                                        <script>
-                                            document.addEventListener('DOMContentLoaded', function () {
-                                                let pendingRemoveId = null;
-                                                const modal = document.getElementById('favorite-modal');
-                                                const confirmBtn = document.getElementById('favorite-modal-confirm');
-                                                const cancelBtn = document.getElementById('favorite-modal-cancel');
-                                                // 開啟 modal
-                                                document.querySelectorAll('.favorite-remove-btn').forEach(function(btn) {
-                                                    btn.addEventListener('click', function() {
-                                                        pendingRemoveId = btn.getAttribute('data-request-list-id');
-                                                        modal.classList.remove('hidden');
-                                                    });
-                                                });
-                                                // 關閉 modal
-                                                cancelBtn.addEventListener('click', function() {
-                                                    modal.classList.add('hidden');
-                                                    pendingRemoveId = null;
-                                                });
-                                                // 確認取消收藏
-                                                confirmBtn.addEventListener('click', function() {
-                                                    if (!pendingRemoveId) return;
-                                                    fetch("{{ route('favorite.toggle') }}", {
-                                                        method: 'POST',
-                                                        headers: {
-                                                            'Content-Type': 'application/json',
-                                                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content'),
-                                                            'Accept': 'application/json',
-                                                        },
-                                                        body: JSON.stringify({ request_list_id: pendingRemoveId })
-                                                    })
-                                                    .then(response => response.json())
-                                                    .then(data => {
-                                                        if (data.status === 'removed') {
-                                                            // 從畫面移除該收藏
-                                                            const item = document.querySelector('.favorite-list-item[data-request-list-id="' + pendingRemoveId + '"]');
-                                                            if (item) item.remove();
-                                                            // 通知接單大廳同步變灰
-                                                            window.localStorage.setItem('favorite-removed', pendingRemoveId);
-                                                        }
-                                                        modal.classList.add('hidden');
-                                                        pendingRemoveId = null;
-                                                    });
-                                                });
-                                            });
-                                        </script>
-                     </section>
+                     
+                     
 
-                     <!-- 撥款紀錄 -->
-                     <section id="payments" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                        <h3 class="text-lg font-bold text-gray-800 mb-6">最近撥款紀錄</h3>
-                        <div class="space-y-4">
-                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-transparent hover:border-indigo-100 transition">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-green-500 shadow-sm border border-gray-100">
-                                        <i class="bi bi-wallet2"></i>
-                                    </div>
-                                    <div>
-                                        <div class="text-sm font-bold text-gray-800">提領至 台灣銀行 (***882)</div>
-                                        <div class="text-[10px] text-gray-400">2025-02-15 10:00</div>
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <div class="text-sm font-bold text-gray-800">-$15,000</div>
-                                    <div class="text-[10px] text-green-600 font-bold">撥款成功</div>
-                                </div>
-                            </div>
-                        </section>
+
                     </div>
 
                     <!-- 分頁二：我的收藏請購清單 (覆蓋顯示) -->
@@ -537,6 +442,31 @@
                                 @empty
                                     <div class="text-gray-400 text-sm text-center py-8">尚未收藏任何請購清單</div>
                                 @endforelse
+                            </div>
+                        </section>
+                    </div>
+
+
+                     <!-- 分頁三：最近撥款紀錄 -->
+                    <div x-show="activeTab === 'payouts'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4">
+                        <section id="payments" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                            <h3 class="text-lg font-bold text-gray-800 mb-6">最近撥款紀錄</h3>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-transparent hover:border-indigo-100 transition">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-green-500 shadow-sm border border-gray-100">
+                                            <i class="bi bi-wallet2"></i>
+                                        </div>
+                                        <div>
+                                            <div class="text-sm font-bold text-gray-800">提領至 台灣銀行 (***882)</div>
+                                            <div class="text-[10px] text-gray-400">2025-02-15 10:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-sm font-bold text-gray-800">-$15,000</div>
+                                        <div class="text-[10px] text-green-600 font-bold">撥款成功</div>
+                                    </div>
+                                </div>
                             </div>
                         </section>
                     </div>
