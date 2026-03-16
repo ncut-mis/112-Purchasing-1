@@ -48,12 +48,17 @@
         </div>
 
         <div class="row g-4">
-            @forelse($agentPosts as $agentPost)
+             @forelse($agentPosts as $agentPost)
                 <div class="col-md-6 col-lg-4">
                     <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden">
                         <div class="position-relative" style="height: 210px;">
+                            @php
+                                $firstProductImage = optional($agentPost->products->first())->image_path;
+                            @endphp
                             @if($agentPost->cover_image)
                                 <img src="{{ asset('storage/' . $agentPost->cover_image) }}" alt="{{ $agentPost->title }}" class="w-100 h-100 object-fit-cover">
+                            @elseif($firstProductImage)
+                                <img src="{{ asset('storage/' . $firstProductImage) }}" alt="{{ $agentPost->title }} 商品圖片" class="w-100 h-100 object-fit-cover">
                             @else
                                 <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-light text-secondary">
                                     <i class="bi bi-image fs-1"></i>
@@ -104,6 +109,7 @@
                                         <div class="small text-muted">已建立於 {{ optional($agentPost->created_at)->format('Y/m/d') }}</div>
                                     </div>
                                 </div>
+                                   <a href="#" class="btn btn-sm btn-primary-custom rounded-pill px-3">我要跟單</a>
                             </div>
                         </div>
                     </div>
