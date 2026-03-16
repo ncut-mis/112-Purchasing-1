@@ -65,7 +65,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // 2. 關鍵：新增申請進度查詢路由
     Route::get('/agent/status', [AgentApplicationController::class, 'status'])->name('agent.status');
     
-    // 顯示個人資訊編輯頁面 (GET)
+    // 顯示個人資訊編輯頁面 (GET123)
     Route::get('/agent/profile', function () {
         return view('agent.profile');
     })->name('agent.profile.edit'); 
