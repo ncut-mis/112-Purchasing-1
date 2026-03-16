@@ -158,23 +158,10 @@
                     
                     <!-- 分頁一：我的代購貼文 (預設顯示) -->
                     <div x-show="activeTab === 'posts'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4">
-                        <section id="agent-posts" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
-                            <div class="flex justify-between items-center mb-6">
-                                <h3 class="text-lg font-bold text-gray-800">我的代購貼文</h3>
-                                <button class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-700 transition">+ 發布貼文</button>
-                            </div>
-                            <!-- 貼文列表佔位符 -->
-                            <div class="border-2 border-dashed border-gray-100 rounded-2xl p-12 text-center">
-                                <p class="text-gray-400 text-sm">尚未發布代購貼文，點擊右上角「+ 發布貼文」開始建立。</p>
-                            </div>
-                        </section>
+                        
 
-                        <!-- 最近撥款紀錄 (貼文分頁下方顯示) -->
-                        <section id="recent-payments" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                            <h3 class="text-lg font-bold text-gray-800 mb-6">最近撥款紀錄</h3>
-
-                    <!-- 我的代購連線 -->
-                    <section id="connections" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                      <!-- 我的代購連線 -->
+                      <section id="connections" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                         @php
                             $myAgentPosts = \App\Models\AgentPost::with(['products'])->withCount('products')
                                 ->where('user_id', Auth::id())
@@ -185,7 +172,7 @@
 
                         <div class="flex justify-between items-center mb-6">
                             <h3 class="text-lg font-bold text-gray-800">我的代購貼文</h3>
-                            <a href="{{ route('agent.posts.create') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-700 transition">+ 發布貼文</a>
+                            <a href="{{ route('agent.posts.create') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-700 transition">+發布貼文</a>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             @forelse($myAgentPosts as $post)
@@ -322,9 +309,9 @@
                                 </div>
                             </div>
                         @endforeach
-                    </section>
+                     </section>
 
-                    <template id="edit-product-template">
+                     <template id="edit-product-template">
                         <div class="edit-product-item rounded-xl border border-gray-200 p-4" data-index="__INDEX__">
                             <div class="flex items-center justify-between mb-3">
                                 <h6 class="font-semibold text-gray-700">商品 #__NUMBER__</h6>
@@ -339,9 +326,9 @@
                                 <input type="file" accept="image/*" name="products[__INDEX__][image]" class="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-indigo-700 file:font-semibold hover:file:bg-indigo-50">
                             </div>
                         </div>
-                    </template>
+                     </template>
 
-                    <script>
+                     <script>
                         document.addEventListener('DOMContentLoaded', function () {
                             document.querySelectorAll('.agent-post-view-btn, .agent-post-edit-btn').forEach(function (btn) {
                                 btn.addEventListener('click', function () {
@@ -415,9 +402,9 @@
                                 refresh();
                             });
                         });
-                    </script>
-                    <!-- 我的收藏請購清單 -->
-                    <section id="favorites" class="bg-white rounded-2xl shadow-sm border border-pink-100 p-6">
+                     </script>
+                     <!-- 我的收藏請購清單 -->
+                     <section id="favorites" class="bg-white rounded-2xl shadow-sm border border-pink-100 p-6">
                         <h3 class="text-lg font-bold text-pink-600 mb-6">我的收藏請購清單</h3>
                         <div class="space-y-4" id="favorite-list-block">
                             @php
@@ -493,10 +480,10 @@
                                                 });
                                             });
                                         </script>
-                    </section>
+                     </section>
 
-                    <!-- 撥款紀錄 -->
-                    <section id="payments" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                     <!-- 撥款紀錄 -->
+                     <section id="payments" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                         <h3 class="text-lg font-bold text-gray-800 mb-6">最近撥款紀錄</h3>
                         <div class="space-y-4">
                             <div class="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-transparent hover:border-indigo-100 transition">
