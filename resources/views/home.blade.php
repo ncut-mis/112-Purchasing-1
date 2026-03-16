@@ -48,48 +48,73 @@
         </div>
 
         <div class="row g-4">
-            @foreach($posts as $post)
-            <div class="col-md-6 col-lg-4">
-                <div class="card h-100 border-0 shadow-sm rounded-4 position-relative hover-shadow transition">
-                    <!-- 地區標籤 -->
-                    <span class="position-absolute top-0 end-0 m-3 badge rounded-pill bg-warning text-dark">
-                        {{ $post->region }}
-                    </span>
-                    
-                    <div class="card-body p-4">
-                        <div class="mb-3">
-                            <!-- 預設圖片或是佔位圖 -->
-                            <div class="rounded-4 bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
-                                <i class="bi bi-box-seam text-secondary display-4"></i>
-                            </div>
-                        </div>
-
-                        <!-- 標題 -->
-                        <h5 class="card-title fw-bold mb-2">{{ $post->title }}</h5>
-                        <p class="card-text text-muted small mb-4 text-truncate-2">
-                            {{ $post->description ?? '暫無詳細說明...' }}
-                        </p>
-
-                        <!-- 代購人資訊 -->
-                        <div class="d-flex align-items-center mb-3">
-                            <img src="https://ui-avatars.com/api/?name={{ urlencode($post->user->name) }}&background=random" class="rounded-circle me-2" width="32" height="32" alt="Avatar">
-                            <small class="text-muted">{{ $post->user->name }}</small>
-                        </div>
-
-                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
-                            <div class="small text-muted">
-                                <i class="bi bi-calendar-event me-1"></i> {{ $post->deadline ? $post->deadline->format('m/d') : 'TBA' }} 截止
-                            </div>
-                            <span class="text-success fw-bold small">
-                                <i class="bi bi-circle-fill me-1" style="font-size: 8px;"></i> 進行中
+            @forelse($agentPosts as $agentPost)
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden">
+                        <div class="position-relative" style="height: 210px;">
+                            @if($agentPost->cover_image)
+                                <img src="{{ asset('storage/' . $agentPost->cover_image) }}" alt="{{ $agentPost->title }}" class="w-100 h-100 object-fit-cover">
+                            @else
+                                <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-light text-secondary">
+                                    <i class="bi bi-image fs-1"></i>
+                                </div>
+                            @endif
+                            <span class="position-absolute top-0 start-0 m-3 badge rounded-pill bg-dark-subtle text-dark">
+                                {{ $agentPost->country }}{{ $agentPost->city ? '・' . $agentPost->city : '' }}
+                            </span>
+                            <span class="position-absolute top-0 end-0 m-3 badge rounded-pill bg-success">
+                                {{ $agentPost->status === 'open' ? '接單中' : $agentPost->status }}
                             </span>
                         </div>
+
+                        <div class="card-body p-4 d-flex flex-column">
+                            <h5 class="card-title fw-bold mb-2">{{ $agentPost->title }}</h5>
+                            <p class="text-muted small mb-3" style="min-height: 48px;">
+                                {{ \Illuminate\Support\Str::limit($agentPost->description ?: '代購人尚未填寫詳細說明。', 80) }}
+                            </p>
+
+                            <div class="small text-muted bg-light rounded-3 p-3 mb-3">
+                                <div class="d-flex align-items-center mb-1">
+                                    <i class="bi bi-calendar-event me-2"></i>
+                                    <span>代購期間：{{ optional($agentPost->start_date)->format('Y/m/d') }} - {{ optional($agentPost->end_date)->format('Y/m/d') }}</span>
+                                </div>
+                                <div class="d-flex align-items-center mb-1">
+                                    <i class="bi bi-truck me-2"></i>
+                                    <span>預計出貨：{{ optional($agentPost->estimated_shipping_date)->format('Y/m/d') ?? '未提供' }}</span>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-box-seam me-2"></i>
+                                    <span>可代購商品：{{ $agentPost->products->count() }} 項</span>
+                                </div>
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                @forelse($agentPost->products->take(3) as $product)
+                                    <span class="badge rounded-pill text-bg-light border">{{ $product->name }}</span>
+                                @empty
+                                    <span class="badge rounded-pill text-bg-light border">尚未建立商品明細</span>
+                                @endforelse
+                            </div>
+
+                            <div class="mt-auto d-flex justify-content-between align-items-center pt-3 border-top">
+                                <div class="d-flex align-items-center">
+                                    <img src="https://ui-avatars.com/api/?name={{ urlencode(optional($agentPost->user)->name ?? 'Agent') }}&background=random" class="rounded-circle me-2" width="32" height="32" alt="Avatar">
+                                    <div>
+                                        <div class="small fw-semibold text-dark">{{ optional($agentPost->user)->name ?? '匿名代購人' }}</div>
+                                        <div class="small text-muted">已建立於 {{ optional($agentPost->created_at)->format('Y/m/d') }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <!-- 點擊整張卡片進入詳情 -->
-                    <a href="#" class="stretched-link"></a>
                 </div>
-            </div>
-            @endforeach
+            @empty
+                <div class="col-12">
+                    <div class="rounded-4 border border-dashed p-5 text-center text-muted bg-light">
+                        目前尚無最新代購連線，歡迎代購人前往會員專區建立貼文。
+                    </div>
+                </div>
+            @endforelse
         </div>
     </div>
 </section>

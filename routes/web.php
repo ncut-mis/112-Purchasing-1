@@ -8,7 +8,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RequestListController;
 use App\Http\Controllers\ShopController;
-use App\Models\Post;
+use App\Models\AgentPost;
 use App\Models\PurchasingRequest;
 use App\Models\RequestList;
 use Illuminate\Support\Facades\Route;
@@ -34,13 +34,17 @@ Route::patch('/admin/agent-applications/{agentApplication}/reject', [AdminAuthCo
 Route::delete('/admin/request-lists/{requestList}', [AdminAuthController::class, 'deleteRequestList'])->middleware('admin.auth')->name('admin.request-lists.delete');
 
 Route::get('/', function () {
-    $posts = Post::all();
+    $agentPosts = AgentPost::with(['user', 'products'])
+        ->where('status', 'open')
+        ->latest()
+        ->take(6)
+        ->get();
 
     $requests = class_exists(PurchasingRequest::class)
         ? PurchasingRequest::all()
         : collect([]);
 
-    return view('home', compact('posts', 'requests'));
+    return view('home', compact('agentPosts', 'requests'));
 })->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {

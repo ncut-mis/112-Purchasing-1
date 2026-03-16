@@ -47,12 +47,12 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">貼文標題</label>
-                        <input type="text" name="title" value="{{ old('title') }}" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" placeholder="例如：東京五月連線代購" required>
+                        <input type="text" name="title" value="{{ old('title') }}" class="w-full rounded-xl border-2 border-blue-500 focus:border-blue-500 focus:ring-blue-500" placeholder="例如：東京五月連線代購" required>
                     </div>
 
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">代購國家</label>
-                        <select name="country" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+                        <select name="country" class="w-full rounded-xl border-2 border-blue-500 focus:border-blue-500 focus:ring-blue-500" required>
                             <option value="">請選擇</option>
                             @foreach (['日本', '韓國', '美國', '英國'] as $country)
                                 <option value="{{ $country }}" @selected(old('country') === $country)>{{ $country }}</option>
@@ -63,18 +63,18 @@
                     <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">銷售開始日</label>
-                            <input type="date" name="start_date" value="{{ old('start_date') }}" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+                            <input type="date" name="start_date" value="{{ old('start_date') }}" class="w-full rounded-xl border-2 border-blue-500 focus:border-blue-500 focus:ring-blue-500" required>
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">銷售結束日</label>
-                            <input type="date" name="end_date" value="{{ old('end_date') }}" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+                            <input type="date" name="end_date" value="{{ old('end_date') }}" class="w-full rounded-xl border-2 border-blue-500 focus:border-blue-500 focus:ring-blue-500" required>
                         </div>
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">描述訊息</label>
-                    <textarea name="description" rows="4" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" placeholder="請描述代購規則、注意事項、收單方式..." required>{{ old('description') }}</textarea>
+                    <textarea name="description" rows="4" class="w-full rounded-xl border-2 border-blue-500 focus:border-blue-500 focus:ring-blue-500" placeholder="請描述代購規則、注意事項、收單方式..." required>{{ old('description') }}</textarea>
                 </div>
 
                 <div class="border-t border-gray-100 pt-6 space-y-4">
@@ -97,15 +97,15 @@
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">商品名稱</label>
-                                        <input type="text" name="products[{{ $index }}][name]" value="{{ $product['name'] ?? '' }}" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+                                        <input type="text" name="products[{{ $index }}][name]" value="{{ $product['name'] ?? '' }}" class="w-full rounded-xl border-2 border-blue-500 focus:border-blue-500 focus:ring-blue-500" required>
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">單價（TWD）</label>
-                                        <input type="number" min="0" step="0.01" name="products[{{ $index }}][price]" value="{{ $product['price'] ?? '' }}" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+                                        <input type="number" min="0" step="0.01" name="products[{{ $index }}][price]" value="{{ $product['price'] ?? '' }}" class="w-full rounded-xl border-2 border-blue-500 focus:border-blue-500 focus:ring-blue-500" required>
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">最高數量</label>
-                                        <input type="number" min="1" step="1" name="products[{{ $index }}][max_quantity]" value="{{ $product['max_quantity'] ?? '' }}" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+                                        <input type="number" min="1" step="1" name="products[{{ $index }}][max_quantity]" value="{{ $product['max_quantity'] ?? '' }}" class="w-full rounded-xl border-2 border-blue-500 focus:border-blue-500 focus:ring-blue-500" required>
                                     </div>
                                 </div>
 
@@ -138,15 +138,15 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">商品名稱</label>
-                    <input type="text" name="products[__INDEX__][name]" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+                    <input type="text" name="products[__INDEX__][name]" class="w-full rounded-xl border-2 border-blue-500 focus:border-blue-500 focus:ring-blue-500" required>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">單價（TWD）</label>
-                    <input type="number" min="0" step="0.01" name="products[__INDEX__][price]" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+                    <input type="number" min="0" step="0.01" name="products[__INDEX__][price]" class="w-full rounded-xl border-2 border-blue-500 focus:border-blue-500 focus:ring-blue-500" required>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">最高數量</label>
-                    <input type="number" min="1" step="1" name="products[__INDEX__][max_quantity]" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+                    <input type="number" min="1" step="1" name="products[__INDEX__][max_quantity]" class="w-full rounded-xl border-2 border-blue-500 focus:border-blue-500 focus:ring-blue-500" required>
                 </div>
             </div>
 
