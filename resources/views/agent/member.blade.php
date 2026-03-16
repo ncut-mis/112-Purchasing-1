@@ -74,8 +74,9 @@
                                 <span>代購商品管理</span>
                             </a>
                             <!-- 4. 聊天訊息 -->
-                            <a href="#" class="flex items-center gap-3 p-3 rounded-xl text-gray-600 hover:bg-gray-50 transition">
-                                <i class="bi bi-chat-dots text-blue-400 text-lg"></i>
+                            <a href="{{ route('agent.chat') }}" 
+                                class="flex items-center gap-3 p-3 rounded-xl transition {{ request()->routeIs('agent.chat') ? 'bg-blue-50 text-blue-600 font-bold' : 'text-gray-600 hover:bg-gray-50' }}">
+                                <i class="bi bi-chat-dots text-lg {{ request()->routeIs('agent.chat') ? 'text-blue-600' : 'text-blue-400' }}"></i>
                                 <span>聊天訊息</span>
                             </a>
                             <!-- 5. 撥款紀錄 -->

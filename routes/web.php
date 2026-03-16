@@ -77,10 +77,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // 處理個人資訊更新 (POST)
     Route::post('/agent/profile', [AgentApplicationController::class, 'updateProfile'])->name('agent.profile.update');
 
-    // 聊天頁面
+    // --- 請購人/一般會員的聊天路由 ---
     Route::get('/messages', function () {
-        return view('messages.index');
+    return view('messages.index');
     })->name('messages.index');
+
+    // --- 代購人專屬的聊天路由 ---
+    Route::get('/agent/chat', function () {
+    return view('agent.chat'); // 指向 resources/views/agent/chat.blade.php
+    })->name('agent.chat');
+    
+    
 
     // 代購人申請功能
 
