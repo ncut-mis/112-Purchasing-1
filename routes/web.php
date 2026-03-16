@@ -65,7 +65,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // 2. 關鍵：新增申請進度查詢路由
     Route::get('/agent/status', [AgentApplicationController::class, 'status'])->name('agent.status');
     
-    // 顯示個人資訊編輯頁面 (GET)
+    // 顯示個人資訊編輯頁面 (GET123)
     Route::get('/agent/profile', function () {
         return view('agent.profile');
     })->name('agent.profile.edit'); 
@@ -86,6 +86,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // 代購人貼文建立
     Route::get('/agent/posts/create', [AgentPostController::class, 'create'])->name('agent.posts.create');
     Route::post('/agent/posts', [AgentPostController::class, 'store'])->name('agent.posts.store');
+    Route::patch('/agent/posts/{agentPost}', [AgentPostController::class, 'update'])->name('agent.posts.update');
 });
 
 Route::middleware('auth')->group(function () {

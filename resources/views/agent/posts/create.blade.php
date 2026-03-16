@@ -53,7 +53,7 @@
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">代購國家</label>
                         <select name="country" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
-                            <option value="">請選擇代購國家</option>
+                            <option value="">請選擇</option>
                             @foreach (['日本', '韓國', '美國', '英國'] as $country)
                                 <option value="{{ $country }}" @selected(old('country') === $country)>{{ $country }}</option>
                             @endforeach
@@ -100,7 +100,7 @@
                                         <input type="text" name="products[{{ $index }}][name]" value="{{ $product['name'] ?? '' }}" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">單價(TWD)</label>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">單價（TWD）</label>
                                         <input type="number" min="0" step="0.01" name="products[{{ $index }}][price]" value="{{ $product['price'] ?? '' }}" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
                                     </div>
                                     <div>
@@ -110,7 +110,7 @@
                                 </div>
 
                                 <div class="mt-4">
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">商品圖片(選擇檔案)</label>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">商品圖片（選擇檔案）</label>
                                     <input type="file" accept="image/*" name="products[{{ $index }}][image]" class="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-indigo-700 file:font-semibold hover:file:bg-indigo-50">
                                 </div>
                             </div>
