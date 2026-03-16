@@ -154,6 +154,7 @@
 
                 <!-- 右側主內容區 -->
                 <div class="w-full lg:w-3/4 space-y-8">
+
                     
                     <!-- 分頁一：我的代購貼文 (預設顯示) -->
                     <div x-show="activeTab === 'posts'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4">
@@ -171,6 +172,333 @@
                         <!-- 最近撥款紀錄 (貼文分頁下方顯示) -->
                         <section id="recent-payments" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                             <h3 class="text-lg font-bold text-gray-800 mb-6">最近撥款紀錄</h3>
+
+                    <!-- 我的代購連線 -->
+                    <section id="connections" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                        @php
+                            $myAgentPosts = \App\Models\AgentPost::with(['products'])->withCount('products')
+                                ->where('user_id', Auth::id())
+                                ->latest()
+                                ->take(6)
+                                ->get();
+                        @endphp
+
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-bold text-gray-800">我的代購貼文</h3>
+                            <a href="{{ route('agent.posts.create') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-700 transition">+ 發布貼文</a>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            @forelse($myAgentPosts as $post)
+                                <div class="p-4 border border-gray-100 rounded-2xl flex gap-4 hover:border-indigo-200 transition">
+                                    <div class="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-gray-300 overflow-hidden">
+                                        @if($post->cover_image)
+                                            <img src="{{ asset('storage/'.$post->cover_image) }}" alt="{{ $post->title }}" class="w-full h-full object-cover">
+                                        @else
+                                            <i class="bi bi-image text-xl"></i>
+                                        @endif
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <h6 class="font-bold text-gray-800 text-sm truncate">【{{ $post->country }}】{{ $post->title }}</h6>
+                                        <p class="text-[10px] text-gray-400">銷售期間: {{ optional($post->start_date)->format('Y-m-d') }} ~ {{ optional($post->end_date)->format('Y-m-d') }}</p>
+                                        <div class="mt-2 flex gap-2 flex-wrap">
+                                            <span class="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded">{{ $post->products_count }} 項商品</span>
+                                            <span class="text-[10px] text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded">{{ $post->status === 'open' ? '進行中' : $post->status }}</span>
+                                        </div>
+                                        <div class="mt-3 flex gap-2">
+                                            <button type="button" class="agent-post-view-btn text-[11px] px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition" data-modal-id="agent-post-view-modal-{{ $post->id }}">檢視</button>
+                                            <button type="button" class="agent-post-edit-btn text-[11px] px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition" data-modal-id="agent-post-edit-modal-{{ $post->id }}">編輯</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="col-span-2 p-8 border border-dashed border-gray-200 rounded-2xl text-center text-sm text-gray-400">
+                                    尚未發布代購貼文，點擊右上角「+ 發布貼文」開始建立。
+                                </div>
+                            @endforelse
+                        </div>
+
+                        @foreach($myAgentPosts as $post)
+                            <div id="agent-post-view-modal-{{ $post->id }}" class="agent-post-modal fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4">
+                                <div class="bg-white w-full max-w-5xl rounded-2xl shadow-xl p-6 max-h-[88vh] overflow-y-auto relative">
+                                    <button type="button" class="modal-close-btn absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                                    <h4 class="text-xl font-bold text-gray-800 mb-2">{{ $post->title }}</h4>
+                                    <p class="text-sm text-gray-500 mb-1">國家：{{ $post->country }}</p>
+                                    <p class="text-sm text-gray-500 mb-1">銷售期間：{{ optional($post->start_date)->format('Y-m-d') }} ~ {{ optional($post->end_date)->format('Y-m-d') }}</p>
+                                    <p class="text-sm text-gray-500 mb-1 whitespace-pre-line">描述訊息：{{ $post->description }}</p>
+                                    <div class="mt-6 border-t pt-4">
+                                        <h5 class="font-bold text-gray-800 mb-3">商品規格</h5>
+                                        <div class="space-y-3">
+                                            @foreach($post->products as $product)
+                                                <div class="rounded-xl border border-gray-100 p-3 flex items-center gap-4">
+                                                    <div class="w-20 h-20 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center text-gray-300">
+                                                        @if($product->image_path)
+                                                            <img src="{{ asset('storage/'.$product->image_path) }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
+                                                        @else
+                                                            <i class="bi bi-image text-2xl"></i>
+                                                        @endif
+                                                    </div>
+                                                    <div class="flex-1 min-w-0">
+                                                        <p class="text-base font-semibold text-gray-800 truncate">{{ $product->name }}</p>
+                                                        <p class="text-sm text-gray-500">單價：NT$ {{ number_format((float) $product->price, 0) }}</p>
+                                                        <p class="text-sm text-gray-500">最高數量：{{ $product->max_quantity }}</p>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="agent-post-edit-modal-{{ $post->id }}" class="agent-post-modal fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4">
+                                <div class="bg-white w-full max-w-4xl rounded-2xl shadow-xl p-6 max-h-[88vh] overflow-y-auto relative">
+                                    <button type="button" class="modal-close-btn absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                                    <h4 class="text-xl font-bold text-gray-800 mb-4">編輯代購貼文</h4>
+
+                                    <form method="POST" action="{{ route('agent.posts.update', $post) }}" enctype="multipart/form-data" class="agent-post-edit-form space-y-5" data-max-items="5">
+                                        @csrf
+                                        @method('PATCH')
+
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-semibold text-gray-700 mb-2">貼文標題</label>
+                                                <input type="text" name="title" value="{{ $post->title }}" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-semibold text-gray-700 mb-2">代購國家</label>
+                                                <select name="country" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+                                                    @foreach (['日本', '韓國', '美國', '英國'] as $country)
+                                                        <option value="{{ $country }}" @selected($post->country === $country)>{{ $country }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-semibold text-gray-700 mb-2">銷售開始日</label>
+                                                <input type="date" name="start_date" value="{{ optional($post->start_date)->format('Y-m-d') }}" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-semibold text-gray-700 mb-2">銷售結束日</label>
+                                                <input type="date" name="end_date" value="{{ optional($post->end_date)->format('Y-m-d') }}" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-700 mb-2">描述訊息</label>
+                                            <textarea name="description" rows="4" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>{{ $post->description }}</textarea>
+                                        </div>
+
+                                        <div class="border-t pt-4">
+                                            <div class="flex items-center justify-between mb-4">
+                                                <h5 class="font-bold text-gray-800">商品規格</h5>
+                                                <button type="button" class="edit-add-product-btn inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 text-sm font-semibold hover:bg-indigo-100">
+                                                    <i class="bi bi-plus-circle"></i> 新增商品
+                                                </button>
+                                            </div>
+                                            <div class="edit-products-container space-y-4">
+                                                @foreach($post->products as $pIndex => $product)
+                                                    <div class="edit-product-item rounded-xl border border-gray-200 p-4" data-index="{{ $pIndex }}">
+                                                        <div class="flex items-center justify-between mb-3">
+                                                            <h6 class="font-semibold text-gray-700">商品 #{{ $pIndex + 1 }}</h6>
+                                                            <button type="button" class="edit-remove-product-btn text-sm text-rose-600 hover:text-rose-700 font-semibold">刪除</button>
+                                                        </div>
+                                                        <input type="hidden" name="products[{{ $pIndex }}][id]" value="{{ $product->id }}">
+                                                        <input type="hidden" name="products[{{ $pIndex }}][existing_image]" value="{{ $product->image_path }}">
+                                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                            <input type="text" name="products[{{ $pIndex }}][name]" value="{{ $product->name }}" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" placeholder="商品名稱" required>
+                                                            <input type="number" min="0" step="0.01" name="products[{{ $pIndex }}][price]" value="{{ $product->price }}" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" placeholder="單價" required>
+                                                            <input type="number" min="1" step="1" name="products[{{ $pIndex }}][max_quantity]" value="{{ $product->max_quantity }}" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" placeholder="最高數量" required>
+                                                        </div>
+                                                        <div class="mt-3">
+                                                            <input type="file" accept="image/*" name="products[{{ $pIndex }}][image]" class="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-indigo-700 file:font-semibold hover:file:bg-indigo-50">
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+
+                                        <div class="flex justify-end">
+                                            <button type="submit" class="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition">儲存變更</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        @endforeach
+                    </section>
+
+                    <template id="edit-product-template">
+                        <div class="edit-product-item rounded-xl border border-gray-200 p-4" data-index="__INDEX__">
+                            <div class="flex items-center justify-between mb-3">
+                                <h6 class="font-semibold text-gray-700">商品 #__NUMBER__</h6>
+                                <button type="button" class="edit-remove-product-btn text-sm text-rose-600 hover:text-rose-700 font-semibold">刪除</button>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <input type="text" name="products[__INDEX__][name]" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" placeholder="商品名稱" required>
+                                <input type="number" min="0" step="0.01" name="products[__INDEX__][price]" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" placeholder="單價" required>
+                                <input type="number" min="1" step="1" name="products[__INDEX__][max_quantity]" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" placeholder="最高數量" required>
+                            </div>
+                            <div class="mt-3">
+                                <input type="file" accept="image/*" name="products[__INDEX__][image]" class="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-indigo-700 file:font-semibold hover:file:bg-indigo-50">
+                            </div>
+                        </div>
+                    </template>
+
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function () {
+                            document.querySelectorAll('.agent-post-view-btn, .agent-post-edit-btn').forEach(function (btn) {
+                                btn.addEventListener('click', function () {
+                                    const modal = document.getElementById(btn.dataset.modalId);
+                                    if (!modal) return;
+                                    modal.classList.remove('hidden');
+                                    modal.classList.add('flex');
+                                });
+                            });
+
+                            document.querySelectorAll('.modal-close-btn').forEach(function (btn) {
+                                btn.addEventListener('click', function () {
+                                    const modal = btn.closest('.agent-post-modal');
+                                    if (!modal) return;
+                                    modal.classList.add('hidden');
+                                    modal.classList.remove('flex');
+                                });
+                            });
+
+                            document.querySelectorAll('.agent-post-modal').forEach(function (modal) {
+                                modal.addEventListener('click', function (event) {
+                                    if (event.target === modal) {
+                                        modal.classList.add('hidden');
+                                        modal.classList.remove('flex');
+                                    }
+                                });
+                            });
+
+                            const template = document.getElementById('edit-product-template').innerHTML;
+                            document.querySelectorAll('.agent-post-edit-form').forEach(function (form) {
+                                const container = form.querySelector('.edit-products-container');
+                                const addBtn = form.querySelector('.edit-add-product-btn');
+                                const maxItems = parseInt(form.dataset.maxItems, 10) || 5;
+                                let nextIndex = Array.from(container.querySelectorAll('.edit-product-item')).reduce((max, item) => {
+                                    const idx = parseInt(item.dataset.index, 10);
+                                    return Number.isNaN(idx) ? max : Math.max(max, idx);
+                                }, -1) + 1;
+
+                                function refresh() {
+                                    const items = container.querySelectorAll('.edit-product-item');
+                                    const canDelete = items.length > 1;
+                                    addBtn.disabled = items.length >= maxItems;
+                                    addBtn.classList.toggle('opacity-50', addBtn.disabled);
+                                    addBtn.classList.toggle('cursor-not-allowed', addBtn.disabled);
+                                    items.forEach(function (item, i) {
+                                        const title = item.querySelector('h6');
+                                        if (title) title.textContent = `商品 #${i + 1}`;
+                                        const removeBtn = item.querySelector('.edit-remove-product-btn');
+                                        if (removeBtn) removeBtn.style.display = canDelete ? '' : 'none';
+                                    });
+                                }
+
+                                addBtn.addEventListener('click', function () {
+                                    const count = container.querySelectorAll('.edit-product-item').length;
+                                    if (count >= maxItems) return;
+                                    const html = template.replaceAll('__INDEX__', String(nextIndex)).replaceAll('__NUMBER__', String(count + 1));
+                                    container.insertAdjacentHTML('beforeend', html);
+                                    nextIndex += 1;
+                                    refresh();
+                                });
+
+                                container.addEventListener('click', function (event) {
+                                    const removeBtn = event.target.closest('.edit-remove-product-btn');
+                                    if (!removeBtn) return;
+                                    if (container.querySelectorAll('.edit-product-item').length <= 1) return;
+                                    const item = removeBtn.closest('.edit-product-item');
+                                    if (item) item.remove();
+                                    refresh();
+                                });
+
+                                refresh();
+                            });
+                        });
+                    </script>
+                    <!-- 我的收藏請購清單 -->
+                    <section id="favorites" class="bg-white rounded-2xl shadow-sm border border-pink-100 p-6">
+                        <h3 class="text-lg font-bold text-pink-600 mb-6">我的收藏請購清單</h3>
+                        <div class="space-y-4" id="favorite-list-block">
+                            @php
+                                $favoriteRequestLists = Auth::user()->favorites
+                                    ->where('favoriteable_type', 'App\\Models\\RequestList')
+                                    ->load('favoriteable')
+                                    ->pluck('favoriteable')
+                                    ->filter();
+                            @endphp
+                            @forelse($favoriteRequestLists as $favList)
+                                <div class="favorite-list-item flex items-center gap-4 p-4 bg-pink-50 rounded-xl border border-pink-100" data-request-list-id="{{ $favList->id }}">
+                                    <button type="button"
+                                        class="favorite-remove-btn w-10 h-10 rounded-full bg-white text-pink-500 flex items-center justify-center shadow-sm border border-pink-100 transition hover:bg-pink-100"
+                                        data-request-list-id="{{ $favList->id }}"
+                                        aria-label="取消收藏"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                                            <path d="M12.001 4.529c2.349-2.532 6.15-2.533 8.498-.001 2.41 2.6 2.41 6.815 0 9.416l-7.66 8.266a1.14 1.14 0 0 1-1.677 0l-7.66-8.266c-2.41-2.601-2.41-6.817 0-9.416 2.348-2.532 6.149-2.531 8.499.001Z"/>
+                                        </svg>
+                                    </button>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="font-bold text-gray-800 truncate">{{ $favList->title ?? '未命名請購' }}</div>
+                                        <div class="text-xs text-gray-400">截止：{{ optional($favList->deadline)->format('Y-m-d') ?? '-' }}</div>
+                                    </div>
+                                    <a href="{{ route('agent.dashboard', ['q' => $favList->title]) }}" class="text-xs text-pink-600 font-bold hover:underline">前往接單大廳</a>
+                                </div>
+                            @empty
+                                <div class="text-gray-400 text-sm text-center py-8">尚未收藏任何請購清單</div>
+                            @endforelse
+                        </div>
+                                        <script>
+                                            document.addEventListener('DOMContentLoaded', function () {
+                                                let pendingRemoveId = null;
+                                                const modal = document.getElementById('favorite-modal');
+                                                const confirmBtn = document.getElementById('favorite-modal-confirm');
+                                                const cancelBtn = document.getElementById('favorite-modal-cancel');
+                                                // 開啟 modal
+                                                document.querySelectorAll('.favorite-remove-btn').forEach(function(btn) {
+                                                    btn.addEventListener('click', function() {
+                                                        pendingRemoveId = btn.getAttribute('data-request-list-id');
+                                                        modal.classList.remove('hidden');
+                                                    });
+                                                });
+                                                // 關閉 modal
+                                                cancelBtn.addEventListener('click', function() {
+                                                    modal.classList.add('hidden');
+                                                    pendingRemoveId = null;
+                                                });
+                                                // 確認取消收藏
+                                                confirmBtn.addEventListener('click', function() {
+                                                    if (!pendingRemoveId) return;
+                                                    fetch("{{ route('favorite.toggle') }}", {
+                                                        method: 'POST',
+                                                        headers: {
+                                                            'Content-Type': 'application/json',
+                                                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content'),
+                                                            'Accept': 'application/json',
+                                                        },
+                                                        body: JSON.stringify({ request_list_id: pendingRemoveId })
+                                                    })
+                                                    .then(response => response.json())
+                                                    .then(data => {
+                                                        if (data.status === 'removed') {
+                                                            // 從畫面移除該收藏
+                                                            const item = document.querySelector('.favorite-list-item[data-request-list-id="' + pendingRemoveId + '"]');
+                                                            if (item) item.remove();
+                                                            // 通知接單大廳同步變灰
+                                                            window.localStorage.setItem('favorite-removed', pendingRemoveId);
+                                                        }
+                                                        modal.classList.add('hidden');
+                                                        pendingRemoveId = null;
+                                                    });
+                                                });
+                                            });
+                                        </script>
+                    </section>
+
+                    <!-- 撥款紀錄 -->
+                    <section id="payments" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-6">最近撥款紀錄</h3>
+                        <div class="space-y-4">
                             <div class="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-transparent hover:border-indigo-100 transition">
                                 <div class="flex items-center gap-3">
                                     <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-green-500 shadow-sm border border-gray-100">
