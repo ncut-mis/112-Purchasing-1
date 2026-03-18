@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AgentPost;
+use App\Models\PostProduct;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -28,29 +29,7 @@ class AgentPostController extends Controller
             'products.*.name' => ['required', 'string', 'max:255'],
             'products.*.price' => ['required', 'numeric', 'min:0'],
             'products.*.max_quantity' => ['required', 'integer', 'min:1'],
-            'products.*.image' => ['nullable', 'image', 'max:2048'],
-        ], [
-            'title.required' => '請填寫貼文標題',
-            'country.required' => '請選擇代購地區',
-            'country.in' => '代購地區僅支援日本、韓國、美國、英國',
-            'description.required' => '請填寫描述訊息',
-            'start_date.required' => '請選擇銷售開始日期',
-            'end_date.required' => '請選擇銷售結束日期',
-            'end_date.after_or_equal' => '銷售結束日期不可早於開始日期',
-            'products.required' => '至少需要 1 項商品',
-            'products.max' => '商品最多可輸入 5 項',
-            'products.*.name.required' => '請填寫商品名稱',
-            'products.*.price.required' => '請填寫商品單價',
-            'products.*.max_quantity.required' => '請填寫商品最高數量',
-        ]);
-
-        DB::transaction(function () use ($request, $validated) {
-            $agentPost = AgentPost::create([
-                'user_id' => Auth::id(),
-                'title' => $validated['title'],
-                'country' => $validated['country'],
-                'city' => $validated['city'] ?? null,
-                'description' => $validated['description'],
+@@ -54,50 +55,60 @@ public function store(Request $request)
                 'start_date' => $validated['start_date'],
                 'end_date' => $validated['end_date'],
                 'status' => 'open',
@@ -74,6 +53,16 @@ class AgentPostController extends Controller
         });
 
         return redirect()->route('agent.member')->with('status', '代購貼文已成功發布！');
+    }
+
+
+    public function image(PostProduct $postProduct)
+    {
+        if (! $postProduct->image_path || ! Storage::disk('public')->exists($postProduct->image_path)) {
+            abort(404);
+        }
+
+        return response()->file(Storage::disk('public')->path($postProduct->image_path));
     }
 
     public function update(Request $request, AgentPost $agentPost)

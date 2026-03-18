@@ -74,12 +74,12 @@
                     <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden">
                         <div class="position-relative" style="height: 210px;">
                             @php
-                                $firstProductImage = optional($agentPost->products->first())->image_path;
+                                 $firstProduct = $agentPost->products->first();
                             @endphp
-                            @if($agentPost->cover_image)
+                             @if(optional($firstProduct)->image_path)
+                                <img src="{{ route('post-product.image', $firstProduct) }}" alt="{{ $agentPost->title }} 商品圖片" class="w-100 h-100 object-fit-cover">
+                            @elseif($agentPost->cover_image)
                                 <img src="{{ asset('storage/' . $agentPost->cover_image) }}" alt="{{ $agentPost->title }}" class="w-100 h-100 object-fit-cover">
-                            @elseif($firstProductImage)
-                                <img src="{{ asset('storage/' . $firstProductImage) }}" alt="{{ $agentPost->title }} 商品圖片" class="w-100 h-100 object-fit-cover">
                             @else
                                 <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-light text-secondary">
                                     <i class="bi bi-image fs-1"></i>
@@ -114,7 +114,7 @@
                                 </div>
                             </div>
 
-                            <div class="d-flex flex-wrap gap-2 mb-3">
+                           <div class="d-flex flex-wrap gap-2 mb-3">
                                 @forelse($agentPost->products->take(3) as $product)
                                     <span class="badge rounded-pill text-bg-light border">{{ $product->name }}</span>
                                 @empty
@@ -130,7 +130,15 @@
                                         <div class="small text-muted">已建立於 {{ optional($agentPost->created_at)->format('Y/m/d') }}</div>
                                     </div>
                                 </div>
-                                   <a href="#" class="btn btn-sm btn-primary-custom rounded-pill px-3">我要跟單</a>
+                              @auth
+                                       @if((int) auth()->id() === (int) $agentPost->user_id)
+                                           <span class="small text-danger fw-semibold text-end ms-3">你無法對自己所發布的代購貼文進行跟單😅</span>
+                                       @else
+                                           <a href="#" class="btn btn-sm btn-primary-custom rounded-pill px-3">我要跟單</a>
+                                       @endif
+                                   @else
+                                       <a href="#" class="btn btn-sm btn-primary-custom rounded-pill px-3">我要跟單</a>
+                              @endauth
                             </div>
                         </div>
                     </div>
@@ -170,34 +178,7 @@
             <p class="text-muted">您可以接單這些請求，賺取代購費</p>
         </div>
 
-        <div class="row g-3">
-            @foreach($requests as $request)
-            <div class="col-md-6 col-lg-3">
-                <div class="bg-white p-4 rounded-4 shadow-sm h-100 border position-relative hover-bg-primary">
-                    <div class="mb-3 d-flex justify-content-between">
-                        <span class="badge bg-light text-dark border">{{ $request->country }}</span>
-                        <span class="text-danger fw-bold small">
-                            預算: ${{ number_format($request->budget_total) }}
-                        </span>
-                    </div>
-                    <h6 class="fw-bold mb-2 text-truncate">{{ $request->title }}</h6>
-                    <p class="text-muted small mb-3 text-truncate-2" style="min-height: 40px;">
-                        {{ $request->note ?? '沒有詳細說明...' }}
-                    </p>
-                    
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div class="d-flex align-items-center">
-                             <img src="https://ui-avatars.com/api/?name={{ $request->user->name }}" class="rounded-circle me-2" width="24">
-                             <small class="text-muted" style="font-size: 0.8rem">{{ $request->user->name }}</small>
-                        </div>
-                        <a href="#" class="btn btn-sm btn-outline-success rounded-pill stretched-link">
-                            接單
-                        </a>
-                    </div>
-                </div>
-            </div>
-            @endforeach
-        </div>
+        
         
         <div class="text-center mt-5">
             <a href="{{ route('store') }}" class="btn btn-outline-dark rounded-pill px-5 py-2">瀏覽所有貼文</a>

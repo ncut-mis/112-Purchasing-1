@@ -71,7 +71,7 @@
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label fw-semibold">備註</label>
-                                    <textarea class="form-control" name="note" rows="3" placeholder="可填寫代購需求補充、規格、交付注意事項等">{{ old('note') }}</textarea>
+                                    <textarea class="form-control" name="note" rows="3" placeholder="可填寫請購需求補充、注意事項等">{{ old('note') }}</textarea>
                                 </div>
                             </div>
 

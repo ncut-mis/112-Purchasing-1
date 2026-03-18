@@ -220,7 +220,7 @@
                                                 <div class="rounded-xl border border-gray-100 p-3 flex items-center gap-4">
                                                     <div class="w-20 h-20 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center text-gray-300">
                                                         @if($product->image_path)
-                                                            <img src="{{ asset('storage/'.$product->image_path) }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
+                                                           <img src="{{ route('post-product.image', $product) }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
                                                         @else
                                                             <i class="bi bi-image text-2xl"></i>
                                                         @endif
