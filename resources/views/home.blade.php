@@ -71,13 +71,14 @@
         <div class="row g-4">
              @forelse($agentPosts as $agentPost)
                 <div class="col-md-6 col-lg-4">
-                    <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden">
+                      <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
                         <div class="position-relative" style="height: 210px;">
                             @php
-                                 $firstProduct = $agentPost->products->first();
+                               $firstProduct = $agentPost->products->first();
+                                $firstProductImageUrl = optional($firstProduct)->display_image_url;
                             @endphp
-                             @if(optional($firstProduct)->image_path)
-                                <img src="{{ route('post-product.image', $firstProduct) }}" alt="{{ $agentPost->title }} 商品圖片" class="w-100 h-100 object-fit-cover">
+                            @if($firstProductImageUrl)
+                                <img src="{{ $firstProductImageUrl }}" alt="{{ $agentPost->title }} 商品圖片" class="w-100 h-100 object-fit-cover">
                             @elseif($agentPost->cover_image)
                                 <img src="{{ asset('storage/' . $agentPost->cover_image) }}" alt="{{ $agentPost->title }}" class="w-100 h-100 object-fit-cover">
                             @else
@@ -94,51 +95,79 @@
                         </div>
 
                         <div class="card-body p-4 d-flex flex-column">
-                            <h5 class="card-title fw-bold mb-2">{{ $agentPost->title }}</h5>
-                            <p class="text-muted small mb-3" style="min-height: 48px;">
-                                {{ \Illuminate\Support\Str::limit($agentPost->description ?: '代購人尚未填寫詳細說明。', 80) }}
-                            </p>
-
-                            <div class="small text-muted bg-light rounded-3 p-3 mb-3">
-                                <div class="d-flex align-items-center mb-1">
-                                    <i class="bi bi-calendar-event me-2"></i>
-                                    <span>代購期間：{{ optional($agentPost->start_date)->format('Y/m/d') }} - {{ optional($agentPost->end_date)->format('Y/m/d') }}</span>
-                                </div>
-                                <div class="d-flex align-items-center mb-1">
-                                    <i class="bi bi-truck me-2"></i>
-                                    <span>預計出貨：{{ optional($agentPost->estimated_shipping_date)->format('Y/m/d') ?? '未提供' }}</span>
-                                </div>
-                                <div class="d-flex align-items-center">
-                                    <i class="bi bi-box-seam me-2"></i>
-                                    <span>可代購商品：{{ $agentPost->products->count() }} 項</span>
-                                </div>
+                           <div class="mb-3">
+                                <h5 class="card-title fw-bold mb-0">{{ $agentPost->title }}</h5>
                             </div>
 
-                           <div class="d-flex flex-wrap gap-2 mb-3">
-                                @forelse($agentPost->products->take(3) as $product)
-                                    <span class="badge rounded-pill text-bg-light border">{{ $product->name }}</span>
-                                @empty
-                                    <span class="badge rounded-pill text-bg-light border">尚未建立商品明細</span>
-                                @endforelse
-                            </div>
+                            <button
+                                type="button"
+                                class="btn btn-light border rounded-pill d-inline-flex align-items-center justify-content-center gap-2 fw-semibold text-secondary agent-post-toggle-btn"
+                                data-target="agent-post-details-{{ $agentPost->id }}"
+                                aria-expanded="false"
+                                aria-controls="agent-post-details-{{ $agentPost->id }}"
+                            >
+                                <span>展開詳細資訊</span>
+                                <i class="bi bi-chevron-down transition-icon"></i>
+                            </button>
 
-                            <div class="mt-auto d-flex justify-content-between align-items-center pt-3 border-top">
-                                <div class="d-flex align-items-center">
-                                    <img src="https://ui-avatars.com/api/?name={{ urlencode(optional($agentPost->user)->name ?? 'Agent') }}&background=random" class="rounded-circle me-2" width="32" height="32" alt="Avatar">
-                                    <div>
-                                        <div class="small fw-semibold text-dark">{{ optional($agentPost->user)->name ?? '匿名代購人' }}</div>
-                                        <div class="small text-muted">已建立於 {{ optional($agentPost->created_at)->format('Y/m/d') }}</div>
+                            <div id="agent-post-details-{{ $agentPost->id }}" class="agent-post-details d-none mt-4 pt-4 border-top">
+                                <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                                    <p class="text-muted small mb-0 flex-grow-1">
+                                        {{ \Illuminate\Support\Str::limit($agentPost->description ?: '代購人尚未填寫詳細說明。', 80) }}
+                                    </p>
+                                    <button
+                                        type="button"
+                                        class="favorite-toggle rounded-circle d-inline-flex align-items-center justify-content-center border-0 shadow-sm" style="width: 2.25rem; height: 2.25rem; background: #f3f4f6; color: #9ca3af;"
+                                        aria-label="收藏代購貼文"
+                                        aria-pressed="false"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5" style="width: 1.1rem; height: 1.1rem;">
+                                            <path d="M12.001 4.529c2.349-2.532 6.15-2.533 8.498-.001 2.41 2.6 2.41 6.815 0 9.416l-7.66 8.266a1.14 1.14 0 0 1-1.677 0l-7.66-8.266c-2.41-2.601-2.41-6.817 0-9.416 2.348-2.532 6.149-2.531 8.499.001Z"/>
+                                        </svg>
+                                    </button>
+                                </div>
+
+                               <div class="small text-muted bg-light rounded-3 p-3 mb-3">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <i class="bi bi-calendar-event me-2"></i>
+                                        <span>代購期間：{{ optional($agentPost->start_date)->format('Y/m/d') }} - {{ optional($agentPost->end_date)->format('Y/m/d') }}</span>
+                                    </div>
+                                    <div class="d-flex align-items-center mb-1">
+                                        <i class="bi bi-truck me-2"></i>
+                                        <span>預計出貨：{{ optional($agentPost->estimated_shipping_date)->format('Y/m/d') ?? '未提供' }}</span>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-box-seam me-2"></i>
+                                        <span>可代購商品：{{ $agentPost->products->count() }} 項</span>
                                     </div>
                                 </div>
-                              @auth
-                                       @if((int) auth()->id() === (int) $agentPost->user_id)
-                                           <span class="small text-danger fw-semibold text-end ms-3">你無法對自己所發布的代購貼文進行跟單😅</span>
+
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    @forelse($agentPost->products->take(3) as $product)
+                                        <span class="badge rounded-pill text-bg-light border">{{ $product->name }}</span>
+                                    @empty
+                                        <span class="badge rounded-pill text-bg-light border">尚未建立商品明細</span>
+                                    @endforelse
+                                </div>
+
+                                <div class="mt-auto d-flex justify-content-between align-items-center pt-3 border-top">
+                                    <div class="d-flex align-items-center">
+                                        <img src="https://ui-avatars.com/api/?name={{ urlencode(optional($agentPost->user)->name ?? 'Agent') }}&background=random" class="rounded-circle me-2" width="32" height="32" alt="Avatar">
+                                        <div>
+                                            <div class="small fw-semibold text-dark">{{ optional($agentPost->user)->name ?? '匿名代購人' }}</div>
+                                            <div class="small text-muted">已建立於 {{ optional($agentPost->created_at)->format('Y/m/d') }}</div>
+                                        </div>
+                                    </div>
+                                       @auth
+                                           @if((int) auth()->id() === (int) $agentPost->user_id)
+                                               <span class="small text-danger fw-semibold text-end ms-3">你無法對自己所發布的代購貼文進行跟單😅</span>
+                                           @else
+                                               <a href="#" class="btn btn-sm btn-primary-custom rounded-pill px-3">我要跟單</a>
+                                           @endif
                                        @else
                                            <a href="#" class="btn btn-sm btn-primary-custom rounded-pill px-3">我要跟單</a>
-                                       @endif
-                                   @else
-                                       <a href="#" class="btn btn-sm btn-primary-custom rounded-pill px-3">我要跟單</a>
-                              @endauth
+                                       @endauth
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -177,8 +206,6 @@
             <h2 class="fw-bold">大家都在找什麼？</h2>
             <p class="text-muted">您可以接單這些請求，賺取代購費</p>
         </div>
-
-        
         
         <div class="text-center mt-5">
             <a href="{{ route('store') }}" class="btn btn-outline-dark rounded-pill px-5 py-2">瀏覽所有貼文</a>
@@ -204,3 +231,35 @@
 </section>
 
 @endsection
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.agent-post-toggle-btn').forEach(function (button) {
+            button.addEventListener('click', function () {
+                const targetId = button.dataset.target;
+                const details = document.getElementById(targetId);
+
+                if (!details) {
+                    return;
+                }
+
+                const isHidden = details.classList.contains('d-none');
+                details.classList.toggle('d-none', !isHidden);
+                button.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+
+                const label = button.querySelector('span');
+                const icon = button.querySelector('.transition-icon');
+
+                if (label) {
+                    label.textContent = isHidden ? '收起詳細資訊' : '展開詳細資訊';
+                }
+
+                if (icon) {
+                    icon.classList.toggle('bi-chevron-down', !isHidden);
+                    icon.classList.toggle('bi-chevron-up', isHidden);
+                }
+            });
+        });
+    });
+</script>
+@endpush

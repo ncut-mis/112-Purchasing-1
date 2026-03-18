@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class PostProduct extends Model
 {
@@ -26,6 +27,39 @@ class PostProduct extends Model
     public function post()
     {
         return $this->belongsTo(AgentPost::class, 'agent_post_id');
+    }
+
+    public function resolveStoredImagePath(?string $path = null): ?string
+    {
+        $path = $path ?? $this->image_path;
+
+        if (! $path) {
+            return null;
+        }
+
+        $normalized = ltrim($path, '/');
+        $candidates = array_values(array_unique(array_filter([
+            $normalized,
+            preg_replace('#^storage/#', '', $normalized),
+            preg_replace('#^public/#', '', $normalized),
+            preg_replace('#^(storage|public)/#', '', $normalized),
+            'agent-post-products/' . basename($normalized),
+        ])));
+
+        foreach ($candidates as $candidate) {
+            if (Storage::disk('public')->exists($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    public function getDisplayImageUrlAttribute(): ?string
+    {
+        return $this->resolveStoredImagePath()
+            ? route('post-product.image', $this)
+            : null;
     }
 
     // 關聯：這個商品被加到了哪些購物車 (選配，若之後要統計購物車數據可用)

@@ -32,7 +32,7 @@ class HomeController extends Controller
      */
     public function search(Request $request)
     {
-        $query = AgentPost::withCount('products')->with(['user', 'products'])->latest('created_at');
+       $query = AgentPost::withCount('products')->with(['user', 'products'])->latest('created_at');
 
         if ($request->filled('q') || $request->filled('search')) {
             $search = $request->q ?? $request->search;

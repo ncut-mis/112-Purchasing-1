@@ -166,4 +166,5 @@ class RequestListController extends Controller
 
         return response()->file(Storage::disk('public')->path($requestItem->reference_image));
     }
+
 }

@@ -207,6 +207,6 @@
         });
     </script>
     @endguest
-
+    @stack('scripts')
 </body>
 </html>
