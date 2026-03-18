@@ -12,7 +12,7 @@
             <div class="card-header bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center">
                 <h5 class="fw-bold mb-0" style="color:#2c3e50;">GlobalBuy Chat</h5>
                 <a href="{{ route('dashboard') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
-                    <i class="bi bi-arrow-left me-1"></i> 返回 Dashboard
+                    <i class="bi bi-arrow-left me-1"></i> 返回會員專區
                 </a>
             </div>
 
@@ -104,7 +104,7 @@
                 {
                     id: 1,
                     name: 'Entity',
-                    intro: '代購人 Entity：大正百龍館、烏龍奇娃娃、kitkat奇巧巧克力',
+                    intro: '代購：大正百龍館、烏龍奇娃娃、kitkat奇巧巧克力',
                     unread: 1,
                     isVisible: true,
                     messages: [
@@ -116,7 +116,7 @@
                 {
                     id: 2,
                     name: 'Cryene',
-                    intro: '代購人 Cryene：大正百龍館、烏龍奇娃娃、kitkat奇巧巧克力',
+                    intro: '代購：大正百龍館、烏龍奇娃娃、kitkat奇巧巧克力',
                     unread: 2,
                     isVisible: true,
                     messages: [
