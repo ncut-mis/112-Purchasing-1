@@ -126,4 +126,12 @@ Route::middleware('auth')->group(function () {
 // 收藏/取消收藏請購清單
 Route::middleware(['auth'])->post('/favorite/toggle', [\App\Http\Controllers\FavoriteController::class, 'toggle'])->name('favorite.toggle');
 
+
+// 改用 HomeController 的 search 方法
+Route::get('/agent/posts/search', [App\Http\Controllers\HomeController::class, 'search'])
+    ->name('agent.posts.search');
+
+
+
+
 require __DIR__.'/auth.php';

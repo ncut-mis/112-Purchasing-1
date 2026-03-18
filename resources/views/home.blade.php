@@ -17,15 +17,18 @@
                 <p class="lead text-muted mb-4">
                     連結數千位優質代購人，無論是日本藥妝、歐洲精品還是韓國服飾，我們都能幫您帶回家。
                 </p>
-                <div class="d-flex gap-3">
-                <form action="{{ route('store') }}" method="GET" class="d-flex gap-3">
-                    <input type="text" name="search" class="form-control shadow-sm" 
-                        placeholder="輸入商品關鍵字" value="{{ request('search') }}" 
-                        style="min-width: 250px;">
-                    <button type="submit" class="btn btn-primary-custom btn-lg shadow-sm">
-                        <i class="bi bi-search me-2"></i>
-                    </button>
-                </form> 
+                <div class="flex gap-3">
+                    <form action="{{ route('agent.posts.search') }}" method="GET" class="d-flex gap-3 align-items-end">
+                        <input type="text" 
+                            name="search" 
+                            class="form-control shadow-sm" 
+                            placeholder="輸入代購關鍵字（如 iPhone、日本）" 
+                            value="{{ request('q') }}" 
+                            style="width: 300px;">
+                        <button type="submit" class="btn btn-primary-custom btn-lg shadow-sm h-100">
+                            <i class="bi bi-search me-2"></i>
+                        </button>
+                    </form>
                 </div>
             </div>
             <div class="col-lg-6 text-center d-none d-lg-block">
@@ -39,13 +42,31 @@
 <!-- Agent Posts Section (最新代購連線) -->
 <section class="py-5">
     <div class="container">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h6 class="text-success fw-bold text-uppercase mb-1">Agent Posts</h6>
-                <h2 class="fw-bold">最新代購連線</h2>
+        @if(request()->has('search'))
+            {{-- 搜尋結果標題 --}}
+            <div class="alert alert-info rounded-4 mb-4 border-0 shadow-sm">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-search fs-3 me-3 text-primary"></i>
+                    <div>
+                        <h4 class="mb-1 fw-bold">搜尋「{{ request('search') }}」</h4>
+                        <p class="mb-0">找到 <strong>{{ $agentPosts->total() }}</strong> 筆結果</p>
+                    </div>
+                    <a href="{{ route('agent.posts.search') }}" class="ms-auto btn btn-sm btn-outline-primary rounded-pill px-3">
+                        清除搜尋
+                    </a>
+                </div>
             </div>
-            <a href="{{ route('store') }}" class="text-decoration-none text-muted">查看全部 <i class="bi bi-arrow-right"></i></a>
-        </div>
+        @else
+            {{-- 原本的最新代購標題 --}}
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h6 class="text-success fw-bold text-uppercase mb-1">Agent Posts</h6>
+                    <h2 class="fw-bold">最新代購連線</h2>
+                </div>
+                <a href="{{ route('store') }}" class="text-decoration-none text-muted">查看全部 <i class="bi bi-arrow-right"></i></a>
+            </div>
+        @endif
+
 
         <div class="row g-4">
              @forelse($agentPosts as $agentPost)
@@ -114,12 +135,27 @@
                         </div>
                     </div>
                 </div>
-            @empty
-                <div class="col-12">
-                    <div class="rounded-4 border border-dashed p-5 text-center text-muted bg-light">
-                        目前尚無最新代購連線，歡迎代購人前往會員專區建立貼文。
+           @empty
+                @if(request()->has('search'))
+                    <div class="col-12">
+                        <div class="text-center py-12 bg-light rounded-4 border-dashed border-2 border-warning">
+                            <i class="bi bi-search display-1 text-muted mb-4 opacity-50"></i>
+                            <h3 class="text-muted mb-3">沒有找到符合條件的代購貼文</h3>
+                            <p class="text-muted mb-4">請嘗試：</p>
+                            <ul class="text-start text-muted mb-0">
+                                <li>使用其他關鍵字（如商品名稱、國家）</li>
+                                <li>檢查拼字是否正確</li>
+                                <li><a href="{{ route('agent.posts.search') }}" class="text-primary fw-bold">清除搜尋條件</a></li>
+                            </ul>
+                        </div>
                     </div>
-                </div>
+                @else
+                    <div class="col-12">
+                        <div class="rounded-4 border border-dashed p-5 text-center text-muted bg-light">
+                            目前尚無最新代購連線，歡迎代購人前往會員專區建立貼文。
+                        </div>
+                    </div>
+                @endif
             @endforelse
         </div>
     </div>
