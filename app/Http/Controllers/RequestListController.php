@@ -40,7 +40,7 @@ class RequestListController extends Controller
             'deadline' => $validated['deadline'],
             'budget_total' => null,
             'currency' => 'TWD',
-            'status' => 'pending',
+            'status' => 'editing',
             'detail_address' => $validated['detail_address'] ?? null,
             'note' => $validated['note'] ?? null,
         ]);
@@ -70,6 +70,10 @@ class RequestListController extends Controller
     {
         abort_unless($requestList->user_id === Auth::id(), 403);
 
+        if ($requestList->status !== 'editing') {
+            return redirect()->route('dashboard')->with('status', '僅編輯中的請購清單可修改');
+        }
+
         $validated = $request->validate([
             'country' => ['required', 'string', 'max:255'],
             'deadline' => ['required', 'date'],
@@ -77,7 +81,7 @@ class RequestListController extends Controller
             'detail_address' => ['nullable', 'string', 'max:1000'],
             'note' => ['nullable', 'string', 'max:1000'],
             'items' => ['required', 'array', 'min:1', 'max:3'],
-            'items.*.id' => ['required', 'integer'],
+            'items.*.id' => ['nullable', 'integer'],
             'items.*.item_name' => ['required', 'string', 'max:255'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.item_image' => ['nullable', 'image', 'max:2048'],
@@ -91,6 +95,10 @@ class RequestListController extends Controller
             return back()->withErrors(['items' => '至少需保留一項商品'])->withInput();
         }
 
+        if ($remainingItems->count() > 3) {
+            return back()->withErrors(['items' => '商品最多只能保留 3 項'])->withInput();
+        }
+
         $firstItemName = $remainingItems->first()['item_name'] ?? '未命名商品';
 
         $requestList->update([
@@ -102,20 +110,19 @@ class RequestListController extends Controller
         ]);
 
         foreach ($validated['items'] as $index => $itemData) {
-            $item = $itemsMap->get((int) $itemData['id']);
-            if (! $item) {
-                continue;
-            }
+            $itemId = isset($itemData['id']) ? (int) $itemData['id'] : null;
+            $item = $itemId ? $itemsMap->get($itemId) : null;
 
             if (!empty($itemData['remove'])) {
-                if ($item->reference_image) {
+                if ($item?->reference_image) {
                     Storage::disk('public')->delete($item->reference_image);
                 }
-                $item->delete();
+
+                $item?->delete();
                 continue;
             }
 
-            $imagePath = $item->reference_image;
+            $imagePath = $item?->reference_image;
             if ($request->hasFile("items.$index.item_image")) {
                 if ($imagePath) {
                     Storage::disk('public')->delete($imagePath);
@@ -123,22 +130,52 @@ class RequestListController extends Controller
                 $imagePath = $request->file("items.$index.item_image")->store('request-items', 'public');
             }
 
-            $item->update([
+            if ($item) {
+                $item->update([
+                    'name' => $itemData['item_name'],
+                    'quantity' => $itemData['quantity'],
+                    'reference_image' => $imagePath,
+                ]);
+                continue;
+            }
+
+            RequestItem::create([
+                'request_list_id' => $requestList->id,
                 'name' => $itemData['item_name'],
                 'quantity' => $itemData['quantity'],
                 'reference_image' => $imagePath,
+                'reference_url' => null,
+                'expected_price' => null,
+                'specification' => null,
             ]);
         }
 
         return redirect()->route('dashboard')->with('status', '請購清單更新成功');
     }
 
+    public function submit(RequestList $requestList)
+    {
+        abort_unless($requestList->user_id === Auth::id(), 403);
+
+        if ($requestList->status !== 'editing') {
+            return redirect()->route('dashboard')->with('status', '僅編輯中的請購清單可送出');
+        }
+
+        if ($requestList->items()->count() < 1) {
+            return redirect()->route('dashboard')->with('status', '請至少保留 1 項商品後再送出');
+        }
+
+        $requestList->update(['status' => 'pending']);
+
+        return redirect()->route('dashboard')->with('status', '請購清單已送出，等待代購人接單');
+    }
+
     public function destroy(RequestList $requestList)
     {
         abort_unless($requestList->user_id === Auth::id(), 403);
 
-        if ($requestList->status !== 'pending') {
-            return redirect()->route('dashboard')->with('status', '僅等待接單的請購清單可刪除');
+        if ($requestList->status !== 'editing') {
+            return redirect()->route('dashboard')->with('status', '僅編輯中的請購清單可刪除');
         }
 
         foreach ($requestList->items as $item) {

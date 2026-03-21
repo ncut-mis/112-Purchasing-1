@@ -106,6 +106,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/request-list/create', [RequestListController::class, 'create'])->name('request-list.create');
     Route::post('/request-list', [RequestListController::class, 'store'])->name('request-list.store');
     Route::put('/request-list/{requestList}', [RequestListController::class, 'update'])->name('request-list.update');
+    Route::patch('/request-list/{requestList}/submit', [RequestListController::class, 'submit'])->name('request-list.submit');
     Route::delete('/request-list/{requestList}', [RequestListController::class, 'destroy'])->name('request-list.destroy');
     Route::get('/request-item-image/{requestItem}', [RequestListController::class, 'image'])->name('request-item.image');
 

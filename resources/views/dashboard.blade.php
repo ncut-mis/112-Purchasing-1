@@ -210,6 +210,7 @@
 
                                             $statusLabel = [
 
+                                                'editing' => '編輯中',
                                                 'pending' => '等待接單',
 
                                                 'offered' => '代購人已關注',
@@ -224,6 +225,7 @@
 
                                             $statusClass = [
 
+                                                'editing' => 'bg-slate-100 text-slate-700',
                                                 'pending' => 'bg-yellow-100 text-yellow-700',
 
                                                 'offered' => 'bg-blue-100 text-blue-700',
@@ -266,16 +268,22 @@
                                               <div class="inline-flex items-center gap-3">
                                                     @if($requestList->status === 'matched')
                                                         <button class="text-gray-500 hover:underline">檢視</button>
-                                                    @else
+                                                    @elseif($requestList->status === 'editing')
                                                         <button type="button" class="text-blue-500 hover:underline" onclick="openEditModal({{ $requestList->id }})">編輯</button>
-                                                    @endif
-
-                                                    @if($requestList->status === 'pending')
+                        
                                                         <form method="POST" action="{{ route('request-list.destroy', $requestList) }}" onsubmit="return confirm('確定要刪除此請購清單嗎？');">
                                                             @csrf
                                                             @method('DELETE')
                                                             <button type="submit" class="text-red-500 hover:underline">刪除</button>
                                                         </form>
+
+                                                        <form method="POST" action="{{ route('request-list.submit', $requestList) }}" onsubmit="return confirm('送出後清單將無法修改與刪除,確定送出嗎？');">
+                                                            @csrf
+                                                            @method('PATCH')
+                                                            <button type="submit" class="text-green-600 hover:underline">送出</button>
+                                                        </form>
+                                                    @elseif($requestList->status === 'pending')
+                                                        <span class="text-xs text-gray-400">已送出，等待接單中</span>
                                                     @endif
                                                 </div>
                                             </td>
@@ -303,7 +311,7 @@
 
 
                         @foreach($requestLists ?? [] as $requestList)
-                            @if($requestList->status !== 'matched')
+                            @if($requestList->status === 'editing')
                                 <div id="edit-modal-{{ $requestList->id }}" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
                                     <div class="bg-white w-full max-w-3xl rounded-xl shadow-lg max-h-[90vh] overflow-y-auto">
                                         <div class="flex justify-between items-center border-b px-6 py-4">
@@ -349,40 +357,67 @@
                                                 <textarea name="note" class="w-full border-gray-300 rounded-lg" rows="2" placeholder="可填寫代購需求補充、規格、交付注意事項等">{{ $requestList->note }}</textarea>
                                             </div>
 
-                                            <div class="space-y-4 pt-2">
-                                                <h5 class="font-semibold text-gray-800">商品資料</h5>
-                                                @foreach($requestList->items->take(3) as $index => $item)
-                                                    <div class="border rounded-lg p-3 space-y-2 edit-item-card">
-                                                        <input type="hidden" name="items[{{ $index }}][id]" value="{{ $item->id }}">
-                                                        <input type="hidden" name="items[{{ $index }}][quantity]" value="{{ $item->quantity }}">
-                                                        <input type="hidden" name="items[{{ $index }}][remove]" value="0" class="remove-flag">
+                                            <div class="space-y-4 pt-2 edit-items-wrapper" data-request-list-id="{{ $requestList->id }}" data-max-items="3" data-next-index="{{ $requestList->items->count() }}">
+                                                <div class="flex items-center justify-between gap-3">
+                                                    <h5 class="font-semibold text-gray-800">商品資料</h5>
+                                                    <button type="button" class="px-3 py-2 text-sm rounded-lg border border-green-200 text-green-600 hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed edit-add-item-btn" onclick="addEditItem({{ $requestList->id }})">新增商品</button>
+                                                </div>
+                                                <p class="text-xs text-gray-500 edit-item-limit-hint">最多可保留 3 項商品。</p>
+
+                                                <div class="space-y-3 edit-item-list">
+                                                    @foreach($requestList->items->take(3) as $index => $item)
+                                                        <div class="border rounded-lg p-3 space-y-2 edit-item-card" data-existing="1">
+                                                            <input type="hidden" name="items[{{ $index }}][id]" value="{{ $item->id }}">
+                                                            <input type="hidden" name="items[{{ $index }}][remove]" value="0" class="remove-flag">
+                                                            <div class="flex items-center justify-between">
+                                                                <label class="block text-sm font-medium text-gray-700">商品名稱</label>
+                                                                <button type="button" class="text-xs text-red-500 hover:underline" onclick="removeEditItem(this)">刪除此商品</button>
+                                                            </div>
+
+                                                            <div>
+                                                                <input type="text" name="items[{{ $index }}][item_name]" value="{{ $item->name }}" class="w-full border-gray-300 rounded-lg" required>
+                                                            </div>
+
+                                                            <div>
+                                                                <label class="block text-sm font-medium text-gray-700 mb-1">數量</label>
+                                                                <input type="number" name="items[{{ $index }}][quantity]" value="{{ $item->quantity }}" min="1" step="1" class="w-full border-gray-300 rounded-lg" required>
+                                                            </div>
+
+                                                            <div>
+                                                                <label class="block text-sm font-medium text-gray-700 mb-1">商品圖片</label>
+                                                                @if($item->reference_image)
+                                                                    <img src="{{ url('/request-item-image/' . $item->id) }}" alt="商品圖片" class="w-24 h-24 object-cover rounded border mb-2">
+                                                                    <p class="text-xs text-gray-500 mb-2">未重新上傳會保留原圖片</p>
+                                                                @endif
+                                                                <input type="file" name="items[{{ $index }}][item_image]" class="w-full border-gray-300 rounded-lg" accept="image/*">
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+
+                                                <template id="edit-item-template-{{ $requestList->id }}">
+                                                    <div class="border rounded-lg p-3 space-y-2 edit-item-card" data-existing="0">
+                                                        <input type="hidden" name="items[__INDEX__][remove]" value="0" class="remove-flag">
                                                         <div class="flex items-center justify-between">
                                                             <label class="block text-sm font-medium text-gray-700">商品名稱</label>
                                                             <button type="button" class="text-xs text-red-500 hover:underline" onclick="removeEditItem(this)">刪除此商品</button>
                                                         </div>
 
                                                         <div>
-                                                            <input type="text" name="items[{{ $index }}][item_name]" value="{{ $item->name }}" class="w-full border-gray-300 rounded-lg">
+                                                            <input type="text" name="items[__INDEX__][item_name]" class="w-full border-gray-300 rounded-lg" placeholder="請輸入商品名稱" required>
                                                         </div>
 
                                                         <div>
                                                             <label class="block text-sm font-medium text-gray-700 mb-1">數量</label>
-                                                            <input type="number" name="items[{{ $index }}][quantity]" value="{{ $item->quantity }}" min="1" step="1" class="w-full border-gray-300 rounded-lg">
+                                                            <input type="number" name="items[__INDEX__][quantity]" value="1" min="1" step="1" class="w-full border-gray-300 rounded-lg" required>
                                                         </div>
 
                                                         <div>
                                                             <label class="block text-sm font-medium text-gray-700 mb-1">商品圖片</label>
-                                                            @if($item->reference_image)
-                                                                <img src="{{ url('/request-item-image/' . $item->id) }}" alt="商品圖片" class="w-24 h-24 object-cover rounded border mb-2">
-                                                                <p class="text-xs text-gray-500 mb-2">未重新上傳會保留原圖片</p>
-                                                            @endif
-                                                            <input type="file" name="items[{{ $index }}][item_image]" class="w-full border-gray-300 rounded-lg" accept="image/*">
-
+                                                            <input type="file" name="items[__INDEX__][item_image]" class="w-full border-gray-300 rounded-lg" accept="image/*">
                                                         </div>
-
                                                     </div>
-
-                                                @endforeach
+                                                </template>
 
                                             </div>
 
@@ -444,29 +479,94 @@
 
 
 
+        function getEditItemsWrapperByListId(id) {
+            return document.querySelector(`.edit-items-wrapper[data-request-list-id="${id}"]`);
+        }
+
+        function getVisibleEditCards(wrapper) {
+            return wrapper ? wrapper.querySelectorAll('.edit-item-card:not(.hidden)') : [];
+        }
+
+        function updateEditItemUi(wrapper) {
+            if (!wrapper) return;
+
+            const maxItems = parseInt(wrapper.dataset.maxItems || '3', 10);
+            const visibleCards = Array.from(getVisibleEditCards(wrapper));
+            const addBtn = wrapper.querySelector('.edit-add-item-btn');
+            const hint = wrapper.querySelector('.edit-item-limit-hint');
+
+            visibleCards.forEach((card) => {
+                const removeBtn = card.querySelector('button[onclick="removeEditItem(this)"]');
+                if (removeBtn) {
+                    removeBtn.disabled = visibleCards.length <= 1;
+                    removeBtn.classList.toggle('opacity-50', visibleCards.length <= 1);
+                    removeBtn.classList.toggle('cursor-not-allowed', visibleCards.length <= 1);
+                }
+            });
+
+            const remaining = maxItems - visibleCards.length;
+            if (addBtn) {
+                addBtn.disabled = remaining <= 0;
+            }
+
+            if (hint) {
+                hint.textContent = remaining > 0
+                    ? `還可再新增 ${remaining} 項商品。`
+                    : '已達商品上限（最多 3 項）。';
+            }
+        }
+
+        function addEditItem(id) {
+            const wrapper = getEditItemsWrapperByListId(id);
+            if (!wrapper) return;
+
+            const maxItems = parseInt(wrapper.dataset.maxItems || '3', 10);
+            const visibleCards = getVisibleEditCards(wrapper);
+            if (visibleCards.length >= maxItems) {
+                return;
+            }
+
+            const template = document.getElementById(`edit-item-template-${id}`);
+            const list = wrapper.querySelector('.edit-item-list');
+            if (!template || !list) return;
+
+            const nextIndex = parseInt(wrapper.dataset.nextIndex || String(visibleCards.length), 10);
+            const html = template.innerHTML.replaceAll('__INDEX__', String(nextIndex));
+            list.insertAdjacentHTML('beforeend', html);
+            wrapper.dataset.nextIndex = String(nextIndex + 1);
+
+            updateEditItemUi(wrapper);
+        }
+
         function removeEditItem(button) {
             const card = button.closest('.edit-item-card');
             if (!card) return;
 
-            const container = card.parentElement;
+            const wrapper = button.closest('.edit-items-wrapper');
+            if (!wrapper) return;
 
-            const visibleCards = container.querySelectorAll('.edit-item-card:not(.hidden)');
-
+            const visibleCards = getVisibleEditCards(wrapper);
             if (visibleCards.length <= 1) {
                 alert('至少需保留一項商品');
                 return;
             }
 
+            const isExisting = card.dataset.existing === '1';
             const flag = card.querySelector('.remove-flag');
 
-            if (flag) {
+            if (isExisting && flag) {
                 flag.value = '1';
+                card.classList.add('hidden');
+            } else {
+                card.remove();
             }
 
-            card.classList.add('hidden');
-
+            updateEditItemUi(wrapper);
         }
 
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.edit-items-wrapper').forEach(updateEditItemUi);
+        });
 
         function closeEditModal(id) {
             const modal = document.getElementById(`edit-modal-${id}`);

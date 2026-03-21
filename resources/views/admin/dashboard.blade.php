@@ -148,6 +148,7 @@
                                             'gb' => '英國',
                                         ][$request->country] ?? $request->country;
                                         $statusLabel = [
+                                            'editing' => '編輯中',
                                             'pending' => '等待接單',
                                             'offered' => '代購人已關注',
                                             'matched' => '已確認代購人',
@@ -175,7 +176,7 @@
                                         <td>{{ $statusLabel }}</td>
                                         <td class="text-end">
                                             <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#requestViewModal-{{ $request->id }}">檢視</button>
-                                            <form method="POST" action="{{ route('admin.request-lists.delete', $request) }}" class="d-inline" onsubmit="return confirm('確定要刪除此請購清單嗎？');">
+                                            <form method="POST" action="{{ route('admin.request-lists.delete', $request) }}" class="d-inline" onsubmit="return confirm('定要刪除此請購清單嗎？');">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-sm btn-outline-danger">刪除</button>
@@ -208,6 +209,7 @@
                                 ][$request->country] ?? $request->country }}</p>
                                 <p class="mb-1"><strong>截止日：</strong>{{ optional($request->deadline)->format('Y-m-d') }}</p>
                                 <p class="mb-2"><strong>狀態：</strong>{{ [
+                                    'editing' => '編輯中',
                                     'pending' => '等待接單',
                                     'offered' => '代購人已關注',
                                     'matched' => '已確認代購人',
