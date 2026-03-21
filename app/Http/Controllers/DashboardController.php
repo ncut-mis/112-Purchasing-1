@@ -11,7 +11,7 @@ class DashboardController extends Controller
     public function index(Request $request)
     {
         // 只顯示當前登入用戶的清單
-        $query = RequestList::where('user_id', Auth::id());
+         $query = RequestList::with(['items', 'offers.agent'])->where('user_id', Auth::id());
         
         // 搜尋功能
         if ($request_search = $request->get('request_search')) {

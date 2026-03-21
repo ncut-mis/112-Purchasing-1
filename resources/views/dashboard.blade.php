@@ -265,7 +265,12 @@
                                                 <span class="px-2 py-1 rounded-full text-[10px] {{ $statusClass }}">{{ $statusLabel }}</span>
                                             </td>
                                             <td class="py-4 text-right">
-                                              <div class="inline-flex items-center gap-3">
+                                                @php
+                                                    $acceptedOffer = $requestList->offers->firstWhere('status', 'accepted');
+                                                    $activeOffer = $acceptedOffer ?? $requestList->offers->first();
+                                                @endphp
+
+                                                <div class="inline-flex items-center gap-3">
                                                     @if($requestList->status === 'matched')
                                                         <button class="text-gray-500 hover:underline">檢視</button>
                                                     @elseif($requestList->status === 'editing')
@@ -283,7 +288,8 @@
                                                             <button type="submit" class="text-green-600 hover:underline">送出</button>
                                                         </form>
                                                     @elseif($requestList->status === 'pending')
-                                                        <span class="text-xs text-gray-400">已送出，等待接單中</span>
+                                                        <button type="button" class="inline-flex items-center rounded-lg bg-blue-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-600" onclick="openRequestDetailModal({{ $requestList->id }})">檢視</button>
+                                                        <button type="button" class="inline-flex items-center rounded-lg bg-green-400 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-green-500">聊天</button>
                                                     @endif
                                                 </div>
                                             </td>
@@ -311,6 +317,130 @@
 
 
                         @foreach($requestLists ?? [] as $requestList)
+                            @if($requestList->status === 'pending')
+                                @php
+                                    $modalCountryLabel = [
+                                        'jp' => '日本',
+                                        'kr' => '韓國',
+                                        'us' => '美國',
+                                        'gb' => '英國',
+                                    ][$requestList->country] ?? $requestList->country;
+                                    $acceptedOffer = $requestList->offers->firstWhere('status', 'accepted');
+                                    $activeOffer = $acceptedOffer ?? $requestList->offers->first();
+                                    $activeAgent = optional($activeOffer)->agent;
+                                    $agentAvatar = $activeAgent && $activeAgent->avatar
+                                        ? asset('storage/' . $activeAgent->avatar)
+                                        : ($activeAgent
+                                            ? 'https://ui-avatars.com/api/?name=' . urlencode($activeAgent->name) . '&background=2563eb&color=fff&size=128'
+                                            : null);
+                                @endphp
+
+                                <div id="request-detail-modal-{{ $requestList->id }}" class="request-detail-modal hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4 py-4" onclick="handleRequestDetailBackdrop(event, {{ $requestList->id }})">
+                                    <div class="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+                                        <div class="flex items-start justify-between gap-4 border-b border-slate-200 bg-gradient-to-r from-blue-600 to-cyan-500 px-5 py-4 text-white">
+                                            <div>
+                                                <p class="text-sm font-medium text-blue-100">等待接單中的請購清單</p>
+                                                <h4 class="mt-1 text-2xl font-bold">{{ $requestList->title }}</h4>
+                                                <p class="mt-2 text-sm text-blue-50">可查看商品明細與目前接單狀況。</p>
+                                            </div>
+                                            <button type="button" class="rounded-full bg-white/15 p-2 text-white transition hover:bg-white/25" onclick="closeRequestDetailModal({{ $requestList->id }})" aria-label="關閉檢視視窗">✕</button>
+                                        </div>
+
+                                        <div class="max-h-[72vh] overflow-y-auto px-5 py-5">
+                                            <div class="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(220px,0.9fr)]">
+                                                <div class="space-y-4">
+                                                    <section class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                                        <h5 class="text-base font-bold text-slate-800">商品明細</h5>
+                                                        <div class="mt-3 space-y-3">
+                                                            @forelse($requestList->items as $item)
+                                                                <div class="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center">
+                                                                    <div class="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl bg-slate-100">
+                                                                        @if($item->reference_image)
+                                                                            <img src="{{ url('/request-item-image/' . $item->id) }}" alt="{{ $item->name }}" class="h-full w-full object-cover">
+                                                                        @else
+                                                                            <span class="text-xs text-slate-400">無商品圖片</span>
+                                                                        @endif
+                                                                    </div>
+                                                                    <div class="min-w-0 flex-1">
+                                                                        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                                                            <div>
+                                                                                <p class="text-base font-semibold text-slate-800">{{ $item->name }}</p>
+                                                                                <p class="mt-1 text-sm text-slate-500">數量：{{ $item->quantity }}</p>
+                                                                            </div>
+                                                                            @if($item->reference_url)
+                                                                                <a href="{{ $item->reference_url }}" target="_blank" rel="noopener noreferrer" class="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline">參考連結</a>
+                                                                            @endif
+                                                                        </div>
+                                                                        @if($item->specification)
+                                                                            <p class="mt-2 rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-600">規格／補充：{{ $item->specification }}</p>
+                                                                        @endif
+                                                                    </div>
+                                                                </div>
+                                                            @empty
+                                                                <div class="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-400">目前沒有商品資料。</div>
+                                                            @endforelse
+                                                        </div>
+                                                    </section>
+
+                                                    <section class="grid gap-3 md:grid-cols-2">
+                                                        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                                            <h5 class="text-base font-bold text-slate-800">商家與購買資訊</h5>
+                                                            <dl class="mt-3 space-y-3 text-sm">
+                                                                <div class="flex items-start justify-between gap-4">
+                                                                    <dt class="text-slate-500">國家</dt>
+                                                                    <dd class="text-right font-medium text-slate-800">{{ $modalCountryLabel }}</dd>
+                                                                </div>
+                                                                <div class="flex items-start justify-between gap-4">
+                                                                    <dt class="text-slate-500">店家</dt>
+                                                                    <dd class="text-right font-medium text-slate-800">{{ $requestList->title ?: '未提供' }}</dd>
+                                                                </div>
+                                                                <div>
+                                                                    <dt class="text-slate-500">店家詳細地址</dt>
+                                                                    <dd class="mt-1 rounded-xl bg-slate-50 px-3 py-3 leading-6 text-slate-700">{{ $requestList->detail_address ?: '未提供詳細地址' }}</dd>
+                                                                </div>
+                                                                <div class="flex items-start justify-between gap-4">
+                                                                    <dt class="text-slate-500">商品截止日</dt>
+                                                                    <dd class="text-right font-medium text-slate-800">{{ optional($requestList->deadline)->format('Y-m-d') ?? '未提供' }}</dd>
+                                                                </div>
+                                                            </dl>
+                                                        </div>
+
+                                                        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                                            <h5 class="text-base font-bold text-slate-800">備註</h5>
+                                                            <dl class="mt-3 space-y-3 text-sm">
+                                                                <div>
+                                                                    <dt class="text-slate-500">內容</dt>
+                                                                    <dd class="mt-1 rounded-xl bg-slate-50 px-3 py-3 leading-6 text-slate-700">{{ $requestList->note ?: '目前沒有備註。' }}</dd>
+                                                                </div>
+                                                            </dl>
+                                                        </div>
+                                                    </section>
+                                                </div>
+
+                                                <aside class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                                    <h5 class="text-base font-bold text-slate-800">目前接單狀況</h5>
+                                                    @if($activeAgent)
+                                                        <div class="mt-4 rounded-2xl bg-white p-4 text-center shadow-sm">
+                                                            <div class="mx-auto flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-4 border-blue-100 bg-slate-100">
+                                                                <img src="{{ $agentAvatar }}" alt="{{ $activeAgent->name }}" class="h-full w-full object-cover">
+                                                            </div>
+                                                            <p class="mt-3 text-base font-semibold text-slate-800">{{ $activeAgent->name }}</p>
+                                                            <p class="mt-1 text-sm text-slate-500">{{ $acceptedOffer ? '已確認接單的代購人' : '已有代購人提出接單意願' }}</p>
+                                                        </div>
+                                                    @else
+                                                        <div class="mt-4 rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center">
+                                                            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-2xl">🕒</div>
+                                                            <p class="mt-4 text-sm font-medium text-slate-700">目前尚未有代購人接單</p>
+                                                            <p class="mt-2 text-xs leading-5 text-slate-400">當有代購人接單或提出報價時，這裡會顯示對方的頭像與名稱。</p>
+                                                        </div>
+                                                    @endif
+                                                </aside>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+
                             @if($requestList->status === 'editing')
                                 <div id="edit-modal-{{ $requestList->id }}" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
                                     <div class="bg-white w-full max-w-3xl rounded-xl shadow-lg max-h-[90vh] overflow-y-auto">
@@ -465,6 +595,43 @@
     </div>
 
     <script>
+
+        function openRequestDetailModal(id) {
+            const modal = document.getElementById(`request-detail-modal-${id}`);
+
+            if (modal) {
+                modal.classList.remove('hidden');
+                document.body.classList.add('overflow-hidden');
+            }
+        }
+
+        function closeRequestDetailModal(id) {
+            const modal = document.getElementById(`request-detail-modal-${id}`);
+
+            if (modal) {
+                modal.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
+            }
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key !== 'Escape') {
+                return;
+            }
+
+            document.querySelectorAll('.request-detail-modal').forEach((modal) => {
+                if (!modal.classList.contains('hidden')) {
+                    modal.classList.add('hidden');
+                    document.body.classList.remove('overflow-hidden');
+                }
+            });
+        });
+
+        function handleRequestDetailBackdrop(event, id) {
+            if (event.target.id === `request-detail-modal-${id}`) {
+                closeRequestDetailModal(id);
+            }
+        }
 
         function openEditModal(id) {
             const modal = document.getElementById(`edit-modal-${id}`);
