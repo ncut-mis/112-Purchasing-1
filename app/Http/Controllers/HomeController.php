@@ -24,7 +24,15 @@ class HomeController extends Controller
             ->take(8)
             ->get();
 
-        return view('home', compact('posts', 'requests'));
+        $favoritedAgentPostIds = auth()->check()
+            ? auth()->user()->favorites()
+                ->where('favoriteable_type', AgentPost::class)
+                ->pluck('favoriteable_id')
+                ->map(fn ($id) => (int) $id)
+                ->all()
+            : [];
+
+        return view('home', compact('posts', 'requests', 'favoritedAgentPostIds'));
     }
 
     /**
@@ -52,9 +60,18 @@ class HomeController extends Controller
             ->take(8)
             ->get();
 
+        $favoritedAgentPostIds = auth()->check()
+            ? auth()->user()->favorites()
+                ->where('favoriteable_type', AgentPost::class)
+                ->pluck('favoriteable_id')
+                ->map(fn ($id) => (int) $id)
+                ->all()
+            : [];
+
         return view('home', [
             'agentPosts' => $posts,
-            'requests' => $requests
+            'requests' => $requests,
+            'favoritedAgentPostIds' => $favoritedAgentPostIds,
         ]);
     }
 

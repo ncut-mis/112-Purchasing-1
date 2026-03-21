@@ -95,8 +95,23 @@
                         </div>
 
                         <div class="card-body p-4 d-flex flex-column">
-                           <div class="mb-3">
-                                <h5 class="card-title fw-bold mb-0">{{ $agentPost->title }}</h5>
+                            <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                                <h5 class="card-title fw-bold mb-0 flex-grow-1">{{ $agentPost->title }}</h5>
+                                @php
+                                    $isFavorited = in_array((int) $agentPost->id, $favoritedAgentPostIds ?? [], true);
+                                @endphp
+                                <button
+                                    type="button"
+                                    class="favorite-toggle rounded-circle d-inline-flex align-items-center justify-content-center border-0 shadow-sm flex-shrink-0"
+                                    style="width: 2.25rem; height: 2.25rem; background: {{ $isFavorited ? '#fce7f3' : '#f3f4f6' }}; color: {{ $isFavorited ? '#ec4899' : '#9ca3af' }}; transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;"
+                                    aria-label="收藏代購貼文"
+                                    aria-pressed="{{ $isFavorited ? 'true' : 'false' }}"
+                                    data-agent-post-id="{{ $agentPost->id }}"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5" style="width: 1.1rem; height: 1.1rem;">
+                                        <path d="M12.001 4.529c2.349-2.532 6.15-2.533 8.498-.001 2.41 2.6 2.41 6.815 0 9.416l-7.66 8.266a1.14 1.14 0 0 1-1.677 0l-7.66-8.266c-2.41-2.601-2.41-6.817 0-9.416 2.348-2.532 6.149-2.531 8.499.001Z"/>
+                                    </svg>
+                                </button>
                             </div>
 
                             <button
@@ -111,21 +126,9 @@
                             </button>
 
                             <div id="agent-post-details-{{ $agentPost->id }}" class="agent-post-details d-none mt-4 pt-4 border-top">
-                                <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
-                                    <p class="text-muted small mb-0 flex-grow-1">
-                                        {{ \Illuminate\Support\Str::limit($agentPost->description ?: '代購人尚未填寫詳細說明。', 80) }}
-                                    </p>
-                                    <button
-                                        type="button"
-                                        class="favorite-toggle rounded-circle d-inline-flex align-items-center justify-content-center border-0 shadow-sm" style="width: 2.25rem; height: 2.25rem; background: #f3f4f6; color: #9ca3af;"
-                                        aria-label="收藏代購貼文"
-                                        aria-pressed="false"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5" style="width: 1.1rem; height: 1.1rem;">
-                                            <path d="M12.001 4.529c2.349-2.532 6.15-2.533 8.498-.001 2.41 2.6 2.41 6.815 0 9.416l-7.66 8.266a1.14 1.14 0 0 1-1.677 0l-7.66-8.266c-2.41-2.601-2.41-6.817 0-9.416 2.348-2.532 6.149-2.531 8.499.001Z"/>
-                                        </svg>
-                                    </button>
-                                </div>
+                                <p class="text-muted small mb-3">
+                                    {{ \Illuminate\Support\Str::limit($agentPost->description ?: '代購人尚未填寫詳細說明。', 80) }}
+                                </p>
 
                                <div class="small text-muted bg-light rounded-3 p-3 mb-3">
                                     <div class="d-flex align-items-center mb-1">
@@ -234,6 +237,11 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        const csrfToken = '{{ csrf_token() }}';
+        const favoriteToggleUrl = '{{ route('favorite.toggle') }}';
+        const loginUrl = '{{ route('login') }}';
+        const isAuthenticated = @json(auth()->check());
+
         document.querySelectorAll('.agent-post-toggle-btn').forEach(function (button) {
             button.addEventListener('click', function () {
                 const targetId = button.dataset.target;
@@ -257,6 +265,54 @@
                 if (icon) {
                     icon.classList.toggle('bi-chevron-down', !isHidden);
                     icon.classList.toggle('bi-chevron-up', isHidden);
+                }
+            });
+        });
+
+        document.querySelectorAll('.favorite-toggle').forEach(function (button) {
+            button.addEventListener('click', async function () {
+                if (!isAuthenticated) {
+                    window.location.href = loginUrl;
+                    return;
+                }
+
+                const agentPostId = button.dataset.agentPostId;
+                if (!agentPostId || button.disabled) {
+                    return;
+                }
+
+                button.disabled = true;
+
+                try {
+                    const response = await fetch(favoriteToggleUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                        },
+                        body: JSON.stringify({
+                            type: 'agent_post',
+                            id: agentPostId,
+                        }),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('favorite toggle failed');
+                    }
+
+                    const data = await response.json();
+                    const nextPressedState = data.status === 'added' ? true : false;
+
+                    button.setAttribute('aria-pressed', nextPressedState ? 'true' : 'false');
+                    button.style.background = nextPressedState ? '#fce7f3' : '#f3f4f6';
+                    button.style.color = nextPressedState ? '#ec4899' : '#9ca3af';
+                    button.style.transform = nextPressedState ? 'scale(1.05)' : 'scale(1)';
+                } catch (error) {
+                    console.error(error);
+                    alert('收藏狀態更新失敗，請稍後再試。');
+                } finally {
+                    button.disabled = false;
                 }
             });
         });

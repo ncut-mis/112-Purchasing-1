@@ -301,7 +301,7 @@
                             'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content'),
                             'Accept': 'application/json',
                         },
-                        body: JSON.stringify({ request_list_id: requestListId })
+                        body: JSON.stringify({ type: 'request_list', id: requestListId })
                     })
                     .then(response => response.json())
                     .then(data => {

@@ -42,11 +42,19 @@ Route::get('/', function () {
         ->take(6)
         ->get();
 
+    $favoritedAgentPostIds = auth()->check()
+        ? auth()->user()->favorites()
+            ->where('favoriteable_type', AgentPost::class)
+            ->pluck('favoriteable_id')
+            ->map(fn ($id) => (int) $id)
+            ->all()
+        : [];
+
     $requests = class_exists(PurchasingRequest::class)
         ? PurchasingRequest::all()
         : collect([]);
 
-    return view('home', compact('agentPosts', 'requests'));
+    return view('home', compact('agentPosts', 'requests', 'favoritedAgentPostIds'));
 })->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {

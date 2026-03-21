@@ -27,6 +27,17 @@ class User extends Authenticatable
             ->where('favoriteable_id', $requestListId)
             ->exists();
     }
+
+    /**
+     * 判斷是否已收藏指定代購貼文
+     */
+    public function hasFavoritedAgentPost($agentPostId)
+    {
+        return $this->favorites()
+            ->where('favoriteable_type', 'App\\Models\\AgentPost')
+            ->where('favoriteable_id', $agentPostId)
+            ->exists();
+    }
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 

@@ -13,19 +13,19 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                 <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-green-500">
                     <div class="text-sm text-gray-500 mb-1">進行中的請購</div>
-                    <div class="text-2xl font-bold text-gray-800">3</div>
+                    <div class="text-2xl font-bold text-gray-800">{{ $stats['ongoing_requests'] }}</div>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500">
                     <div class="text-sm text-gray-500 mb-1">未讀訊息</div>
-                    <div class="text-2xl font-bold text-gray-800">5</div>
+                    <div class="text-2xl font-bold text-gray-800">{{ $stats['unread_messages'] }}</div>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-yellow-500">
                     <div class="text-sm text-gray-500 mb-1">收藏貼文</div>
-                    <div class="text-2xl font-bold text-gray-800">12</div>
+                    <div class="text-2xl font-bold text-gray-800">{{ $stats['favorite_posts'] }}</div>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-purple-500">
                     <div class="text-sm text-gray-500 mb-1">我的評價</div>
-                    <div class="text-2xl font-bold text-gray-800">4.9 / 5</div>
+                    <div class="text-2xl font-bold text-gray-800">{{ $stats['reviews_score'] }}</div>
                 </div>
             </div>
 
@@ -44,12 +44,12 @@
                         @endphp
 
                         <nav class="p-2 space-y-1">
-                            <a href="#" class="flex items-center space-x-3 p-3 rounded-lg bg-green-50 text-green-700 font-medium">
+                            <a href="{{ route('dashboard', ['section' => 'request-lists']) }}" class="flex items-center space-x-3 p-3 rounded-lg {{ $currentSection === 'request-lists' ? 'bg-green-50 text-green-700 font-medium' : 'text-gray-600 hover:bg-gray-50 transition' }}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
                                 <span>請購清單</span>
                             </a>
 
-                            <a href="#" class="flex items-center space-x-3 p-3 rounded-lg text-gray-600 hover:bg-gray-50 transition">
+                            <a href="{{ route('dashboard', ['section' => 'favorite-posts']) }}" class="flex items-center space-x-3 p-3 rounded-lg {{ $currentSection === 'favorite-posts' ? 'bg-pink-50 text-pink-600 font-medium' : 'text-gray-600 hover:bg-gray-50 transition' }}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
                                 <span>收藏貼文</span>
                             </a>
@@ -126,8 +126,106 @@
                 <!-- 右側主內容區 -->
                 <div class="flex-1 space-y-6">
 
+                    @if($currentSection === 'favorite-posts')
+                        <div class="bg-white rounded-2xl shadow-sm p-6">
+                            <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                                <div>
+                                    <h3 class="text-lg font-bold text-gray-800">目前收藏貼文</h3>
+                                    <p class="mt-1 text-sm text-gray-500">這裡會顯示你在「最新代購連線」中收藏的代購人貼文。</p>
+                                </div>
+
+                                <div class="flex items-center gap-4">                        
+
+                                <!-- 搜尋框 -->
+
+                                <form method="GET" action="{{ route('dashboard') }}" style="display: flex; gap: 8px; min-width: 280px;">
+                                    <input type="hidden" name="section" value="favorite-posts">
+                                    <input
+                                        type="search"
+                                        name="favorite_search"
+                                        placeholder="搜尋貼文標題、代購人..."
+                                        value="{{ request('favorite_search') }}"
+                                        style="padding: 8px 12px; border: 2px solid #0e0e0f; border-radius: 8px; font-size: 14px; min-width: 220px; flex: 1;"
+                                    >
+                                    <button type="submit" style="padding: 8px 16px; background: #ec4899; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                                        🔍
+                                    </button>
+                                </form>
+                            </div>
+                            </div>
+
+                            @if(request('favorite_search'))
+                                <div class="mb-4 rounded-lg border border-pink-200 bg-pink-50 px-4 py-3 text-sm text-pink-700">
+                                    搜尋「{{ request('favorite_search') }}」找到 {{ $favoriteAgentPosts->total() }} 筆收藏貼文。
+                                    <a href="{{ route('dashboard', ['section' => 'favorite-posts']) }}" class="ml-2 font-semibold hover:underline">清除搜尋</a>
+                                </div>
+                            @endif
+
+                            <div class="space-y-4" id="favorite-post-list">
+                                @forelse($favoriteAgentPosts as $favoriteAgentPost)
+                                    <article class="favorite-post-item flex items-start gap-4 rounded-2xl border border-pink-100 bg-pink-50/60 p-4 shadow-sm" data-agent-post-id="{{ $favoriteAgentPost->id }}">
+                                        <div class="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-white shadow-sm">
+                                            @php
+                                                $favoriteFirstProduct = $favoriteAgentPost->products->first();
+                                                $favoriteImage = optional($favoriteFirstProduct)->display_image_url;
+                                            @endphp
+                                            @if($favoriteImage)
+                                                <img src="{{ $favoriteImage }}" alt="{{ $favoriteAgentPost->title }}" class="h-full w-full object-cover">
+                                            @elseif($favoriteAgentPost->cover_image)
+                                                <img src="{{ asset('storage/' . $favoriteAgentPost->cover_image) }}" alt="{{ $favoriteAgentPost->title }}" class="h-full w-full object-cover">
+                                            @else
+                                                <div class="flex h-full w-full items-center justify-center bg-white text-2xl text-pink-300">♡</div>
+                                            @endif
+                                        </div>
+
+                                        <div class="min-w-0 flex-1">
+                                            <div class="flex items-start justify-between gap-3">
+                                                <div class="min-w-0 flex-1">
+                                                    <h4 class="truncate text-base font-bold text-gray-800">{{ $favoriteAgentPost->title }}</h4>
+                                                    <div class="mt-3 flex flex-col gap-2 text-sm text-gray-500 lg:flex-row lg:items-center lg:justify-between">
+                                                        <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+                                                            <span class="font-medium text-gray-600">代購人：{{ optional($favoriteAgentPost->user)->name ?? '匿名代購人' }}</span>
+                                                            <span>貼文建立：{{ optional($favoriteAgentPost->created_at)->format('Y-m-d') }}</span>
+                                                            <span>可代購商品：{{ $favoriteAgentPost->products->count() }} 項</span>
+                                                            <span>狀態：{{ $favoriteAgentPost->status === 'open' ? '接單中' : $favoriteAgentPost->status }}</span>
+                                                        </div>
+                                                       
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    class="dashboard-favorite-toggle inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-pink-100 bg-white text-pink-500 shadow-sm transition hover:bg-pink-100"
+                                                    data-agent-post-id="{{ $favoriteAgentPost->id }}"
+                                                    aria-label="取消收藏貼文"
+                                                    aria-pressed="true"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5">
+                                                        <path d="M12.001 4.529c2.349-2.532 6.15-2.533 8.498-.001 2.41 2.6 2.41 6.815 0 9.416l-7.66 8.266a1.14 1.14 0 0 1-1.677 0l-7.66-8.266c-2.41-2.601-2.41-6.817 0-9.416 2.348-2.532 6.149-2.531 8.499.001Z"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </article>
+                                @empty
+                                    <div class="rounded-2xl border border-dashed border-pink-200 bg-pink-50/40 px-6 py-12 text-center text-sm text-gray-500">
+                                        @if(request('favorite_search'))
+                                            找不到符合「{{ request('favorite_search') }}」的收藏貼文。
+                                        @else
+                                            目前尚收藏任何代購貼文，請先到首頁的「最新代購連線」按下愛心收藏。
+                                        @endif
+                                    </div>
+                                @endforelse
+                            </div>
+
+                            @if($favoriteAgentPosts->hasPages())
+                                <div class="mt-6">
+                                    {{ $favoriteAgentPosts->appends(['section' => 'favorite-posts', 'favorite_search' => request('favorite_search')])->links() }}
+                                </div>
+                            @endif
+                        </div>
+                    @else
                     <!-- 請購清單區塊-->
-                                            <div class="flex justify-between items-center mb-6">
+                        <div class="flex justify-between items-center mb-6">
 
                             <h3 class="text-lg font-bold text-gray-800">目前請購清單</h3>
 
@@ -136,6 +234,7 @@
                                 <!-- 搜尋框 -->
 
                                 <form method="GET" action="{{ route('dashboard') }}" style="display: flex; gap: 8px; min-width: 280px;">
+                                    <input type="hidden" name="section" value="request-lists">
                                     <input
                                         type="search"
                                         name="request_search"
@@ -313,6 +412,7 @@
                             </table>
                         </div>
                     </div>
+                    @endif
 
 
 
@@ -564,28 +664,6 @@
                             @endif
 
                         @endforeach
-
-
-
-                    <!-- 聊天訊息預覽 -->
-
-                    <div class="bg-white rounded-xl shadow-sm p-6">
-                        <h3 class="text-lg font-bold text-gray-800 mb-4">最新聊天</h3>
-                        <div class="space-y-4">
-                            <div class="flex items-center gap-4 p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition">
-                                <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-bold">小</div>
-                                <div class="flex-1">
-                                    <div class="flex justify-between">
-                                        <span class="font-bold text-sm">小王 (日本代購人)</span>
-                                        <span class="text-[10px] text-gray-400">10分鐘前</span>
-                                    </div>
-                                    <p class="text-xs text-gray-500 truncate">您好，手把已經幫您買到囉，稍後提供照片...</p>
-                                </div>
-                                <div class="w-2 h-2 bg-red-500 rounded-full"></div>
-                            </div>
-                        </div>
-                    </div>
-
                 </div>
 
             </div>
@@ -595,6 +673,8 @@
     </div>
 
     <script>
+        const dashboardFavoriteToggleUrl = @json(route('favorite.toggle'));
+        const dashboardCsrfToken = @json(csrf_token());
 
         function openRequestDetailModal(id) {
             const modal = document.getElementById(`request-detail-modal-${id}`);
@@ -632,6 +712,52 @@
                 closeRequestDetailModal(id);
             }
         }
+
+        document.querySelectorAll('.dashboard-favorite-toggle').forEach((button) => {
+            button.addEventListener('click', async () => {
+                const agentPostId = button.dataset.agentPostId;
+                if (!agentPostId || button.disabled) {
+                    return;
+                }
+
+                button.disabled = true;
+
+                try {
+                    const response = await fetch(dashboardFavoriteToggleUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': dashboardCsrfToken,
+                        },
+                        body: JSON.stringify({
+                            type: 'agent_post',
+                            id: agentPostId,
+                        }),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('favorite toggle failed');
+                    }
+
+                    const data = await response.json();
+                    if (data.status === 'removed') {
+                        const card = button.closest('.favorite-post-item');
+                        card?.remove();
+
+                        const list = document.getElementById('favorite-post-list');
+                        if (list && !list.querySelector('.favorite-post-item')) {
+                            list.innerHTML = '<div class="rounded-2xl border border-dashed border-pink-200 bg-pink-50/40 px-6 py-12 text-center text-sm text-gray-500">目前尚未收藏任何代購貼文，請先到首頁的「最新代購連線」按下愛心收藏。</div>';
+                        }
+                    }
+                } catch (error) {
+                    console.error(error);
+                    alert('更新收藏狀態失敗，請稍後再試。');
+                } finally {
+                    button.disabled = false;
+                }
+            });
+        });
 
         function openEditModal(id) {
             const modal = document.getElementById(`edit-modal-${id}`);
