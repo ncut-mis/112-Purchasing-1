@@ -186,7 +186,7 @@
                                         @endif
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <h6 class="font-bold text-gray-800 text-sm truncate">​:codex-terminal-citation[codex-terminal-citation]{line_range_start=1 line_range_end=866 terminal_chunk_id={{ $post->country }}】{{ $post->title }}</h6>
+                                        <h6 class="font-bold text-gray-800 text-sm truncate">【{{ $post->country }}】{{ $post->title }}</h6>
                                         <p class="text-[10px] text-gray-400">銷售期間: {{ optional($post->start_date)->format('Y-m-d') }} ~ {{ optional($post->end_date)->format('Y-m-d') }}</p>
                                         <div class="mt-2 flex gap-2 flex-wrap">
                                             <span class="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded">{{ $post->products_count }} 項商品</span>

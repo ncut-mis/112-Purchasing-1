@@ -182,14 +182,16 @@
                                             <div class="flex items-start justify-between gap-3">
                                                 <div class="min-w-0 flex-1">
                                                     <h4 class="truncate text-base font-bold text-gray-800">{{ $favoriteAgentPost->title }}</h4>
-                                                    <div class="mt-3 flex flex-col gap-2 text-sm text-gray-500 lg:flex-row lg:items-center lg:justify-between">
+                                                    <div class="mt-3 flex flex-col gap-3 text-sm text-gray-500 xl:flex-row xl:items-center xl:justify-between">
                                                         <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
-                                                            <span class="font-medium text-gray-600">代購人：{{ optional($favoriteAgentPost->user)->name ?? '匿名代購人' }}</span>
+                                                            <span class="font-medium text-gray-600">代購人：{{ optional($favoriteAgentPost->user)->name ?? '匿名代購人' }}</span>  
                                                             <span>貼文建立：{{ optional($favoriteAgentPost->created_at)->format('Y-m-d') }}</span>
                                                             <span>可代購商品：{{ $favoriteAgentPost->products->count() }} 項</span>
                                                             <span>狀態：{{ $favoriteAgentPost->status === 'open' ? '接單中' : $favoriteAgentPost->status }}</span>
                                                         </div>
-                                                       
+                                                        <div class="flex flex-wrap items-center gap-3 xl:justify-end">
+                                                             <a href="{{ route('agent.posts.search', ['search' => $favoriteAgentPost->title]) }}" class="text-sm font-semibold text-pink-500 transition hover:text-pink-600 hover:underline">前往首頁</a>
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <button
@@ -211,7 +213,7 @@
                                         @if(request('favorite_search'))
                                             找不到符合「{{ request('favorite_search') }}」的收藏貼文。
                                         @else
-                                            目前尚收藏任何代購貼文，請先到首頁的「最新代購連線」按下愛心收藏。
+                                            目前尚未收藏任何代購貼文，請先到首頁的「最新代購連線」按下愛心收藏。
                                         @endif
                                     </div>
                                 @endforelse
@@ -224,8 +226,8 @@
                             @endif
                         </div>
                     @else
-                    <!-- 請購清單區塊-->
-                        <div class="flex justify-between items-center mb-6">
+                    <!-- 請購清單塊-->
+                         <div class="flex justify-between items-center mb-6">
 
                             <h3 class="text-lg font-bold text-gray-800">目前請購清單</h3>
 
@@ -758,6 +760,7 @@
                 }
             });
         });
+
 
         function openEditModal(id) {
             const modal = document.getElementById(`edit-modal-${id}`);

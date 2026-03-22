@@ -95,7 +95,7 @@
                         </div>
 
                         <div class="card-body p-4 d-flex flex-column">
-                            <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                             <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
                                 <h5 class="card-title fw-bold mb-0 flex-grow-1">{{ $agentPost->title }}</h5>
                                 @php
                                     $isFavorited = in_array((int) $agentPost->id, $favoritedAgentPostIds ?? [], true);
