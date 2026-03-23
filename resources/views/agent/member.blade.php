@@ -172,9 +172,18 @@
                         @endphp
 
                         <div class="flex justify-between items-center mb-6">
-                            <h3 class="text-lg font-bold text-gray-800">我的代購貼文</h3>
+                             <div>
+                                <h3 class="text-lg font-bold text-gray-800">我的代購貼文</h3>
+                            </div>
                             <a href="{{ route('agent.posts.create') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-700 transition">+發布貼文</a>
                         </div>
+
+                        @if (session('status'))
+                            <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+                                {{ session('status') }}
+                            </div>
+                        @endif
+
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             @forelse($myAgentPosts as $post)
                                 <div class="p-4 border border-gray-100 rounded-2xl flex gap-4 hover:border-indigo-200 transition">
@@ -190,11 +199,29 @@
                                         <p class="text-[10px] text-gray-400">銷售期間: {{ optional($post->start_date)->format('Y-m-d') }} ~ {{ optional($post->end_date)->format('Y-m-d') }}</p>
                                         <div class="mt-2 flex gap-2 flex-wrap">
                                             <span class="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded">{{ $post->products_count }} 項商品</span>
-                                            <span class="text-[10px] text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded">{{ $post->status === 'open' ? '進行中' : $post->status }}</span>
+                                             @php
+                                                $statusLabel = $post->status === 'draft' ? '編輯中' : ($post->status === 'open' ? '進行中' : $post->status);
+                                                $statusClasses = $post->status === 'draft'
+                                                    ? 'text-amber-600 bg-amber-50'
+                                                    : 'text-green-600 bg-green-50';
+                                            @endphp
+                                            <span class="text-[10px] font-bold px-2 py-0.5 rounded {{ $statusClasses }}">{{ $statusLabel }}</span>
                                         </div>
-                                        <div class="mt-3 flex gap-2">
+                                        <div class="mt-3 flex gap-2 flex-wrap">
                                             <button type="button" class="agent-post-view-btn text-[11px] px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition" data-modal-id="agent-post-view-modal-{{ $post->id }}">檢視</button>
-                                            <button type="button" class="agent-post-edit-btn text-[11px] px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition" data-modal-id="agent-post-edit-modal-{{ $post->id }}">編輯</button>
+                                            @if($post->status === 'draft')
+                                                <button type="button" class="agent-post-edit-btn text-[11px] px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition" data-modal-id="agent-post-edit-modal-{{ $post->id }}">編輯</button>
+                                                <form method="POST" action="{{ route('agent.posts.destroy', $post) }}" onsubmit="return confirm('確定要刪除這篇編輯中的代購貼文嗎？');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="text-[11px] px-3 py-1.5 rounded-lg bg-rose-50 text-rose-600 font-semibold hover:bg-rose-100 transition">刪除</button>
+                                                </form>
+                                                <form method="POST" action="{{ route('agent.posts.submit', $post) }}" onsubmit="return confirm('送出後會顯示在首頁最新代購連線，確定送出？');">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button type="submit" class="text-[11px] px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition">送出</button>
+                                                </form>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
@@ -211,6 +238,7 @@
                                     <button type="button" class="modal-close-btn absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
                                     <h4 class="text-xl font-bold text-gray-800 mb-2">{{ $post->title }}</h4>
                                     <p class="text-sm text-gray-500 mb-1">國家：{{ $post->country }}</p>
+                                     <p class="text-sm text-gray-500 mb-1">狀態：{{ $post->status === 'draft' ? '編輯中' : ($post->status === 'open' ? '進行中' : $post->status) }}</p>
                                     <p class="text-sm text-gray-500 mb-1">銷售期間：{{ optional($post->start_date)->format('Y-m-d') }} ~ {{ optional($post->end_date)->format('Y-m-d') }}</p>
                                     <p class="text-sm text-gray-500 mb-1 whitespace-pre-line">描述訊息：{{ $post->description }}</p>
                                     <div class="mt-6 border-t pt-4">
@@ -236,7 +264,7 @@
                                     </div>
                                 </div>
                             </div>
-
+                              @if($post->status === 'draft')
                             <div id="agent-post-edit-modal-{{ $post->id }}" class="agent-post-modal fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4">
                                 <div class="bg-white w-full max-w-4xl rounded-2xl shadow-xl p-6 max-h-[88vh] overflow-y-auto relative">
                                     <button type="button" class="modal-close-btn absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
@@ -309,6 +337,7 @@
                                     </form>
                                 </div>
                             </div>
+                               @endif
                         @endforeach
                      </section>
 

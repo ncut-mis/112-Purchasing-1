@@ -108,6 +108,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/agent/posts/create', [AgentPostController::class, 'create'])->name('agent.posts.create');
     Route::post('/agent/posts', [AgentPostController::class, 'store'])->name('agent.posts.store');
     Route::patch('/agent/posts/{agentPost}', [AgentPostController::class, 'update'])->name('agent.posts.update');
+
+    Route::patch('/agent/posts/{agentPost}/submit', [AgentPostController::class, 'submit'])->name('agent.posts.submit');
+    Route::delete('/agent/posts/{agentPost}', [AgentPostController::class, 'destroy'])->name('agent.posts.destroy');
+
 });
 
 Route::middleware('auth')->group(function () {
