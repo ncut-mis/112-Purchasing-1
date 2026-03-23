@@ -163,8 +163,8 @@
 
                             <div class="space-y-4" id="favorite-post-list">
                                 @forelse($favoriteAgentPosts as $favoriteAgentPost)
-                                    <article class="favorite-post-item flex items-start gap-4 rounded-2xl border border-pink-100 bg-pink-50/60 p-4 shadow-sm" data-agent-post-id="{{ $favoriteAgentPost->id }}">
-                                        <div class="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-white shadow-sm">
+                                    <article class="favorite-post-item flex flex-col gap-4 rounded-[26px] border border-pink-100 bg-[#fff8fc] px-5 py-4 shadow-sm lg:flex-row lg:items-center" data-agent-post-id="{{ $favoriteAgentPost->id }}">
+                                        <div class="h-24 w-24 shrink-0 overflow-hidden rounded-[26px] bg-white shadow-sm">
                                             @php
                                                 $favoriteFirstProduct = $favoriteAgentPost->products->first();
                                                 $favoriteImage = optional($favoriteFirstProduct)->display_image_url;
@@ -179,32 +179,34 @@
                                         </div>
 
                                         <div class="min-w-0 flex-1">
-                                            <div class="flex items-start justify-between gap-3">
+                                            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                                                 <div class="min-w-0 flex-1">
-                                                    <h4 class="truncate text-base font-bold text-gray-800">{{ $favoriteAgentPost->title }}</h4>
-                                                    <div class="mt-3 flex flex-col gap-3 text-sm text-gray-500 xl:flex-row xl:items-center xl:justify-between">
-                                                        <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
-                                                            <span class="font-medium text-gray-600">代購人：{{ optional($favoriteAgentPost->user)->name ?? '匿名代購人' }}</span>  
-                                                            <span>貼文建立：{{ optional($favoriteAgentPost->created_at)->format('Y-m-d') }}</span>
-                                                            <span>可代購商品：{{ $favoriteAgentPost->products->count() }} 項</span>
-                                                            <span>狀態：{{ $favoriteAgentPost->status === 'open' ? '接單中' : $favoriteAgentPost->status }}</span>
-                                                        </div>
-                                                        <div class="flex flex-wrap items-center gap-3 xl:justify-end">
-                                                             <a href="{{ route('agent.posts.search', ['search' => $favoriteAgentPost->title]) }}" class="text-sm font-semibold text-pink-500 transition hover:text-pink-600 hover:underline">前往首頁</a>
-                                                        </div>
+                                                    <h4 class="truncate text-[1.45rem] font-bold tracking-tight text-slate-800">{{ $favoriteAgentPost->title }}</h4>
+                                                    <p class="mt-3 text-[1.05rem] text-slate-600">代購人：{{ optional($favoriteAgentPost->user)->name ?? '匿名代購人' }}</p>
+                                                    <div class="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-[0.98rem] text-slate-500">
+                                                        <span>貼文建立：{{ optional($favoriteAgentPost->created_at)->format('Y-m-d') }}</span>
+                                                        <span>可代購商品：{{ $favoriteAgentPost->products->count() }} 項</span>
+                                                        <span>狀態：{{ $favoriteAgentPost->status === 'open' ? '接單中' : $favoriteAgentPost->status }}</span>
                                                     </div>
                                                 </div>
-                                                <button
-                                                    type="button"
-                                                    class="dashboard-favorite-toggle inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-pink-100 bg-white text-pink-500 shadow-sm transition hover:bg-pink-100"
-                                                    data-agent-post-id="{{ $favoriteAgentPost->id }}"
-                                                    aria-label="取消收藏貼文"
-                                                    aria-pressed="true"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5">
-                                                        <path d="M12.001 4.529c2.349-2.532 6.15-2.533 8.498-.001 2.41 2.6 2.41 6.815 0 9.416l-7.66 8.266a1.14 1.14 0 0 1-1.677 0l-7.66-8.266c-2.41-2.601-2.41-6.817 0-9.416 2.348-2.532 6.149-2.531 8.499.001Z"/>
-                                                    </svg>
-                                                </button>
+
+                                                <div class="flex items-center justify-between gap-4 lg:justify-end">
+                                                    <a href="{{ route('agent.posts.search', ['search' => $favoriteAgentPost->title]) }}" class="shrink-0 text-[1.1rem] font-semibold text-pink-500 transition hover:text-pink-600 hover:underline">
+                                                        前往首頁
+                                                    </a>
+
+                                                    <button
+                                                        type="button"
+                                                        class="dashboard-favorite-toggle inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-pink-100 bg-white text-pink-500 shadow-[0_10px_30px_rgba(236,72,153,0.12)] transition hover:-translate-y-0.5 hover:bg-pink-50"
+                                                        data-agent-post-id="{{ $favoriteAgentPost->id }}"
+                                                        aria-label="取消收藏貼文"
+                                                        aria-pressed="true"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-7 w-7">
+                                                            <path d="M12.001 4.529c2.349-2.532 6.15-2.533 8.498-.001 2.41 2.6 2.41 6.815 0 9.416l-7.66 8.266a1.14 1.14 0 0 1-1.677 0l-7.66-8.266c-2.41-2.601-2.41-6.817 0-9.416 2.348-2.532 6.149-2.531 8.499.001Z"/>
+                                                        </svg>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </article>
@@ -224,6 +226,32 @@
                                     {{ $favoriteAgentPosts->appends(['section' => 'favorite-posts', 'favorite_search' => request('favorite_search')])->links() }}
                                 </div>
                             @endif
+                        </div>
+
+                        <div id="favorite-unfavorite-modal" class="hidden fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/45 px-4 py-6" role="dialog" aria-modal="true" aria-labelledby="favorite-unfavorite-modal-title">
+                            <div class="w-full max-w-[400px] rounded-[2rem] bg-white px-5 py-5 text-center shadow-[0_24px_80px_rgba(15,23,42,0.18)]">
+                                <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-pink-50 text-pink-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-10 w-10">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12.001 4.529c2.349-2.532 6.15-2.533 8.498-.001 2.41 2.6 2.41 6.815 0 9.416l-7.66 8.266a1.14 1.14 0 0 1-1.677 0l-7.66-8.266c-2.41-2.601-2.41-6.817 0-9.416 2.348-2.532 6.149-2.531 8.499.001Z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m15 9-6 6" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m9 9 6 6" />
+                                    </svg>
+                                </div>
+
+                                <h4 id="favorite-unfavorite-modal-title" class="mt-6 text-[2rem] font-bold tracking-tight text-slate-800">確定取消收藏？</h4>
+                                <p class="mt-4 text-lg leading-8 text-slate-400">
+                                    取消後，此貼文將從您的收藏夾中移除。
+                                </p>
+
+                                <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <button type="button" id="favorite-unfavorite-cancel" class="inline-flex items-center justify-center rounded-2xl bg-slate-100 px-3 py-3 text-2xl font-bold text-slate-600 transition hover:bg-slate-200">
+                                        取消
+                                    </button>
+                                    <button type="button" id="favorite-unfavorite-confirm" class="inline-flex items-center justify-center rounded-2xl bg-pink-600 px-3 py-3 text-2xl font-bold text-white transition hover:bg-pink-700 disabled:cursor-not-allowed disabled:opacity-70">
+                                        確定移除
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     @else
                     <!-- 請購清單塊-->
@@ -701,6 +729,11 @@
                 return;
             }
 
+            if (favoriteUnfavoriteModal && !favoriteUnfavoriteModal.classList.contains('hidden')) {
+                closeFavoriteUnfavoriteModal();
+                return;
+            }
+
             document.querySelectorAll('.request-detail-modal').forEach((modal) => {
                 if (!modal.classList.contains('hidden')) {
                     modal.classList.add('hidden');
@@ -715,50 +748,113 @@
             }
         }
 
+        const favoriteUnfavoriteModal = document.getElementById('favorite-unfavorite-modal');
+        const favoriteUnfavoriteCancelButton = document.getElementById('favorite-unfavorite-cancel');
+        const favoriteUnfavoriteConfirmButton = document.getElementById('favorite-unfavorite-confirm');
+        let pendingFavoriteRemovalButton = null;
+        const favoriteEmptyStateHtml = '<div class="rounded-2xl border border-dashed border-pink-200 bg-pink-50/40 px-6 py-12 text-center text-sm text-gray-500">目前尚未收藏任何代購貼文，請先到首頁的「最新代購連線」按下愛心收藏。</div>';
+
+        function closeFavoriteUnfavoriteModal() {
+            if (!favoriteUnfavoriteModal) {
+                return;
+            }
+
+            favoriteUnfavoriteModal.classList.add('hidden');
+            pendingFavoriteRemovalButton = null;
+            document.body.classList.remove('overflow-hidden');
+
+            if (favoriteUnfavoriteConfirmButton) {
+                favoriteUnfavoriteConfirmButton.disabled = false;
+                favoriteUnfavoriteConfirmButton.textContent = '確定移除';
+            }
+        }
+
+        function openFavoriteUnfavoriteModal(button) {
+            if (!favoriteUnfavoriteModal || !button) {
+                return;
+            }
+
+            pendingFavoriteRemovalButton = button;
+            favoriteUnfavoriteModal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        async function removeFavoriteFromDashboard(button) {
+            const agentPostId = button?.dataset.agentPostId;
+            if (!agentPostId || button.disabled) {
+                return;
+            }
+
+            button.disabled = true;
+            if (favoriteUnfavoriteConfirmButton) {
+                favoriteUnfavoriteConfirmButton.disabled = true;
+                favoriteUnfavoriteConfirmButton.textContent = '移除中...';
+            }
+
+            try {
+                const response = await fetch(dashboardFavoriteToggleUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': dashboardCsrfToken,
+                    },
+                    body: JSON.stringify({
+                        type: 'agent_post',
+                        id: agentPostId,
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('favorite toggle failed');
+                }
+
+                const data = await response.json();
+                if (data.status === 'removed') {
+                    const card = button.closest('.favorite-post-item');
+                    card?.remove();
+
+                    const list = document.getElementById('favorite-post-list');
+                    if (list && !list.querySelector('.favorite-post-item')) {
+                        list.innerHTML = favoriteEmptyStateHtml;
+                    }
+                }
+
+                closeFavoriteUnfavoriteModal();
+            } catch (error) {
+                console.error(error);
+                alert('更新收藏狀態失敗，請稍後再試。');
+
+                if (favoriteUnfavoriteConfirmButton) {
+                    favoriteUnfavoriteConfirmButton.disabled = false;
+                    favoriteUnfavoriteConfirmButton.textContent = '確定移除';
+                }
+
+                button.disabled = false;
+            }
+        }
+
         document.querySelectorAll('.dashboard-favorite-toggle').forEach((button) => {
-            button.addEventListener('click', async () => {
+            button.addEventListener('click', () => {
                 const agentPostId = button.dataset.agentPostId;
                 if (!agentPostId || button.disabled) {
                     return;
                 }
 
-                button.disabled = true;
-
-                try {
-                    const response = await fetch(dashboardFavoriteToggleUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': dashboardCsrfToken,
-                        },
-                        body: JSON.stringify({
-                            type: 'agent_post',
-                            id: agentPostId,
-                        }),
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('favorite toggle failed');
-                    }
-
-                    const data = await response.json();
-                    if (data.status === 'removed') {
-                        const card = button.closest('.favorite-post-item');
-                        card?.remove();
-
-                        const list = document.getElementById('favorite-post-list');
-                        if (list && !list.querySelector('.favorite-post-item')) {
-                            list.innerHTML = '<div class="rounded-2xl border border-dashed border-pink-200 bg-pink-50/40 px-6 py-12 text-center text-sm text-gray-500">目前尚未收藏任何代購貼文，請先到首頁的「最新代購連線」按下愛心收藏。</div>';
-                        }
-                    }
-                } catch (error) {
-                    console.error(error);
-                    alert('更新收藏狀態失敗，請稍後再試。');
-                } finally {
-                    button.disabled = false;
-                }
+                openFavoriteUnfavoriteModal(button);
             });
+        });
+
+        favoriteUnfavoriteCancelButton?.addEventListener('click', closeFavoriteUnfavoriteModal);
+        favoriteUnfavoriteModal?.addEventListener('click', (event) => {
+            if (event.target === favoriteUnfavoriteModal) {
+                closeFavoriteUnfavoriteModal();
+            }
+        });
+        favoriteUnfavoriteConfirmButton?.addEventListener('click', () => {
+            if (pendingFavoriteRemovalButton) {
+                removeFavoriteFromDashboard(pendingFavoriteRemovalButton);
+            }
         });
 
 

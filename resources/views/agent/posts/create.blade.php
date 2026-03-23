@@ -31,7 +31,7 @@
 
                 <div class="border-b border-gray-100 pb-6">
                     <h3 class="text-lg font-bold text-gray-800 mb-1">貼文資訊</h3>
-                    <p class="text-sm text-gray-500">設定銷售期間與描述,並建立商品規格(最多5項)。</p>
+                    <p class="text-sm text-gray-500">先儲存為編輯中草稿，再回會員專區確認內容後送出上架；商品規格最多 5 項。</p>
                 </div>
 
                 @if ($errors->any())
@@ -121,7 +121,7 @@
                 <div class="pt-2">
                     <button type="submit" class="w-full md:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition shadow-sm">
                         <i class="bi bi-send-check"></i>
-                        儲存並發布
+                        儲存
                     </button>
                 </div>
             </form>
