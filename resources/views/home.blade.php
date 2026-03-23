@@ -154,21 +154,112 @@
                                             <div class="small text-muted">已建立於 {{ optional($agentPost->created_at)->format('Y/m/d') }}</div>
                                         </div>
                                     </div>
-                                       @auth
-                                           @if((int) auth()->id() === (int) $agentPost->user_id)
-                                               <a href="#" class="btn btn-sm rounded-pill px-3 btn-secondary disabled" tabindex="-1" aria-disabled="true">無法跟單</a>
-                                           @else
-                                               <a href="#" class="btn btn-sm btn-primary-custom rounded-pill px-3">我要跟單</a>
-                                           @endif
-                                       @else
-                                           <a href="#" class="btn btn-sm btn-primary-custom rounded-pill px-3">我要跟單</a>
-                                       @endauth
+                                      {{-- 判斷登入狀態與身份 --}}
+                                        @auth
+                                            @if((int) auth()->id() === (int) $agentPost->user_id)
+                                                <button class="btn btn-sm rounded-pill px-3 btn-secondary disabled">無法跟單</button>
+                                            @else
+                                                <button type="button" class="btn btn-sm btn-primary-custom rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#followOrderModal-{{ $agentPost->id }}">我要跟單</button>
+                                            @endif
+                                        @else
+                                            {{-- 未登入時：改為超連結跳轉 --}}
+                                            <a href="{{ route('login') }}" class="btn btn-sm btn-primary-custom rounded-pill px-3">
+                                                我要跟單
+                                            </a>
+                                        @endauth
                                 </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+
+<div class="modal fade" id="followOrderModal-{{ $agentPost->id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                            <div class="modal-header border-0 bg-light py-3 px-4">
+                                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-cart-plus me-2 text-primary"></i>確認跟單商品</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            
+                            <form action="#" method="POST"> @csrf
+                                <div class="modal-body p-4">
+                                    <div class="row g-3 mb-4">
+                                        <div class="col-md-6">
+                                            <div class="p-3 border rounded-4 h-100 bg-light-subtle">
+                                                <label class="text-muted small fw-bold text-uppercase d-block mb-1">銷售期間</label>
+                                                <div class="text-dark fw-bold">
+                                                    {{ optional($agentPost->start_date)->format('Y/m/d') }} <span class="mx-1 text-muted">至</span> {{ optional($agentPost->end_date)->format('Y/m/d') }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="p-3 border rounded-4 h-100 bg-light-subtle">
+                                                <label class="text-muted small fw-bold text-uppercase d-block mb-1">描述訊息</label>
+                                                <div class="text-muted small text-truncate">
+                                                    {{ $agentPost->description ?: '無詳細說明。' }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="table-responsive">
+                                        <table class="table align-middle">
+                                            <thead class="bg-light">
+                                                <tr class="small text-muted border-0">
+                                                    <th class="border-0 ps-0" style="width: 70px;">圖片</th>
+                                                    <th class="border-0">商品名稱</th>
+                                                    <th class="border-0 text-center">單價</th>
+                                                    <th class="border-0 text-center" style="width: 140px;">數量</th>
+                                                    <th class="border-0 text-end pe-0">小計</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($agentPost->products as $product)
+                                                <tr class="product-row" data-price="{{ $product->price }}">
+                                                    <td class="ps-0">
+                                                        <img src="{{ $product->display_image_url ?? 'https://via.placeholder.com/60' }}" 
+                                                             class="rounded-3 object-fit-cover shadow-sm" width="55" height="55">
+                                                    </td>
+                                                    <td>
+                                                        <div class="fw-bold text-dark mb-0">{{ $product->name }}</div>
+                                                    </td>
+                                                    <td class="text-center fw-semibold text-muted">
+                                                        ${{ number_format($product->price) }}
+                                                    </td>
+                                                    <td>
+                                                        <div class="input-group input-group-sm border rounded-pill overflow-hidden bg-white mx-auto" style="max-width: 110px;">
+                                                            <button class="btn btn-link text-decoration-none border-0 px-2 qty-minus" type="button"><i class="bi bi-dash-lg"></i></button>
+                                                            <input type="number" name="products[{{ $product->id }}][quantity]" 
+                                                                   class="form-control border-0 text-center bg-transparent qty-input" value="0" min="0" style="box-shadow: none;">
+                                                            <button class="btn btn-link text-decoration-none border-0 px-2 qty-plus" type="button"><i class="bi bi-plus-lg"></i></button>
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-end pe-0 fw-bold text-primary subtotal">
+                                                        $0
+                                                    </td>
+                                                </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div class="modal-footer border-0 p-4 pt-0 flex-column align-items-end">
+                                    <div class="d-flex align-items-baseline mb-4">
+                                        <span class="text-muted me-3">總計金額：</span>
+                                        <span class="h3 fw-bold text-success mb-0">NT$ <span class="total-amount">0</span></span>
+                                    </div>
+                                    <div class="d-flex gap-2 w-100">
+                                        <button type="button" class="btn btn-light rounded-pill flex-grow-1 py-2 fw-bold" data-bs-dismiss="modal">再逛逛</button>
+                                        <button type="button" class="btn btn-primary-custom rounded-pill flex-grow-1 py-2 fw-bold shadow">確認結帳</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
            @empty
                 @if(request()->has('search'))
                     <div class="col-12">
@@ -236,26 +327,19 @@
         const loginUrl = '{{ route('login') }}';
         const isAuthenticated = @json(auth()->check());
 
+        // 1. 展開/收起詳細資訊
         document.querySelectorAll('.agent-post-toggle-btn').forEach(function (button) {
             button.addEventListener('click', function () {
                 const targetId = button.dataset.target;
                 const details = document.getElementById(targetId);
-
-                if (!details) {
-                    return;
-                }
+                if (!details) return;
 
                 const isHidden = details.classList.contains('d-none');
                 details.classList.toggle('d-none', !isHidden);
-                button.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
-
+                
                 const label = button.querySelector('span');
                 const icon = button.querySelector('.transition-icon');
-
-                if (label) {
-                    label.textContent = isHidden ? '收起詳細資訊' : '展開詳細資訊';
-                }
-
+                if (label) label.textContent = isHidden ? '收起詳細資訊' : '展開詳細資訊';
                 if (icon) {
                     icon.classList.toggle('bi-chevron-down', !isHidden);
                     icon.classList.toggle('bi-chevron-up', isHidden);
@@ -263,53 +347,97 @@
             });
         });
 
+        // 2. 收藏按鈕邏輯
         document.querySelectorAll('.favorite-toggle').forEach(function (button) {
             button.addEventListener('click', async function () {
-                if (!isAuthenticated) {
-                    window.location.href = loginUrl;
-                    return;
-                }
-
+                if (!isAuthenticated) { window.location.href = loginUrl; return; }
                 const agentPostId = button.dataset.agentPostId;
-                if (!agentPostId || button.disabled) {
-                    return;
-                }
+                if (!agentPostId || button.disabled) return;
 
                 button.disabled = true;
-
                 try {
                     const response = await fetch(favoriteToggleUrl, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': csrfToken,
-                        },
-                        body: JSON.stringify({
-                            type: 'agent_post',
-                            id: agentPostId,
-                        }),
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                        body: JSON.stringify({ type: 'agent_post', id: agentPostId }),
                     });
-
-                    if (!response.ok) {
-                        throw new Error('favorite toggle failed');
-                    }
-
                     const data = await response.json();
-                    const nextPressedState = data.status === 'added' ? true : false;
-
-                    button.setAttribute('aria-pressed', nextPressedState ? 'true' : 'false');
-                    button.style.background = nextPressedState ? '#fce7f3' : '#f3f4f6';
-                    button.style.color = nextPressedState ? '#ec4899' : '#9ca3af';
-                    button.style.transform = nextPressedState ? 'scale(1.05)' : 'scale(1)';
+                    const isAdded = data.status === 'added';
+                    button.style.background = isAdded ? '#fce7f3' : '#f3f4f6';
+                    button.style.color = isAdded ? '#ec4899' : '#9ca3af';
                 } catch (error) {
-                    console.error(error);
-                    alert('收藏狀態更新失敗，請稍後再試。');
+                    alert('操作失敗，請稍後再試。');
                 } finally {
                     button.disabled = false;
                 }
             });
         });
+
+        // 3. Modal 數量與金額即時計算 (優化邏輯)
+        document.querySelectorAll('.modal').forEach(modal => {
+            const updateTotals = () => {
+                let grandTotal = 0;
+                modal.querySelectorAll('.product-row').forEach(row => {
+                    const price = parseFloat(row.dataset.price) || 0;
+                    const qtyInput = row.querySelector('.qty-input');
+                    const qty = parseInt(qtyInput.value) || 0;
+                    const subtotal = price * qty;
+                    row.querySelector('.subtotal').textContent = '$' + subtotal.toLocaleString();
+                    grandTotal += subtotal;
+                });
+                modal.querySelector('.total-amount').textContent = grandTotal.toLocaleString();
+            };
+
+            modal.addEventListener('click', (e) => {
+                const plusBtn = e.target.closest('.qty-plus');
+                const minusBtn = e.target.closest('.qty-minus');
+                
+                if (plusBtn) {
+                    const input = plusBtn.closest('.input-group').querySelector('.qty-input');
+                    input.value = parseInt(input.value) + 1;
+                    updateTotals();
+                }
+                if (minusBtn) {
+                    const input = minusBtn.closest('.input-group').querySelector('.qty-input');
+                    if (parseInt(input.value) > 0) {
+                        input.value = parseInt(input.value) - 1;
+                        updateTotals();
+                    }
+                }
+            });
+
+            modal.querySelectorAll('.qty-input').forEach(input => {
+                input.addEventListener('input', () => {
+                    if (input.value < 0) input.value = 0;
+                    updateTotals();
+                });
+            });
+        });
     });
 </script>
+
+<style>
+    /* 全域按鈕與表單樣式優化 */
+    .btn-primary-custom {
+        background-color: #5A9E8E;
+        border-color: #5A9E8E;
+        color: white;
+    }
+    .btn-primary-custom:hover {
+        background-color: #4a8376;
+        color: white;
+    }
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    input[type=number] {
+        -moz-appearance: textfield;
+    }
+    .bg-light-subtle {
+        background-color: #f8fafc !important;
+    }
+    .ls-1 { letter-spacing: 1px; }
+</style>
 @endpush
