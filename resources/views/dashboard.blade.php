@@ -21,7 +21,7 @@
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-yellow-500">
                     <div class="text-sm text-gray-500 mb-1">收藏貼文</div>
-                    <div class="text-2xl font-bold text-gray-800">{{ $stats['favorite_posts'] }}</div>
+                     <div id="favorite-posts-count" class="text-2xl font-bold text-gray-800" data-count="{{ $stats['favorite_posts'] }}">{{ $stats['favorite_posts'] }}</div>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-purple-500">
                     <div class="text-sm text-gray-500 mb-1">我的評價</div>
@@ -751,8 +751,28 @@
         const favoriteUnfavoriteModal = document.getElementById('favorite-unfavorite-modal');
         const favoriteUnfavoriteCancelButton = document.getElementById('favorite-unfavorite-cancel');
         const favoriteUnfavoriteConfirmButton = document.getElementById('favorite-unfavorite-confirm');
+        const favoritePostsCountElement = document.getElementById('favorite-posts-count');
         let pendingFavoriteRemovalButton = null;
         const favoriteEmptyStateHtml = '<div class="rounded-2xl border border-dashed border-pink-200 bg-pink-50/40 px-6 py-12 text-center text-sm text-gray-500">目前尚未收藏任何代購貼文，請先到首頁的「最新代購連線」按下愛心收藏。</div>';
+
+        function updateFavoritePostsCount(nextCount) {
+            if (!favoritePostsCountElement) {
+                return;
+            }
+
+            const safeCount = Math.max(0, Number.parseInt(nextCount, 10) || 0);
+            favoritePostsCountElement.dataset.count = String(safeCount);
+            favoritePostsCountElement.textContent = String(safeCount);
+        }
+
+        function decrementFavoritePostsCount() {
+            if (!favoritePostsCountElement) {
+                return;
+            }
+
+            updateFavoritePostsCount((favoritePostsCountElement.dataset.count || favoritePostsCountElement.textContent) - 1);
+        }
+
 
         function closeFavoriteUnfavoriteModal() {
             if (!favoriteUnfavoriteModal) {
@@ -813,6 +833,7 @@
                 if (data.status === 'removed') {
                     const card = button.closest('.favorite-post-item');
                     card?.remove();
+                    decrementFavoritePostsCount();
 
                     const list = document.getElementById('favorite-post-list');
                     if (list && !list.querySelector('.favorite-post-item')) {
