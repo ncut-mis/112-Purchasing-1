@@ -90,4 +90,9 @@ class User extends Authenticatable
         // 檢查是否有申請紀錄，且狀態為 'approved'
         return $this->agentApplication()->where('status', 'approved')->exists();
     }
+
+    public function agentPosts()
+    {
+    return $this->hasMany(AgentPost::class, 'user_id');
+    }
 }

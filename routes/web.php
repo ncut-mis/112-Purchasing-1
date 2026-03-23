@@ -75,29 +75,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
      // 1. 申請頁面
     Route::get('/agent/apply', [AgentApplicationController::class, 'create'])->name('agent.apply');
     Route::post('/agent/apply', [AgentApplicationController::class, 'store'])->name('agent.store');
-
     // 2. 關鍵：新增申請進度查詢路由
     Route::get('/agent/status', [AgentApplicationController::class, 'status'])->name('agent.status');
-    
     // 顯示個人資訊編輯頁面 (GET123)
     Route::get('/agent/profile', function () {
         return view('agent.profile');
     })->name('agent.profile.edit'); 
-
     // 處理個人資訊更新 (POST)
     Route::post('/agent/profile', [AgentApplicationController::class, 'updateProfile'])->name('agent.profile.update');
-
     // --- 請購人/一般會員的聊天路由 ---
     Route::get('/messages', function () {
     return view('messages.index');
     })->name('messages.index');
-
     // --- 代購人專屬的聊天路由 ---
     Route::get('/agent/chat', function () {
     return view('agent.chat'); // 指向 resources/views/agent/chat.blade.php
     })->name('agent.chat');
     
-    
+    // 查看代購人詳細資料
+    Route::get('/agent/{id}/profile', [ShopController::class, 'show'])->name('agent.show');
 
     // 代購人申請功能
 

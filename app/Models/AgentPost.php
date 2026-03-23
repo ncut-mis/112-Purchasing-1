@@ -5,11 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AgentPost extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $table = 'agent_posts';
     // 允許批量賦值的欄位 (安全性設定)
     protected $fillable = [
         'user_id',
@@ -32,7 +34,7 @@ class AgentPost extends Model
     ];
 
     // 關聯設定：這篇貼文屬於哪個使用者 (代購人)
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }

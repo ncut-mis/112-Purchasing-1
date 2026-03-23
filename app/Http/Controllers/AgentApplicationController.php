@@ -132,4 +132,17 @@ class AgentApplicationController extends Controller
 
         return redirect()->route('agent.member')->with('success', '個人資訊已成功更新！');
     }
+
+    public function index(Request $request)
+    {
+    // 撈取所有擁有 'approved' 狀態申請紀錄的使用者
+    // 並預載入 agentApplication 關聯以增進效能
+    $agents = \App\Models\User::whereHas('agentApplication', function($query) {
+        $query->where('status', 'approved');
+    })->with('agentApplication')->get();
+
+    return view('store.index', compact('agents'));
+    }
+
+
 }
