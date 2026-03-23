@@ -166,9 +166,9 @@
                                     <span class="text-xs text-gray-500 truncate">請購人：{{ $requestList->user->name ?? '未知使用者' }}</span>
                                 </div>
                                 @if(auth()->check() && $requestList->user_id === auth()->id())
-                                    <span class="text-xs text-red-500 font-bold flex items-center gap-1">
-                                        <i class="bi bi-emoji-frown"></i> 您不能代購自己發布的請購清單😅
-                                    </span>
+                                    <button type="button"class="accept-order-btn px-8 py-2.5 bg-gray-400 text-white rounded-xl font-bold text-sm flex items-center gap-2 cursor-not-allowed" disabled>
+                                       <i class="bi bi-cart-plus"></i> 無法接單
+                                    </button>
                                 @else
                                     @php
                                         $orderData = [
