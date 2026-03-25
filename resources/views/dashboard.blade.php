@@ -419,6 +419,15 @@
                                                     @elseif($requestList->status === 'pending')
                                                         <button type="button" class="inline-flex items-center rounded-lg bg-blue-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-600" onclick="openRequestDetailModal({{ $requestList->id }})">檢視</button>
                                                         <button type="button" class="inline-flex items-center rounded-lg bg-green-400 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-green-500">聊天</button>
+                                                        @php
+                                                          // 計算倒數結束時間：更新時間 + 1個月
+                                                          $endTime = $requestList->updated_at->addMonth()->toIso8601String();
+                                                        @endphp
+                                                        <button type="button"class="inline-flex items-center rounded-lg bg-amber-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-amber-600"onclick="openCountdownModal('{{ $requestList->id }}', '{{ $endTime }}', '{{ $firstItem }}')">
+                                                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                           </svg>
+                                                        </button>
                                                     @endif
                                                 </div>
                                             </td>
@@ -989,6 +998,108 @@
             }
         }
 
+let countdownInterval;
+
+function openCountdownModal(id, endTimeISO, title) {
+    const modal = document.getElementById('countdown-modal');
+    const targetName = document.getElementById('countdown-target-name');
+    const endTime = new Date(endTimeISO).getTime();
+
+
+    modal.classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+
+    // 清除舊的計時器
+    if (countdownInterval) clearInterval(countdownInterval);
+
+    // 啟動新的倒數計時
+    updateTimer(endTime);
+    countdownInterval = setInterval(() => updateTimer(endTime), 1000);
+}
+
+function updateTimer(endTime) {
+    const now = new Date().getTime();
+    const distance = endTime - now;
+
+    if (distance < 0) {
+        clearInterval(countdownInterval);
+        document.getElementById('timer-days').innerText = "00";
+        document.getElementById('timer-hours').innerText = "00";
+        document.getElementById('timer-mins').innerText = "00";
+        document.getElementById('timer-secs').innerText = "00";
+        return;
+    }
+
+    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+    // 補零顯示
+    document.getElementById('timer-days').innerText = String(days).padStart(2, '0');
+    document.getElementById('timer-hours').innerText = String(hours).padStart(2, '0');
+    document.getElementById('timer-mins').innerText = String(minutes).padStart(2, '0');
+    document.getElementById('timer-secs').innerText = String(seconds).padStart(2, '0');
+}
+
+function closeCountdownModal() {
+    const modal = document.getElementById('countdown-modal');
+    modal.classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+    clearInterval(countdownInterval);
+}
+
+// 點擊背景也可關閉
+window.onclick = function(event) {
+    const modal = document.getElementById('countdown-modal');
+    if (event.target == modal) {
+        closeCountdownModal();
+    }
+}
+
     </script>
+
+<div id="countdown-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+    <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden transform transition-all">
+        <div class="bg-amber-500 p-6 text-center text-white">
+            <div class="inline-flex p-3 bg-white/20 rounded-full mb-3">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <h3 class="text-xl font-bold">清單倒數中</h3>
+            <p id="countdown-target-name" class="text-amber-100 text-sm mt-1 truncate px-4"></p>
+        </div>
+
+        <div class="p-8">
+            <div class="grid grid-cols-4 gap-4 text-center">
+                <div class="bg-gray-50 rounded-2xl p-3 border border-gray-100">
+                    <div id="timer-days" class="text-2xl font-black text-gray-800">00</div>
+                    <div class="text-[10px] uppercase text-gray-400 font-bold tracking-widest">Days</div>
+                </div>
+                <div class="bg-gray-50 rounded-2xl p-3 border border-gray-100">
+                    <div id="timer-hours" class="text-2xl font-black text-gray-800">00</div>
+                    <div class="text-[10px] uppercase text-gray-400 font-bold tracking-widest">Hours</div>
+                </div>
+                <div class="bg-gray-50 rounded-2xl p-3 border border-gray-100">
+                    <div id="timer-mins" class="text-2xl font-black text-gray-800">00</div>
+                    <div class="text-[10px] uppercase text-gray-400 font-bold tracking-widest">Mins</div>
+                </div>
+                <div class="bg-gray-50 rounded-2xl p-3 border border-gray-100">
+                    <div id="timer-secs" class="text-2xl font-black text-amber-600">00</div>
+                    <div class="text-[10px] uppercase text-gray-400 font-bold tracking-widest">Secs</div>
+                </div>
+            </div>
+
+            <p class="text-center text-gray-400 text-xs mt-6">
+                提示：若倒數結束清單將自動刪除。
+            </p>
+
+            <button onclick="closeCountdownModal()" class="w-full mt-8 py-3 bg-gray-800 text-white font-bold rounded-xl hover:bg-gray-900 transition shadow-lg">
+                知道了
+            </button>
+        </div>
+    </div>
+</div>
 
 </x-app-layout>
