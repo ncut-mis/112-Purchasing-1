@@ -59,7 +59,7 @@
                                 <span>通知中心</span>
                             </a>
 
-                            <a href="#" class="flex items-center space-x-3 p-3 rounded-lg text-gray-600 hover:bg-gray-50 transition">
+                            <a href="{{ route('dashboard', ['section' => 'follow-orders']) }}" class="flex items-center space-x-3 p-3 rounded-lg {{ $currentSection === 'follow-orders' ? 'bg-indigo-50 text-indigo-600 font-medium' : 'text-gray-600 hover:bg-gray-50 transition' }}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
                                 <span>跟單紀錄</span>
                             </a>
@@ -252,6 +252,104 @@
                                     </button>
                                 </div>
                             </div>
+                        </div>
+                         @elseif($currentSection === 'follow-orders')
+                        <div class="bg-white rounded-2xl shadow-sm p-6">
+                            <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                                <div>
+                                    <h3 class="text-lg font-bold text-gray-800">跟單紀錄</h3>
+                                    <p class="mt-1 text-sm text-gray-500">這裡會顯示你所有跟單貼文與目前配送狀態。</p>
+                                </div>
+
+                                <div class="flex items-center gap-4">
+                                    <form method="GET" action="{{ route('dashboard') }}" style="display: flex; gap: 8px; min-width: 280px;">
+                                        <input type="hidden" name="section" value="follow-orders">
+                                        <input
+                                            type="search"
+                                            name="follow_search"
+                                            placeholder="搜尋貼文標題、代購人..."
+                                            value="{{ request('follow_search') }}"
+                                            style="padding: 8px 12px; border: 2px solid #0e0e0f; border-radius: 8px; font-size: 14px; min-width: 220px; flex: 1;"
+                                        >
+                                        <button type="submit" style="padding: 8px 16px; background: #6366f1; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                                            🔍
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            @if(request('follow_search'))
+                                <div class="mb-4 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700">
+                                    搜尋「{{ request('follow_search') }}」找到 {{ $followOrders->total() }} 筆跟單紀錄。
+                                    <a href="{{ route('dashboard', ['section' => 'follow-orders']) }}" class="ml-2 font-semibold hover:underline">清除搜尋</a>
+                                </div>
+                            @endif
+
+                            <div class="space-y-4">
+                                @forelse($followOrders as $followOrder)
+                                    <article class="flex flex-col gap-4 rounded-[26px] border border-indigo-100 bg-[#f8f9ff] px-5 py-4 shadow-sm lg:flex-row lg:items-center">
+                                        <div class="flex h-24 w-24 shrink-0 items-center justify-center rounded-[26px] bg-white text-indigo-400 shadow-sm">
+                                            <svg class="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                                            </svg>
+                                        </div>
+
+                                        <div class="min-w-0 flex-1">
+                                            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                                                <div class="min-w-0 flex-1">
+                                                    <h4 class="truncate text-[1.35rem] font-bold tracking-tight text-slate-800">{{ $followOrder->post_title }}</h4>
+                                                    <p class="mt-2 text-[1rem] text-slate-600">代購人：{{ optional($followOrder->seller)->name ?? '未指定代購人' }}</p>
+                                                    <div class="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-[0.95rem] text-slate-500">
+                                                        <span>下單日期：{{ optional($followOrder->created_at)->format('Y-m-d') }}</span>
+                                                        <span>商品數量：{{ $followOrder->items->sum('quantity') }} 件</span>
+                                                        <span>總金額：{{ number_format((float) $followOrder->total_amount, 0) }} {{ $followOrder->currency }}</span>
+                                                    </div>
+                                                    <div class="mt-2 flex flex-wrap items-center gap-x-6 gap-y-2 text-[0.95rem] text-slate-500">
+                                                        <span>物流單號：{{ $followOrder->tracking_number ?: '待更新' }}</span>
+                                                        <span>付款方式：{{ $followOrder->payment_method ?: '未設定' }}</span>
+                                                    </div>
+                                                    <div class="mt-2 text-[0.92rem] text-slate-500">
+                                                        代購商品：
+                                                        {{ $followOrder->items->map(fn ($item) => $item->name . ' × ' . $item->quantity)->implode('、') ?: '無商品資料' }}
+                                                    </div>
+                                                </div>
+
+                                                <div class="flex items-center justify-between gap-3 lg:justify-end">
+                                                    @php
+                                                        $statusText = match ($followOrder->status) {
+                                                            'pending_payment' => '待付款',
+                                                            'paid' => '已付款',
+                                                            'purchasing' => '採購中',
+                                                            'shipped' => '已出貨',
+                                                            'completed' => '已完成',
+                                                            'cancelled' => '已取消',
+                                                            'refunded' => '已退款',
+                                                            default => $followOrder->status,
+                                                        };
+                                                    @endphp
+                                                    <span class="inline-flex items-center rounded-full bg-indigo-100 px-4 py-2 text-sm font-semibold text-indigo-700">
+                                                        {{ $statusText }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </article>
+                                @empty
+                                    <div class="rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/40 px-6 py-12 text-center text-sm text-gray-500">
+                                        @if(request('follow_search'))
+                                            找不到符合「{{ request('follow_search') }}」的跟單紀錄。
+                                        @else
+                                            目前尚無跟單紀錄，快去首頁找到喜歡的代購商品並建立第一筆跟單吧！
+                                        @endif
+                                    </div>
+                                @endforelse
+                            </div>
+
+                            @if($followOrders->hasPages())
+                                <div class="mt-6">
+                                    {{ $followOrders->appends(['section' => 'follow-orders', 'follow_search' => request('follow_search')])->links() }}
+                                </div>
+                            @endif
                         </div>
                     @else
                     <!-- 請購清單塊-->

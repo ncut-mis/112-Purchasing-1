@@ -50,6 +50,17 @@
 <!-- Agent Posts Section (最新代購連線) -->
 <section class="py-5">
     <div class="container">
+        @if(session('status'))
+            <div class="alert alert-success rounded-4 shadow-sm border-0 mb-4">
+                {{ session('status') }}
+            </div>
+        @endif
+
+        @if($errors->has('follow_order'))
+            <div class="alert alert-danger rounded-4 shadow-sm border-0 mb-4">
+                {{ $errors->first('follow_order') }}
+            </div>
+        @endif
         @if(request()->filled('search') || request()->filled('country'))
             <div class="alert alert-info rounded-4 mb-4 border-0 shadow-sm">
                 <div class="d-flex align-items-center flex-wrap gap-2">
@@ -201,7 +212,8 @@
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             
-                            <form action="#" method="POST"> @csrf
+                            <form action="{{ route('orders.store', $agentPost) }}" method="POST" class="follow-order-form">
+                                @csrf
                                 <div class="modal-body p-4">
                                     <div class="row g-3 mb-4">
                                         <div class="col-md-6">
@@ -271,7 +283,7 @@
                                     </div>
                                     <div class="d-flex gap-2 w-100">
                                         <button type="button" class="btn btn-light rounded-pill flex-grow-1 py-2 fw-bold" data-bs-dismiss="modal">再逛逛</button>
-                                        <button type="button" class="btn btn-primary-custom rounded-pill flex-grow-1 py-2 fw-bold shadow">確認結帳</button>
+                                        <button type="submit" class="btn btn-primary-custom rounded-pill flex-grow-1 py-2 fw-bold shadow follow-order-submit-btn">確認結帳</button>
                                     </div>
                                 </div>
                             </form>
@@ -394,8 +406,12 @@
 
         // 3. Modal 數量與金額即時計算 (優化邏輯)
         document.querySelectorAll('.modal').forEach(modal => {
+            const form = modal.querySelector('.follow-order-form');
+            const submitBtn = modal.querySelector('.follow-order-submit-btn');
+
             const updateTotals = () => {
                 let grandTotal = 0;
+                let totalQuantity = 0;
                 modal.querySelectorAll('.product-row').forEach(row => {
                     const price = parseFloat(row.dataset.price) || 0;
                     const qtyInput = row.querySelector('.qty-input');
@@ -403,8 +419,12 @@
                     const subtotal = price * qty;
                     row.querySelector('.subtotal').textContent = '$' + subtotal.toLocaleString();
                     grandTotal += subtotal;
+                    totalQuantity += qty;
                 });
                 modal.querySelector('.total-amount').textContent = grandTotal.toLocaleString();
+                if (submitBtn) {
+                    submitBtn.disabled = totalQuantity < 1;
+                }
             };
 
             modal.addEventListener('click', (e) => {
@@ -431,6 +451,24 @@
                     updateTotals();
                 });
             });
+
+            form?.addEventListener('submit', (event) => {
+                const totalQuantity = Array.from(modal.querySelectorAll('.qty-input'))
+                    .reduce((sum, input) => sum + (parseInt(input.value) || 0), 0);
+
+                if (totalQuantity < 1) {
+                    event.preventDefault();
+                    alert('請至少選擇一項商品數量後再確認結帳。');
+                    return;
+                }
+
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = '建立訂單中...';
+                }
+            });
+
+            updateTotals();
         });
     });
 </script>
