@@ -25,6 +25,14 @@
                             placeholder="輸入代購關鍵字（如 iPhone、日本）" 
                             value="{{ request('q') }}" 
                             style="width: 300px;">
+                            <select name="country" class="form-select shadow-sm" style="width: 150px;">
+                            <option value="">所有國家</option>
+                            @foreach(['日本', '韓國', '美國', '歐洲', '澳洲', '其他'] as $country)
+                <option value="{{ $country }}" {{ request('country') == $country ? 'selected' : '' }}>
+                    {{ $country }}
+                </option>
+            @endforeach
+        </select>
                         <button type="submit" class="btn btn-primary-custom btn-lg shadow-sm h-100">
                             <i class="bi bi-search me-2"></i>
                         </button>
@@ -42,18 +50,29 @@
 <!-- Agent Posts Section (最新代購連線) -->
 <section class="py-5">
     <div class="container">
-        @if(request()->has('search'))
-            {{-- 搜尋結果標題 --}}
+        @if(request()->filled('search') || request()->filled('country'))
             <div class="alert alert-info rounded-4 mb-4 border-0 shadow-sm">
-                <div class="d-flex align-items-center">
-                    <i class="bi bi-search fs-3 me-3 text-primary"></i>
-                    <div>
-                        <h4 class="mb-1 fw-bold">搜尋「{{ request('search') }}」</h4>
-                        <p class="mb-0">找到 <strong>{{ $agentPosts->total() }}</strong> 筆結果</p>
+                <div class="d-flex align-items-center flex-wrap gap-2">
+                    {{-- 商品搜尋標籤 --}}
+                    @if(request()->filled('search'))
+                    <span class="badge bg-primary rounded-pill px-3 py-2">
+                        <i class="bi bi-search me-1"></i>{{ request('search') }}
+                    </span>
+                    @endif
+                    
+                    {{-- 國家篩選標籤 --}}
+                    @if(request()->filled('country'))
+                    <span class="badge bg-success rounded-pill px-3 py-2">
+                        <i class="bi bi-geo-alt me-1"></i>{{ request('country') }}
+                    </span>
+                    @endif
+                    
+                    {{-- 清除按鈕 --}}
+                    <div class="ms-auto">
+                        <a href="{{ route('agent.posts.search') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                            <i class="bi bi-x-circle me-1"></i>清除
+                        </a>
                     </div>
-                    <a href="{{ route('agent.posts.search') }}" class="ms-auto btn btn-sm btn-outline-primary rounded-pill px-3">
-                        清除搜尋
-                    </a>
                 </div>
             </div>
         @else

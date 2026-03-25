@@ -38,41 +38,40 @@ class HomeController extends Controller
     /**
      * 搜尋代購貼文 (首頁搜尋表單使用)
      */
-    public function search(Request $request)
+        public function search(Request $request)
     {
-        $query = AgentPost::withCount('products')->with(['user', 'products'])->where('status', 'open')->latest('created_at');
+        $query = AgentPost::withCount('products')
+            ->with('user')
+            ->latest();
 
-        if ($request->filled('q') || $request->filled('search')) {
-            $search = $request->q ?? $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('title', 'LIKE', "%{$search}%")
-                ->orWhere('description', 'LIKE', "%{$search}%")
-                ->orWhere('country', 'LIKE', "%{$search}%");
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('products', function ($productQuery) use ($search) {
+                // ✅ 只搜商品名稱
+                $productQuery->where('name', 'LIKE', "%{$search}%");
             });
+        }
+        if ($request->filled('country')) {
+        $query->where('country', $request->country);
         }
 
         $posts = $query->paginate(12)->withQueryString();
         
-        // 加這段！
-        $requests = \App\Models\RequestList::with('user')
+        $requests = RequestList::with('user')
             ->where('status', 'pending')
             ->latest()
             ->take(8)
             ->get();
 
-        $favoritedAgentPostIds = auth()->check()
-            ? auth()->user()->favorites()
-                ->where('favoriteable_type', AgentPost::class)
-                ->pluck('favoriteable_id')
-                ->map(fn ($id) => (int) $id)
-                ->all()
-            : [];
-
         return view('home', [
             'agentPosts' => $posts,
             'requests' => $requests,
-            'favoritedAgentPostIds' => $favoritedAgentPostIds,
+            'countries' => ['日本', '韓國', '美國', '歐洲', '澳洲', '其他'],  // ✅ 國家選項
+            'selectedCountry' => $request->country ?? '',  // ✅ 保留選中
+            'searchQuery' => $request->search ?? ''
         ]);
+
     }
+
 
 }
