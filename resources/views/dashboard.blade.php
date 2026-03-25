@@ -418,7 +418,7 @@
                                                         </form>
                                                     @elseif($requestList->status === 'pending')
                                                         <button type="button" class="inline-flex items-center rounded-lg bg-blue-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-600" onclick="openRequestDetailModal({{ $requestList->id }})">檢視</button>
-                                                        <button type="button" class="inline-flex items-center rounded-lg bg-green-400 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-green-500">聊天</button>
+                                                        <button type="button" class="inline-flex items-center rounded-lg bg-green-400 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-green-500"onclick="window.location.href='{{ url('/messages') }}'">聊天</button>
                                                         @php
                                                           // 計算倒數結束時間：更新時間 + 1個月
                                                           $endTime = $requestList->updated_at->addMonth()->toIso8601String();
