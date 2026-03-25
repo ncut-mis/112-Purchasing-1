@@ -38,7 +38,7 @@ class HomeController extends Controller
     /**
      * 搜尋代購貼文 (首頁搜尋表單使用)
      */
-        public function search(Request $request)
+    public function search(Request $request)
     {
         $query = AgentPost::withCount('products')
             ->with('user')
@@ -46,13 +46,18 @@ class HomeController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->whereHas('products', function ($productQuery) use ($search) {
-                // ✅ 只搜商品名稱
-                $productQuery->where('name', 'LIKE', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                // ✅ 新增：標題搜尋 OR 商品搜尋
+                $q->whereHas('products', function ($productQuery) use ($search) {
+                    $productQuery->where('name', 'LIKE', "%{$search}%");
+                })
+                ->orWhere('title', 'LIKE', "%{$search}%");  // ✅ 標題搜尋
             });
         }
+
+        // 國家篩選（AND）
         if ($request->filled('country')) {
-        $query->where('country', $request->country);
+            $query->where('country', $request->country);
         }
 
         $posts = $query->paginate(12)->withQueryString();
@@ -66,12 +71,12 @@ class HomeController extends Controller
         return view('home', [
             'agentPosts' => $posts,
             'requests' => $requests,
-            'countries' => ['日本', '韓國', '美國', '歐洲', '澳洲', '其他'],  // ✅ 國家選項
-            'selectedCountry' => $request->country ?? '',  // ✅ 保留選中
+            'countries' => ['日本', '韓國', '美國', '歐洲', '澳洲', '其他'],
+            'selectedCountry' => $request->country ?? '',
             'searchQuery' => $request->search ?? ''
         ]);
-
     }
+
 
 
 }
