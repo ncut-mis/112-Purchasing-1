@@ -251,32 +251,68 @@
         <!-- [彈窗 2] 報價單 Modal -->
         <div x-show="showPriceModal" class="fixed inset-0 z-[110] flex items-center justify-center p-4" x-cloak>
             <div class="absolute inset-0 bg-indigo-950/40 backdrop-blur-sm" @click="closeAll()"></div>
-            <div x-show="showPriceModal" x-transition class="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-md relative">
+            <div x-show="showPriceModal" x-transition class="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-2xl relative flex flex-col max-h-[90vh]">
                 <div class="h-2 bg-indigo-600"></div>
-                <div class="p-10">
+                
+                <div class="p-8 pb-4">
                     <h4 class="text-2xl font-black text-gray-800 mb-2">填寫代購報價單</h4>
-                    <p class="text-gray-400 text-sm mb-8">向買家提供您的代購方案與預計行程</p>
-                    <div class="space-y-6">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-400 uppercase mb-3 tracking-widest">請輸入代購價 (NTD)</label>
-                            <div class="relative">
-                                <span class="absolute left-6 top-1/2 -translate-y-1/2 text-xl font-black text-indigo-300">NT$</span>
-                                <input type="number" x-model="quoteAmount" class="w-full pl-16 pr-6 py-5 bg-gray-50 border-none rounded-3xl text-2xl font-black text-indigo-600 focus:ring-2 focus:ring-indigo-500" placeholder="0">
+                    <p class="text-gray-400 text-sm">請針對請購單內的每一項商品提供報價 (NTD)</p>
+                </div>
+
+                <!-- 商品報價列表 (可滾動區) -->
+                <div class="flex-1 overflow-y-auto px-8 custom-scrollbar space-y-6">
+                    <template x-for="(item, index) in selectedRequest?.items" :key="index">
+                        <div class="p-5 bg-indigo-50/30 rounded-3xl border-2 border-indigo-50 hover:border-indigo-100 transition shadow-sm">
+                            <div class="flex items-center gap-4 mb-5">
+                                <div class="w-20 h-20 rounded-2xl bg-white flex items-center justify-center overflow-hidden border-2 border-white shadow-sm shrink-0">
+                                    <template x-if="item.image">
+                                        <img :src="item.image" class="w-full h-full object-cover">
+                                    </template>
+                                    <template x-if="!item.image">
+                                        <i class="bi bi-image text-gray-300 text-xl"></i>
+                                    </template>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="font-black text-gray-800 text-base mb-1" x-text="item.name"></div>
+                                    <div class="inline-flex items-center px-3 py-1 bg-white rounded-full text-xs text-indigo-600 font-black shadow-sm border border-indigo-50" x-text="'需求數量：' + item.quantity"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="relative group">
+                                <span class="absolute left-5 top-1/2 -translate-y-1/2 text-base font-black text-indigo-400 transition group-focus-within:text-indigo-600">NT$</span>
+                                <input type="number" x-model="itemPrices[index]" 
+                                    class="w-full pl-16 pr-6 py-4 bg-white border-2 border-indigo-100 rounded-2xl text-xl font-black text-indigo-600 placeholder-gray-300 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-sm transition-all" 
+                                    placeholder="輸入此項商品之報價">
                             </div>
                         </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-400 uppercase mb-3 tracking-widest">請輸入可代購時段</label>
-                            <textarea x-model="availableTime" rows="2" class="w-full p-6 bg-gray-50 border-none rounded-3xl text-sm font-bold text-gray-700 focus:ring-2 focus:ring-indigo-500" placeholder="例如：本週末採買，預計下週一寄出"></textarea>
-                        </div>
-                        <div class="flex gap-4 pt-4">
-                            <button @click="closeAll()" class="flex-1 py-4 text-gray-400 font-bold">取消</button>
-                            <button @click="submitQuote()" :disabled="!quoteAmount || !availableTime" :class="(!quoteAmount || !availableTime) ? 'opacity-40' : 'hover:bg-indigo-700 shadow-xl shadow-indigo-100'" class="flex-[2] py-4 bg-indigo-600 text-white rounded-2xl font-black transition transform active:scale-95">送出報價</button>
-                        </div>
+                    </template>
+
+                    <div class="pt-2 pb-6">
+                        <label class="block text-xs font-black text-gray-500 uppercase mb-3 tracking-widest flex items-center gap-2">
+                            <i class="bi bi-calendar-event text-indigo-500"></i> 請輸入可代購時段
+                        </label>
+                        <textarea x-model="availableTime" rows="3" 
+                            class="w-full p-6 bg-white border-2 border-indigo-100 rounded-3xl text-sm font-bold text-gray-700 placeholder-gray-300 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-sm transition-all" 
+                            placeholder="例如：本週末於實體門市採買，預計下週一完成空運寄出"></textarea>
+                    </div>
+                </div>
+
+                <!-- 底部操作按鈕區 -->
+                <div class="p-8 pt-6 border-t border-gray-100 bg-gray-50/50">
+                    <div class="flex gap-4">
+                        <button @click="closeAll()" class="flex-1 py-4 text-gray-500 font-black hover:text-gray-700 transition">取消</button>
+                        <button @click="submitQuote()" 
+                                :disabled="!isReadyToSubmit" 
+                                :class="!isReadyToSubmit ? 'opacity-40 cursor-not-allowed scale-95' : 'hover:bg-indigo-700 shadow-xl shadow-indigo-100 hover:-translate-y-0.5'" 
+                                class="flex-[2] py-4 bg-indigo-600 text-white rounded-2xl font-black transition-all duration-300 transform active:scale-95">
+                            確認並送出報價清單
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
 
     <style>
         [x-cloak] { display: none !important; }
