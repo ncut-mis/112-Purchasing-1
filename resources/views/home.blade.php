@@ -236,43 +236,64 @@
 
                                     <div class="table-responsive">
                                         <table class="table align-middle">
-                                            <thead class="bg-light">
-                                                <tr class="small text-muted border-0">
-                                                    <th class="border-0 ps-0" style="width: 70px;">圖片</th>
-                                                    <th class="border-0">商品名稱</th>
-                                                    <th class="border-0 text-center">單價</th>
-                                                    <th class="border-0 text-center" style="width: 140px;">數量</th>
-                                                    <th class="border-0 text-end pe-0">小計</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach($agentPost->products as $product)
-                                                <tr class="product-row" data-price="{{ $product->price }}">
-                                                    <td class="ps-0">
-                                                        <img src="{{ $product->display_image_url ?? 'https://via.placeholder.com/60' }}" 
-                                                             class="rounded-3 object-fit-cover shadow-sm" width="55" height="55">
-                                                    </td>
-                                                    <td>
-                                                        <div class="fw-bold text-dark mb-0">{{ $product->name }}</div>
-                                                    </td>
-                                                    <td class="text-center fw-semibold text-muted">
-                                                        ${{ number_format($product->price) }}
-                                                    </td>
-                                                    <td>
-                                                        <div class="input-group input-group-sm border rounded-pill overflow-hidden bg-white mx-auto" style="max-width: 110px;">
-                                                            <button class="btn btn-link text-decoration-none border-0 px-2 qty-minus" type="button"><i class="bi bi-dash-lg"></i></button>
-                                                            <input type="number" name="products[{{ $product->id }}][quantity]" 
-                                                                   class="form-control border-0 text-center bg-transparent qty-input" value="0" min="0" style="box-shadow: none;">
-                                                            <button class="btn btn-link text-decoration-none border-0 px-2 qty-plus" type="button"><i class="bi bi-plus-lg"></i></button>
-                                                        </div>
-                                                    </td>
-                                                    <td class="text-end pe-0 fw-bold text-primary subtotal">
-                                                        $0
-                                                    </td>
-                                                </tr>
-                                                @endforeach
-                                            </tbody>
-                                        </table>
+    <thead class="bg-light">
+        <tr class="small text-muted border-0">
+            <th class="border-0 ps-0" style="width: 70px;">圖片</th>
+            <th class="border-0">商品名稱</th>
+            <th class="border-0 text-center">可下單數量</th> 
+            <th class="border-0 text-center">單價</th>
+            <th class="border-0 text-center" style="width: 140px;">數量</th>
+            <th class="border-0 text-end pe-0">小計</th>
+        </tr>
+    </thead>
+   <tbody>
+    @foreach($agentPost->products as $product)
+        @php
+            // 計算真正的剩餘數量：最大數量 - 已售數量
+            $max = $product->max_quantity ?? 0;
+            $sold = $product->sold_quantity ?? 0;
+            $remaining = $max - $sold; 
+        @endphp
+        <tr class="product-row" data-price="{{ $product->price }}">
+            <td class="ps-0">
+                <img src="{{ $product->display_image_url ?? 'https://via.placeholder.com/60' }}" 
+                     class="rounded-3 object-fit-cover shadow-sm" width="55" height="55">
+            </td>
+            <td>
+                <div class="fw-bold text-dark mb-0">{{ $product->name }}</div>
+            </td>
+            <td class="text-center">
+                <span class="badge {{ $remaining > 0 ? 'bg-info-subtle text-info' : 'bg-danger-subtle text-danger' }} rounded-pill">
+                    {{ $remaining > 0 ? '還有 ' . $remaining : '已售罄' }}
+                </span>
+            </td>
+            <td class="text-center fw-semibold text-muted">
+                ${{ number_format($product->price) }}
+            </td>
+            <td>
+                <div class="input-group input-group-sm border rounded-pill overflow-hidden bg-white mx-auto" style="max-width: 110px;">
+                    <button class="btn btn-link text-decoration-none border-0 px-2 qty-minus" type="button" {{ $remaining <= 0 ? 'disabled' : '' }}>
+                        <i class="bi bi-dash-lg"></i>
+                    </button>
+                    <input type="number" name="products[{{ $product->id }}][quantity]" 
+                           class="form-control border-0 text-center bg-transparent qty-input" 
+                           value="0" 
+                           min="0" 
+                           max="{{ $remaining }}" 
+                           {{ $remaining <= 0 ? 'disabled' : '' }}
+                           style="box-shadow: none;">
+                    <button class="btn btn-link text-decoration-none border-0 px-2 qty-plus" type="button" {{ $remaining <= 0 ? 'disabled' : '' }}>
+                        <i class="bi bi-plus-lg"></i>
+                    </button>
+                </div>
+            </td>
+            <td class="text-end pe-0 fw-bold text-primary subtotal">
+                $0
+            </td>
+        </tr>
+    @endforeach
+</tbody>
+</table>
                                     </div>
                                 </div>
 
@@ -427,30 +448,46 @@
                 }
             };
 
-            modal.addEventListener('click', (e) => {
-                const plusBtn = e.target.closest('.qty-plus');
-                const minusBtn = e.target.closest('.qty-minus');
-                
-                if (plusBtn) {
-                    const input = plusBtn.closest('.input-group').querySelector('.qty-input');
-                    input.value = parseInt(input.value) + 1;
-                    updateTotals();
-                }
-                if (minusBtn) {
-                    const input = minusBtn.closest('.input-group').querySelector('.qty-input');
-                    if (parseInt(input.value) > 0) {
-                        input.value = parseInt(input.value) - 1;
-                        updateTotals();
-                    }
-                }
-            });
+    modal.addEventListener('click', (e) => {
+    const plusBtn = e.target.closest('.qty-plus');
+    const minusBtn = e.target.closest('.qty-minus');
+    
+    if (plusBtn) {
+        const input = plusBtn.closest('.input-group').querySelector('.qty-input');
+        const currentVal = parseInt(input.value) || 0;
+        const maxVal = parseInt(input.getAttribute('max')) || 0;
+
+        // 檢查是否超過最大可下單數量
+        if (currentVal < maxVal) {
+            input.value = currentVal + 1;
+            updateTotals();
+        } else {
+            alert('已達該商品最大可下單數量！');
+        }
+    }
+    
+    if (minusBtn) {
+        const input = minusBtn.closest('.input-group').querySelector('.qty-input');
+        if (parseInt(input.value) > 0) {
+            input.value = parseInt(input.value) - 1;
+            updateTotals();
+        }
+    }
+});
 
             modal.querySelectorAll('.qty-input').forEach(input => {
-                input.addEventListener('input', () => {
-                    if (input.value < 0) input.value = 0;
-                    updateTotals();
-                });
-            });
+    input.addEventListener('change', () => {
+        const maxVal = parseInt(input.getAttribute('max')) || 0;
+        let currentVal = parseInt(input.value) || 0;
+
+        if (currentVal > maxVal) {
+            alert('不能超過可下單數量：' + maxVal);
+            input.value = maxVal;
+        }
+        if (currentVal < 0) input.value = 0;
+        updateTotals();
+    });
+});
 
             form?.addEventListener('submit', (event) => {
                 const totalQuantity = Array.from(modal.querySelectorAll('.qty-input'))
