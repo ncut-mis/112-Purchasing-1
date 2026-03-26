@@ -5,6 +5,7 @@ use App\Http\Controllers\AgentApplicationController;
 use App\Http\Controllers\AgentDashboardController;
 use App\Http\Controllers\AgentPostController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RequestListController;
 use App\Http\Controllers\ShopController;
@@ -34,6 +35,7 @@ Route::post('/admin/logout', [AdminAuthController::class, 'logout'])->name('admi
 Route::patch('/admin/agent-applications/{agentApplication}/approve', [AdminAuthController::class, 'approveAgentApplication'])->middleware('admin.auth')->name('admin.agent-applications.approve');
 Route::patch('/admin/agent-applications/{agentApplication}/reject', [AdminAuthController::class, 'rejectAgentApplication'])->middleware('admin.auth')->name('admin.agent-applications.reject');
 Route::delete('/admin/request-lists/{requestList}', [AdminAuthController::class, 'deleteRequestList'])->middleware('admin.auth')->name('admin.request-lists.delete');
+Route::middleware('auth')->get('/api/latest-orders', [DashboardController::class, 'getLatestOrders'])->name('api.orders.latest');
 
 Route::get('/', function () {
     $agentPosts = AgentPost::with(['user', 'products'])
@@ -57,15 +59,8 @@ Route::get('/', function () {
     return view('home', compact('agentPosts', 'requests', 'favoritedAgentPostIds'));
 })->name('home');
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard', function () {
-        $requestLists = RequestList::with('items')
-            ->where('user_id', auth()->id())
-            ->latest()
-            ->get();
-
-        return view('dashboard', compact('requestLists'));
-    })->name('dashboard');
+    Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // 代購人會員專區
     Route::get('/agent/member', function () {
@@ -127,11 +122,14 @@ Route::middleware('auth')->group(function () {
     Route::patch('/cart/update/{id}', [CartController::class, 'update'])->name('cart.update');
     Route::delete('/cart/remove/{id}', [CartController::class, 'remove'])->name('cart.remove');
     Route::delete('/cart/empty', [CartController::class, 'empty'])->name('cart.empty');
+    Route::post('/agent-posts/{agentPost}/follow-order', [OrderController::class, 'store'])->name('orders.store');
 });
+
     //建立搜尋自己清單的路由
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
+
 
 
 // 收藏/取消收藏請購清單
@@ -141,6 +139,11 @@ Route::middleware(['auth'])->post('/favorite/toggle', [\App\Http\Controllers\Fav
 // 改用 HomeController 的 search 方法
 Route::get('/agent/posts/search', [App\Http\Controllers\HomeController::class, 'search'])
     ->name('agent.posts.search');
+
+Route::middleware('auth')->group(function () {
+    // ...
+    Route::post('/agent-posts/{agentPost}/follow-order', [OrderController::class, 'store'])->name('orders.store');
+});
 
 
 

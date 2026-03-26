@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\AgentPost;
+use App\Models\Order;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use App\Models\RequestList;
 
 class DashboardController extends Controller
@@ -49,6 +52,36 @@ class DashboardController extends Controller
             ->map(fn ($id) => (int) $id)
             ->all();
 
+        $followOrders = new LengthAwarePaginator(
+            [],
+            0,
+            9,
+            (int) $request->query('follow_page', 1),
+            [
+                'path' => $request->url(),
+                'query' => $request->query(),
+                'pageName' => 'follow_page',
+            ]
+        );
+
+        if ($currentSection === 'follow-orders' && Schema::hasTable('orders')) {
+            $followOrdersQuery = Order::with(['seller', 'items'])
+                ->where('buyer_id', $user->id);
+
+            if ($followSearch = trim((string) $request->query('follow_search', ''))) {
+                $followOrdersQuery->where(function ($q) use ($followSearch) {
+                    $q->where('order_no', 'like', "%{$followSearch}%")
+                        ->orWhere('status', 'like', "%{$followSearch}%")
+                        ->orWhere('tracking_number', 'like', "%{$followSearch}%")
+                        ->orWhereHas('seller', function ($sellerQuery) use ($followSearch) {
+                            $sellerQuery->where('name', 'like', "%{$followSearch}%");
+                        });
+                });
+            }
+
+            $followOrders = $followOrdersQuery->latest()->paginate(9, ['*'], 'follow_page');
+        }
+
         $stats = [
             'ongoing_requests' => RequestList::where('user_id', $user->id)
                 ->whereIn('status', ['pending', 'offered', 'matched'])
@@ -62,6 +95,7 @@ class DashboardController extends Controller
             'requestLists',
             'favoriteAgentPosts',
             'favoriteAgentPostIds',
+            'followOrders',
             'currentSection',
             'stats'
         ));

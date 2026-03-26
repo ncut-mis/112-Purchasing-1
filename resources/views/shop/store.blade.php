@@ -49,21 +49,33 @@
                     <div class="h-8 w-px bg-gray-100 hidden lg:block mx-2"></div>
 
                     <!-- 國家篩選按鈕區 (替代原本的建立清單) -->
-                    <div class="flex gap-2 w-full lg:w-auto">
-                        <a href="{{ route('store', array_merge(request()->except('country'), ['country' => '日本'])) }}" 
-                           class="flex-1 lg:flex-none px-6 py-4 rounded-2xl font-bold border-2 transition flex items-center justify-center gap-2 {{ request('country') == '日本' ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-100' : 'border-gray-100 text-gray-500 hover:border-emerald-500 hover:text-emerald-600' }}">
-                            🇯🇵 日本
-                        </a>
-                        <a href="{{ route('store', array_merge(request()->except('country'), ['country' => '韓國'])) }}" 
-                           class="flex-1 lg:flex-none px-6 py-4 rounded-2xl font-bold border-2 transition flex items-center justify-center gap-2 {{ request('country') == '韓國' ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-100' : 'border-gray-100 text-gray-500 hover:border-emerald-500 hover:text-emerald-600' }}">
-                            🇰🇷 韓國
-                        </a>
+                    <div class="flex gap-3 items-end w-full lg:w-auto">
+                    {{-- 國家下拉選單 --}}
+                        <div class="flex-1 lg:w-48">
+                            <select name="country" 
+                                onchange="this.form.submit()" 
+                                class="form-select rounded-2xl border-2 shadow-sm {{ request('country') ? 'border-emerald-500 shadow-emerald-100' : 'border-gray-200' }}"
+                                style="font-weight: 600; height: 56px;">
+                                <option value="">🌍 所有國家</option>
+                                <option value="日本" {{ request('country') == '日本' ? 'selected' : '' }}>JP 日本</option>
+                                <option value="韓國" {{ request('country') == '韓國' ? 'selected' : '' }}>KR 韓國</option>
+                                <option value="美國" {{ request('country') == '美國' ? 'selected' : '' }}>US 美國</option>
+                                <option value="歐洲" {{ request('country') == '歐洲' ? 'selected' : '' }}>EU 歐洲</option>
+                                <option value="澳洲" {{ request('country') == '澳洲' ? 'selected' : '' }}>AU 澳洲</option>
+                                <option value="香港" {{ request('country') == '香港' ? 'selected' : '' }}>HK 香港</option>
+                            </select>
+                        </div>
+    
+                        {{-- 清除按鈕 --}}
                         @if(request('country'))
-                            <a href="{{ route('store', request()->except('country')) }}" class="p-4 rounded-2xl bg-red-50 text-red-500 hover:bg-red-100 transition flex items-center justify-center" title="清除篩選">
-                                <i class="bi bi-x-lg"></i>
-                            </a>
+                        <a href="{{ route('store', request()->except('country')) }}" 
+                        class="p-4 rounded-2xl bg-red-50 border-2 border-red-100 text-red-500 hover:bg-red-100 shadow-sm transition flex items-center justify-center h-14" 
+                        title="清除國家篩選">
+                            <i class="bi bi-x-lg fs-4"></i>
+                        </a>
                         @endif
                     </div>
+
                 </form>
             </div>
 

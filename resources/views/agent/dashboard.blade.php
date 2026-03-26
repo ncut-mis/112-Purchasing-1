@@ -203,6 +203,7 @@
                 @endforelse
             </div>
 
+
             <div class="mt-8">
                 {{ $requestLists->links() }}
             </div>
@@ -219,6 +220,74 @@
                         <div class="text-sm text-gray-500"><span class="font-bold">地址：</span><span x-text="selectedRequest?.address"></span></div>
                         <div class="text-sm text-gray-500"><span class="font-bold">截止日期：</span><span x-text="selectedRequest?.deadline"></span></div>
                     </div>
+
+                            <div class="flex items-center justify-between pt-4 border-t border-gray-50">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <img src="https://ui-avatars.com/api/?name={{ urlencode($requestList->user->name ?? 'User') }}&background=f3f4f6" class="w-6 h-6 rounded-full" alt="user-avatar">
+                                    <span class="text-xs text-gray-500 truncate">請購人：{{ $requestList->user->name ?? '未知使用者' }}</span>
+                                </div>
+                                @if(auth()->check() && $requestList->user_id === auth()->id())
+                                    <button type="button"class="accept-order-btn px-8 py-2.5 bg-gray-400 text-white rounded-xl font-bold text-sm flex items-center gap-2 cursor-not-allowed" disabled>
+                                       <i class="bi bi-cart-plus"></i> 無法接單
+                                    </button>
+                                @else
+                                    @php
+                                        $orderData = [
+                                            "id" => $requestList->id,
+                                            "title" => $title,
+                                            "detail_address" => $requestList->detail_address ?: '未填寫',
+                                            "deadline" => optional($requestList->deadline)->format("Y-m-d"),
+                                            "note" => $requestList->note,
+                                            "items" => $requestList->items->map(function($item) {
+                                                $img = null;
+                                                if ($item->reference_image) {
+                                                    $img = url('/request-item-image/' . $item->id);
+                                                }
+                                                return [
+                                                    "name" => $item->name,
+                                                    "quantity" => $item->quantity,
+                                                    "image" => $img
+                                                ];
+                                            })->values()->toArray(),
+                                        ];
+                                    @endphp
+                                    <button type="button"
+                                        class="accept-order-btn px-8 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-indigo-700 transition"
+                                        data-request-list='@json($orderData)'
+                                    >
+                                        <i class="bi bi-cart-plus"></i> 我要接單
+                                    </button>
+                                @endif
+                                <!-- 接單詳情 Modal -->
+                                <div id="order-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 hidden">
+                                    <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-2xl text-left relative">
+                                        <button id="order-modal-close" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                                        <div class="mb-4">
+                                            <h3 class="text-xl font-bold text-indigo-700 mb-2" id="order-modal-title"></h3>
+                                            <div class="text-sm text-gray-500 mb-1"><span class="font-bold">地址：</span><span id="order-modal-address"></span></div>
+                                            <div class="text-sm text-gray-500 mb-1"><span class="font-bold">截止日期：</span><span id="order-modal-deadline"></span></div>
+                                        </div>
+                                        <div class="mb-4">
+                                            <div class="font-bold text-gray-700 mb-2">商品明細</div>
+                                            <div id="order-modal-items" class="space-y-2"></div>
+                                        </div>
+                                        <div class="mb-4">
+                                            <div class="font-bold text-gray-700 mb-1">備註</div>
+                                            <div id="order-modal-note" class="text-gray-600 text-sm"></div>
+                                        </div>
+                                        <div class="flex justify-end">
+                                            <button class="px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition">確定接單</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="lg:col-span-2 bg-white rounded-2xl border border-dashed border-gray-200 p-12 text-center text-gray-500">
+                            目前沒有符合條件的請購清單。
+                        </div>
+                    @endforelse
+
                 </div>
 
                 <div class="mb-6">
