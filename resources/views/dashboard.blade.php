@@ -285,36 +285,41 @@
                                 </div>
                             @endif
 
-                            <div class="space-y-4">
+                            <div class="space-y-2.5">
                                 @forelse($followOrders as $followOrder)
-                                    <article class="flex flex-col gap-4 rounded-[26px] border border-indigo-100 bg-[#f8f9ff] px-5 py-4 shadow-sm lg:flex-row lg:items-center">
-                                        <div class="flex h-24 w-24 shrink-0 items-center justify-center rounded-[26px] bg-white text-indigo-400 shadow-sm">
-                                            <svg class="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    @php
+                                        $followOrderTitle = $followOrder->source?->title
+                                            ?? data_get($followOrder->recipient_data, 'post_title')
+                                            ?? '未命名貼文';
+                                    @endphp
+                                    <article class="flex flex-col gap-2.5 rounded-[20px] border border-indigo-100 bg-[#f8f9ff] px-3.5 py-3 shadow-sm lg:flex-row lg:items-center">
+                                        <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-[18px] bg-white text-indigo-400 shadow-sm">
+                                            <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
                                             </svg>
                                         </div>
 
                                         <div class="min-w-0 flex-1">
-                                            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                                             <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
                                                 <div class="min-w-0 flex-1">
-                                                    <h4 class="truncate text-[1.35rem] font-bold tracking-tight text-slate-800">{{ $followOrder->post_title }}</h4>
-                                                    <p class="mt-2 text-[1rem] text-slate-600">代購人：{{ optional($followOrder->seller)->name ?? '未指定代購人' }}</p>
-                                                    <div class="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-[0.95rem] text-slate-500">
+                                                    <h4 class="truncate text-[0.9rem] font-semibold text-slate-700">{{ $followOrderTitle }}</h4>
+                                                    <div class="mt-1 flex flex-wrap items-center gap-x-6 gap-y-1 text-[0.82rem] text-slate-600">
+                                                        <span>代購人：{{ optional($followOrder->seller)->name ?? '未指定代購人' }}</span>
+                                                        <span>
+                                                            代購商品：
+                                                            {{ $followOrder->items->map(fn ($item) => $item->name . ' × ' . $item->quantity)->implode('、') ?: '無商品資料' }}
+                                                        </span>
+                                                    </div>
+                                                    <div class="mt-1 flex flex-wrap items-center gap-x-5 gap-y-1 text-[0.82rem] text-slate-500">
                                                         <span>下單日期：{{ optional($followOrder->created_at)->format('Y-m-d') }}</span>
                                                         <span>商品數量：{{ $followOrder->items->sum('quantity') }} 件</span>
                                                         <span>總金額：{{ number_format((float) $followOrder->total_amount, 0) }} {{ $followOrder->currency }}</span>
                                                     </div>
-                                                    <div class="mt-2 flex flex-wrap items-center gap-x-6 gap-y-2 text-[0.95rem] text-slate-500">
-                                                        <span>物流單號：{{ $followOrder->tracking_number ?: '待更新' }}</span>
-                                                        <span>付款方式：{{ $followOrder->payment_method ?: '未設定' }}</span>
-                                                    </div>
-                                                    <div class="mt-2 text-[0.92rem] text-slate-500">
-                                                        代購商品：
-                                                        {{ $followOrder->items->map(fn ($item) => $item->name . ' × ' . $item->quantity)->implode('、') ?: '無商品資料' }}
-                                                    </div>
+                                                    
+                    
                                                 </div>
 
-                                                <div class="flex items-center justify-between gap-3 lg:justify-end">
+                                                 <div class="flex items-center justify-between gap-2 lg:justify-end">
                                                     @php
                                                         $statusText = match ($followOrder->status) {
                                                             'pending_payment' => '待付款',
@@ -327,9 +332,16 @@
                                                             default => $followOrder->status,
                                                         };
                                                     @endphp
-                                                    <span class="inline-flex items-center rounded-full bg-indigo-100 px-4 py-2 text-sm font-semibold text-indigo-700">
+                                                    <span class="inline-flex items-center rounded-full bg-indigo-100 px-3 py-1 text-[0.8rem] font-semibold text-indigo-700">
                                                         {{ $statusText }}
                                                     </span>
+                                                    <button
+                                                        type="button"
+                                                        class="inline-flex items-center rounded-full bg-white px-3 py-1 text-[0.8rem] font-semibold text-indigo-600 shadow-sm ring-1 ring-indigo-200 transition hover:bg-indigo-50"
+                                                        onclick="openFollowOrderModal({{ $followOrder->id }})"
+                                                    >
+                                                        檢視
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -350,6 +362,78 @@
                                     {{ $followOrders->appends(['section' => 'follow-orders', 'follow_search' => request('follow_search')])->links() }}
                                 </div>
                             @endif
+
+                            @foreach($followOrders as $followOrder)
+                                @php
+                                    $followOrderTitle = $followOrder->source?->title
+                                        ?? data_get($followOrder->recipient_data, 'post_title')
+                                        ?? '未命名貼文';
+                                    $followOrderStatusText = match ($followOrder->status) {
+                                        'pending_payment' => '待付款',
+                                        'paid' => '已付款',
+                                        'purchasing' => '採購中',
+                                        'shipped' => '已出貨',
+                                        'completed' => '已完成',
+                                        'cancelled' => '已取消',
+                                        'refunded' => '已退款',
+                                        default => $followOrder->status,
+                                    };
+                                @endphp
+                                <div id="follow-order-modal-{{ $followOrder->id }}" class="follow-order-modal hidden fixed inset-0 z-[72] flex items-center justify-center bg-slate-900/55 px-4 py-6" onclick="handleFollowOrderBackdrop(event, {{ $followOrder->id }})">
+                                    <div class="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+                                        <div class="flex items-start justify-between gap-3 border-b border-indigo-100 bg-indigo-50 px-5 py-4">
+                                            <div>
+                                                <p class="text-xs font-semibold uppercase tracking-wider text-indigo-500">跟單完整資料</p>
+                                                <h4 class="mt-1 text-lg font-bold text-slate-800">{{ $followOrderTitle }}</h4>
+                                            </div>
+                                            <button type="button" class="rounded-full bg-white px-2.5 py-1 text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-50" onclick="closeFollowOrderModal({{ $followOrder->id }})" aria-label="關閉跟單完整資料視窗">✕</button>
+                                        </div>
+
+                                        <div class="max-h-[72vh] overflow-y-auto px-5 py-5">
+                                            <div class="grid gap-3 sm:grid-cols-2">
+                                                <div class="rounded-xl bg-slate-50 px-4 py-3">
+                                                    <p class="text-xs text-slate-400">代購人</p>
+                                                    <p class="mt-1 text-sm font-semibold text-slate-700">{{ optional($followOrder->seller)->name ?? '未指定代購人' }}</p>
+                                                </div>
+                                                <div class="rounded-xl bg-slate-50 px-4 py-3">
+                                                    <p class="text-xs text-slate-400">訂單狀態</p>
+                                                    <p class="mt-1 text-sm font-semibold text-indigo-700">{{ $followOrderStatusText }}</p>
+                                                </div>
+                                                <div class="rounded-xl bg-slate-50 px-4 py-3">
+                                                    <p class="text-xs text-slate-400">下單日期</p>
+                                                    <p class="mt-1 text-sm font-semibold text-slate-700">{{ optional($followOrder->created_at)->format('Y-m-d H:i') ?? '-' }}</p>
+                                                </div>
+                                                <div class="rounded-xl bg-slate-50 px-4 py-3">
+                                                    <p class="text-xs text-slate-400">付款方式</p>
+                                                    <p class="mt-1 text-sm font-semibold text-slate-700">{{ $followOrder->payment_method ?: '未設定' }}</p>
+                                                </div>
+                                                <div class="rounded-xl bg-slate-50 px-4 py-3">
+                                                    <p class="text-xs text-slate-400">物流單號</p>
+                                                    <p class="mt-1 text-sm font-semibold text-slate-700">{{ $followOrder->tracking_number ?: '待更新' }}</p>
+                                                </div>
+                                                <div class="rounded-xl bg-slate-50 px-4 py-3">
+                                                    <p class="text-xs text-slate-400">總金額</p>
+                                                    <p class="mt-1 text-sm font-semibold text-slate-700">{{ number_format((float) $followOrder->total_amount, 0) }} {{ $followOrder->currency }}</p>
+                                                </div>
+                                            </div>
+
+                                            <section class="mt-4 rounded-xl border border-slate-200 p-4">
+                                                <h5 class="text-sm font-bold text-slate-700">商品清單</h5>
+                                                <ul class="mt-3 space-y-2 text-sm text-slate-600">
+                                                    @forelse($followOrder->items as $item)
+                                                        <li class="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                                                            <span class="truncate pr-4">{{ $item->name }}</span>
+                                                            <span class="shrink-0 text-slate-500">× {{ $item->quantity }}</span>
+                                                        </li>
+                                                    @empty
+                                                        <li class="rounded-lg bg-slate-50 px-3 py-2 text-slate-400">無商品資料</li>
+                                                    @endforelse
+                                                </ul>
+                                            </section>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
                         </div>
                     @else
                     <!-- 請購清單塊-->
@@ -831,6 +915,24 @@
             }
         }
 
+        function openFollowOrderModal(id) {
+            const modal = document.getElementById(`follow-order-modal-${id}`);
+
+            if (modal) {
+                modal.classList.remove('hidden');
+                document.body.classList.add('overflow-hidden');
+            }
+        }
+
+        function closeFollowOrderModal(id) {
+            const modal = document.getElementById(`follow-order-modal-${id}`);
+
+            if (modal) {
+                modal.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
+            }
+        }
+
         document.addEventListener('keydown', (event) => {
             if (event.key !== 'Escape') {
                 return;
@@ -849,9 +951,21 @@
             });
         });
 
+        document.querySelectorAll('.follow-order-modal').forEach((modal) => {
+                if (!modal.classList.contains('hidden')) {
+                    modal.classList.add('hidden');
+                    document.body.classList.remove('overflow-hidden');
+                }
+            });
+
         function handleRequestDetailBackdrop(event, id) {
             if (event.target.id === `request-detail-modal-${id}`) {
                 closeRequestDetailModal(id);
+            }
+        }
+        function handleFollowOrderBackdrop(event, id) {
+            if (event.target.id === `follow-order-modal-${id}`) {
+                closeFollowOrderModal(id);
             }
         }
 

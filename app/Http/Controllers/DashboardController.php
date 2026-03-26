@@ -65,7 +65,7 @@ class DashboardController extends Controller
         );
 
         if ($currentSection === 'follow-orders' && Schema::hasTable('orders')) {
-            $followOrdersQuery = Order::with(['seller', 'items'])
+            $followOrdersQuery = Order::with(['seller', 'items', 'source'])
                 ->where('buyer_id', $user->id);
 
             if ($followSearch = trim((string) $request->query('follow_search', ''))) {
@@ -73,6 +73,9 @@ class DashboardController extends Controller
                     $q->where('order_no', 'like', "%{$followSearch}%")
                         ->orWhere('status', 'like', "%{$followSearch}%")
                         ->orWhere('tracking_number', 'like', "%{$followSearch}%")
+                         ->orWhereHasMorph('source', [AgentPost::class, RequestList::class], function ($sourceQuery) use ($followSearch) {
+                            $sourceQuery->where('title', 'like', "%{$followSearch}%");
+                        })
                         ->orWhereHas('seller', function ($sellerQuery) use ($followSearch) {
                             $sellerQuery->where('name', 'like', "%{$followSearch}%");
                         });
