@@ -161,65 +161,65 @@
                                 </div>
                             @endif
 
-                            <div class="space-y-4" id="favorite-post-list">
-                                @forelse($favoriteAgentPosts as $favoriteAgentPost)
-                                    <article class="favorite-post-item flex flex-col gap-4 rounded-[26px] border border-pink-100 bg-[#fff8fc] px-5 py-4 shadow-sm lg:flex-row lg:items-center" data-agent-post-id="{{ $favoriteAgentPost->id }}">
-                                        <div class="h-24 w-24 shrink-0 overflow-hidden rounded-[26px] bg-white shadow-sm">
-                                            @php
-                                                $favoriteFirstProduct = $favoriteAgentPost->products->first();
-                                                $favoriteImage = optional($favoriteFirstProduct)->display_image_url;
-                                            @endphp
-                                            @if($favoriteImage)
-                                                <img src="{{ $favoriteImage }}" alt="{{ $favoriteAgentPost->title }}" class="h-full w-full object-cover">
-                                            @elseif($favoriteAgentPost->cover_image)
-                                                <img src="{{ asset('storage/' . $favoriteAgentPost->cover_image) }}" alt="{{ $favoriteAgentPost->title }}" class="h-full w-full object-cover">
-                                            @else
-                                                <div class="flex h-full w-full items-center justify-center bg-white text-2xl text-pink-300">♡</div>
-                                            @endif
-                                        </div>
+                            <div class="space-y-2.5" id="favorite-post-list">
+    @forelse($favoriteAgentPosts as $favoriteAgentPost)
+        <article class="favorite-post-item flex flex-col gap-2.5 rounded-[20px] border border-pink-100 bg-[#fff8fc] px-3.5 py-3 shadow-sm lg:flex-row lg:items-center" data-agent-post-id="{{ $favoriteAgentPost->id }}">
+            <div class="h-16 w-16 shrink-0 overflow-hidden rounded-[18px] bg-white shadow-sm">
+                @php
+                    $favoriteFirstProduct = $favoriteAgentPost->products->first();
+                    $favoriteImage = optional($favoriteFirstProduct)->display_image_url;
+                @endphp
+                @if($favoriteImage)
+                    <img src="{{ $favoriteImage }}" alt="{{ $favoriteAgentPost->title }}" class="h-full w-full object-cover">
+                @elseif($favoriteAgentPost->cover_image)
+                    <img src="{{ asset('storage/' . $favoriteAgentPost->cover_image) }}" alt="{{ $favoriteAgentPost->title }}" class="h-full w-full object-cover">
+                @else
+                    <div class="flex h-full w-full items-center justify-center bg-white text-xl text-pink-300">♡</div>
+                @endif
+            </div>
 
-                                        <div class="min-w-0 flex-1">
-                                            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                                                <div class="min-w-0 flex-1">
-                                                    <h4 class="truncate text-[1.45rem] font-bold tracking-tight text-slate-800">{{ $favoriteAgentPost->title }}</h4>
-                                                    <p class="mt-3 text-[1.05rem] text-slate-600">代購人：{{ optional($favoriteAgentPost->user)->name ?? '匿名代購人' }}</p>
-                                                    <div class="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-[0.98rem] text-slate-500">
-                                                        <span>貼文建立：{{ optional($favoriteAgentPost->created_at)->format('Y-m-d') }}</span>
-                                                        <span>可代購商品：{{ $favoriteAgentPost->products->count() }} 項</span>
-                                                        <span>狀態：{{ $favoriteAgentPost->status === 'open' ? '接單中' : $favoriteAgentPost->status }}</span>
-                                                    </div>
-                                                </div>
+            <div class="min-w-0 flex-1">
+                <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="min-w-0 flex-1">
+                        <h4 class="truncate text-[0.9rem] font-semibold text-slate-700">{{ $favoriteAgentPost->title }}</h4>
+                        <p class="mt-1 text-[0.82rem] text-slate-600">代購人：{{ optional($favoriteAgentPost->user)->name ?? '匿名代購人' }}</p>
+                        <div class="mt-1 flex flex-wrap items-center gap-x-5 gap-y-1 text-[0.82rem] text-slate-500">
+                            <span>貼文建立：{{ optional($favoriteAgentPost->created_at)->format('Y-m-d') }}</span>
+                            <span>可代購商品：{{ $favoriteAgentPost->products->count() }} 項</span>
+                            <span>狀態：{{ $favoriteAgentPost->status === 'open' ? '接單中' : $favoriteAgentPost->status }}</span>
+                        </div>
+                    </div>
 
-                                                <div class="flex items-center justify-between gap-4 lg:justify-end">
-                                                    <a href="{{ route('agent.posts.search', ['search' => $favoriteAgentPost->title]) }}" class="shrink-0 text-[1.1rem] font-semibold text-pink-500 transition hover:text-pink-600 hover:underline">
-                                                        前往首頁
-                                                    </a>
+                    <div class="flex items-center justify-between gap-2 lg:justify-end">
+                        <a href="{{ route('agent.posts.search', ['search' => $favoriteAgentPost->title]) }}" class="shrink-0 text-[1.2rem] font-semibold text-pink-500 transition hover:text-pink-600 hover:underline">
+                            前往首頁跟單
+                        </a>
 
-                                                    <button
-                                                        type="button"
-                                                        class="dashboard-favorite-toggle inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-pink-100 bg-white text-pink-500 shadow-[0_10px_30px_rgba(236,72,153,0.12)] transition hover:-translate-y-0.5 hover:bg-pink-50"
-                                                        data-agent-post-id="{{ $favoriteAgentPost->id }}"
-                                                        aria-label="取消收藏貼文"
-                                                        aria-pressed="true"
-                                                    >
-                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-7 w-7">
-                                                            <path d="M12.001 4.529c2.349-2.532 6.15-2.533 8.498-.001 2.41 2.6 2.41 6.815 0 9.416l-7.66 8.266a1.14 1.14 0 0 1-1.677 0l-7.66-8.266c-2.41-2.601-2.41-6.817 0-9.416 2.348-2.532 6.149-2.531 8.499.001Z"/>
-                                                        </svg>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </article>
-                                @empty
-                                    <div class="rounded-2xl border border-dashed border-pink-200 bg-pink-50/40 px-6 py-12 text-center text-sm text-gray-500">
-                                        @if(request('favorite_search'))
-                                            找不到符合「{{ request('favorite_search') }}」的收藏貼文。
-                                        @else
-                                            目前尚未收藏任何代購貼文，請先到首頁的「最新代購連線」按下愛心收藏。
-                                        @endif
-                                    </div>
-                                @endforelse
-                            </div>
+                        <button
+                            type="button"
+                            class="dashboard-favorite-toggle inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-pink-100 bg-white text-pink-500 shadow-sm transition hover:bg-pink-50"
+                            data-agent-post-id="{{ $favoriteAgentPost->id }}"
+                            aria-label="取消收藏貼文"
+                            aria-pressed="true"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-6 w-6">
+                                <path d="M12.001 4.529c2.349-2.532 6.15-2.533 8.498-.001 2.41 2.6 2.41 6.815 0 9.416l-7.66 8.266a1.14 1.14 0 0 1-1.677 0l-7.66-8.266c-2.41-2.601-2.41-6.817 0-9.416 2.348-2.532 6.149-2.531 8.499.001Z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </article>
+    @empty
+        <div class="rounded-2xl border border-dashed border-pink-200 bg-pink-50/40 px-6 py-12 text-center text-sm text-gray-500">
+            @if(request('favorite_search'))
+                找不到符合「{{ request('favorite_search') }}」的收藏貼文。
+            @else
+                目前尚未收藏任何代購貼文，請先到首頁的「最新代購連線」按下愛心收藏。
+            @endif
+        </div>
+    @endforelse
+</div>
 
                             @if($favoriteAgentPosts->hasPages())
                                 <div class="mt-6">
