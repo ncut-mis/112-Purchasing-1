@@ -191,9 +191,11 @@
                     </div>
 
                     <div class="flex items-center justify-between gap-2 lg:justify-end">
-                        <a href="{{ route('agent.posts.search', ['search' => $favoriteAgentPost->title]) }}" class="shrink-0 text-[1.2rem] font-semibold text-pink-500 transition hover:text-pink-600 hover:underline">
-                            前往首頁跟單
-                        </a>
+                        <button type="button" 
+                          onclick="openFollowChoiceModal('{{ $favoriteAgentPost->id }}', '{{ $favoriteAgentPost->title }}', '{{ route('agent.posts.search', ['search' => $favoriteAgentPost->title]) }}')"
+                          class="shrink-0 text-[0.9rem] font-semibold text-pink-500 transition hover:text-pink-600 hover:underline">
+                          在此跟單或至首頁跟單
+                        </button>
 
                         <button
                             type="button"
@@ -1200,7 +1202,47 @@
 
         document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.edit-items-wrapper').forEach(updateEditItemUi);
+            // 取得所有開頭為 followOrderModal- 的視窗
+    const orderModals = document.querySelectorAll('[id^="followOrderModal-"]');
+
+    orderModals.forEach(modal => {
+        const qtyInputs = modal.querySelectorAll('.qty-input');
+        const totalAmountDisplay = modal.querySelector('.total-amount');
+
+        // 定義計算總額的函式
+        const calculateTotal = () => {
+            let grandTotal = 0;
+            
+            // 遍歷視窗內每一列商品
+            modal.querySelectorAll('.product-row').forEach(row => {
+                const price = parseFloat(row.getAttribute('data-price')) || 0;
+                const quantity = parseInt(row.querySelector('.qty-input').value) || 0;
+                grandTotal += price * quantity;
+            });
+
+            // 更新顯示金額（加上千分位符號）
+            totalAmountDisplay.textContent = grandTotal.toLocaleString();
+        };
+
+        // 為每個輸入框綁定監聽事件
+        qtyInputs.forEach(input => {
+            // 'input' 事件：當使用者輸入、點擊上下箭頭、或透過 JS 改變數值時觸發
+            input.addEventListener('input', function() {
+                // 防呆：確保數值不低於 0
+                if (this.value < 0) this.value = 0;
+                
+                // 防呆：確保數值不超過 max (剩餘數量)
+                const max = parseInt(this.getAttribute('max'));
+                if (parseInt(this.value) > max) {
+                    alert('不能超過可下單數量：' + max);
+                    this.value = max;
+                }
+
+                calculateTotal();
+            });
         });
+    });
+});
 
         function closeEditModal(id) {
             const modal = document.getElementById(`edit-modal-${id}`);
@@ -1269,6 +1311,81 @@ window.onclick = function(event) {
     }
 }
 
+// 1. 控制選擇視窗
+    function openFollowChoiceModal(id, title, searchUrl) {
+        const modal = document.getElementById('choiceModal');
+        const goToHomeBtn = document.getElementById('goToHomeBtn');
+        const followHereBtn = document.getElementById('followHereBtn');
+
+        goToHomeBtn.href = searchUrl; // 設定跳轉網址
+        followHereBtn.onclick = function() {
+            closeChoiceModal();
+            openOrderModal(id); // 開啟對應的跟單 Modal
+        };
+
+        modal.classList.remove('hidden');
+    }
+
+    function closeChoiceModal() {
+        document.getElementById('choiceModal').classList.add('hidden');
+    }
+
+    // 2. 控制跟單視窗
+    function openOrderModal(id) {
+        document.getElementById(`followOrderModal-${id}`).classList.remove('hidden');
+    }
+
+    function closeOrderModal(id) {
+        document.getElementById(`followOrderModal-${id}`).classList.add('hidden');
+    }
+
+    // 3. 計算金額邏輯 (初始化所有 Modal 的事件)
+    document.querySelectorAll('[id^="followOrderModal-"]').forEach(modal => {
+        const updateTotals = () => {
+            let grandTotal = 0;
+            modal.querySelectorAll('.product-row').forEach(row => {
+                const price = parseFloat(row.dataset.price) || 0;
+                const qty = parseInt(row.querySelector('.qty-input').value) || 0;
+                grandTotal += price * qty;
+            });
+            modal.querySelector('.total-amount').textContent = grandTotal.toLocaleString();
+        };
+
+        modal.addEventListener('click', (e) => {
+            const input = e.target.closest('.product-row')?.querySelector('.qty-input');
+            if (!input) return;
+
+            if (e.target.closest('.qty-plus')) {
+                const max = parseInt(input.max);
+                if (parseInt(input.value) < max) {
+                    input.value = parseInt(input.value) + 1;
+                    updateTotals();
+                }
+            }
+            if (e.target.closest('.qty-minus')) {
+                if (parseInt(input.value) > 0) {
+                    input.value = parseInt(input.value) - 1;
+                    updateTotals();
+                }
+            }
+        });
+
+        // 監聽手動輸入
+        modal.querySelectorAll('.qty-input').forEach(input => {
+            input.addEventListener('change', () => {
+                const max = parseInt(input.max);
+                if (parseInt(input.value) > max) input.value = max;
+                if (parseInt(input.value) < 0) input.value = 0;
+                updateTotals();
+            });
+        });
+    });
+
+
+
+
+
+
     </script>
 
 <div id="countdown-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
@@ -1313,5 +1430,74 @@ window.onclick = function(event) {
         </div>
     </div>
 </div>
+
+<div id="choiceModal" class="fixed inset-0 z-[60] hidden overflow-y-auto">
+    <div class="flex min-h-screen items-center justify-center p-4 text-center">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeChoiceModal()"></div>
+        <div class="relative transform overflow-hidden rounded-2xl bg-white p-6 text-left shadow-xl transition-all sm:w-full sm:max-w-sm">
+            <h3 class="text-center text-lg font-bold text-gray-900 mb-4">請選擇跟單方式</h3>
+            <div class="flex flex-col gap-3">
+                <button id="followHereBtn" class="w-full rounded-xl bg-pink-500 py-3 font-bold text-white shadow-sm hover:bg-pink-600 transition">
+                    就在這裡跟單
+                </button>
+                <a id="goToHomeBtn" href="#" class="w-full rounded-xl border border-gray-200 bg-white py-3 text-center font-bold text-gray-700 hover:bg-gray-50 transition">
+                    前往首頁搜尋此貼文
+                </a>
+                <button onclick="closeChoiceModal()" class="text-sm text-gray-400 hover:text-gray-600 mt-2">取消</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@foreach($favoriteAgentPosts as $favoriteAgentPost)
+<div id="followOrderModal-{{ $favoriteAgentPost->id }}" class="fixed inset-0 z-[70] hidden overflow-y-auto">
+    <div class="flex min-h-screen items-center justify-center p-4">
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-50 transition-opacity" onclick="closeOrderModal('{{ $favoriteAgentPost->id }}')"></div>
+        <div class="relative w-full max-w-2xl transform overflow-hidden rounded-3xl bg-white shadow-2xl transition-all">
+            <div class="bg-gray-50 px-6 py-4 border-b flex justify-between items-center">
+                <h3 class="text-xl font-bold text-gray-800">確認跟單商品</h3>
+                <button onclick="closeOrderModal('{{ $favoriteAgentPost->id }}')" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+
+            <form action="{{ route('orders.store', $favoriteAgentPost) }}" method="POST" class="p-6">
+                @csrf
+                <div class="max-h-[50vh] overflow-y-auto space-y-4 pr-2">
+                    @foreach($favoriteAgentPost->products as $product)
+                        @php
+                            $remaining = ($product->max_quantity ?? 0) - ($product->sold_quantity ?? 0);
+                        @endphp
+                        <div class="product-row flex items-center gap-4 rounded-2xl border p-4 bg-white" data-price="{{ $product->price }}">
+                            <img src="{{ $product->display_image_url ?? 'https://via.placeholder.com/60' }}" class="h-14 w-14 rounded-xl object-cover">
+                            <div class="flex-1 min-w-0">
+                                <p class="font-bold text-gray-800 truncate text-sm">{{ $product->name }}</p>
+                                <p class="text-pink-500 font-bold text-sm">${{ number_format($product->price) }}</p>
+                            </div>
+                            <div class="text-center px-2">
+                                <span class="block text-[10px] text-gray-400 font-bold">可下單</span>
+                                <span class="text-xs font-bold {{ $remaining > 0 ? 'text-blue-500' : 'text-red-500' }}">
+                                    {{ $remaining > 0 ? $remaining : '已售罄' }}
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-2 bg-gray-50 rounded-full p-1 border">
+                                <input type="number" name="products[{{ $product->id }}][quantity]" class="qty-input w-10 border-0 bg-transparent text-center font-bold focus:ring-0 text-sm" value="0" min="0" max="{{ $remaining }}" {{ $remaining <= 0 ? 'disabled' : '' }}>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                <div class="mt-6 pt-4 border-t flex flex-col items-end gap-4">
+                    <div class="text-right">
+                        <span class="text-gray-500 mr-2 text-sm">總計金額：</span>
+                        <span class="text-xl font-black text-green-600">NT$ <span class="total-amount">0</span></span>
+                    </div>
+                    <button type="submit" class="w-full rounded-xl bg-pink-500 py-3 font-bold text-white shadow-lg shadow-pink-200 hover:bg-pink-600 transition">確認下單</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endforeach
+
+
 
 </x-app-layout>
