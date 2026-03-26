@@ -22,7 +22,7 @@
                         <input type="text" 
                             name="search" 
                             class="form-control shadow-sm" 
-                            placeholder="輸入代購關鍵字（如 iPhone、日本）" 
+                            placeholder="輸入代購關鍵字（如 iPhone）" 
                             value="{{ request('q') }}" 
                             style="width: 300px;">
                             <select name="country" class="form-select shadow-sm" style="width: 150px;">

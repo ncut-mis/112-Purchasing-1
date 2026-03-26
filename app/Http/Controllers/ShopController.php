@@ -11,29 +11,36 @@ class ShopController extends Controller
     /**
      * 顯示「找代購」列表頁面，支援搜尋功能
      */
-    public function store(Request $request)
+            public function store(Request $request)
     {
-        // 1. 建立代購人的基本查詢：必須是審核通過的
+        // 1. 基本查詢：審核通過的 Agent
         $query = User::whereHas('agentApplication', function($q) {
             $q->where('status', 'approved');
         });
 
-        // 2. 處理搜尋邏輯 (搜尋暱稱或姓名)
+        // 2. 搜尋姓名（users.name）
         if ($search = $request->input('search')) {
-            $query->where(function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('nickname', 'like', "%{$search}%");
+            $query->where('name', 'like', "%{$search}%");
+        }
+
+        // ✅ 3. 國家篩選：查 agent_applications.country
+        if ($country = $request->input('country')) {
+            $query->whereHas('agentApplication', function($q) use ($country) {
+                $q->where('status', 'approved')
+                ->where('country', $country);
             });
         }
 
-        // 3. 預載入關聯資料（申請資訊與代購貼文）
-        $agents = $query->with(['agentApplication', 'agentPosts' => function($q) {
-            $q->where('status', 'open')->orderBy('created_at', 'desc');
-        }])->get();
+        $agents = $query->with([
+            'agentApplication', 
+            'agentPosts' => fn($q) => $q->where('status', 'open')->orderBy('created_at', 'desc')
+        ])->paginate(12)->withQueryString();
 
-        // 4. 只回傳一個視圖
         return view('shop.store', compact('agents'));
     }
+
+
+
 
     /**
      * 詳細資料頁面 (保留作為單獨連結使用)
