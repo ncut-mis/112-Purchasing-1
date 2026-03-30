@@ -50,7 +50,7 @@ class AdminAuthController extends Controller
 
     public function approveAgentApplication(AgentApplication $agentApplication)
     {
-        if ($agentApplication->status !== 'pending') {
+        if (! in_array($agentApplication->status, ['pending', 'resubmitted'])) {
             return redirect()->route('admin.dashboard')->with('status', '此申請已完成審核');
         }
 
@@ -61,7 +61,7 @@ class AdminAuthController extends Controller
 
     public function rejectAgentApplication(AgentApplication $agentApplication)
     {
-        if ($agentApplication->status !== 'pending') {
+        if (! in_array($agentApplication->status, ['pending', 'resubmitted'])) {
             return redirect()->route('admin.dashboard')->with('status', '此申請已完成審核');
         }
 

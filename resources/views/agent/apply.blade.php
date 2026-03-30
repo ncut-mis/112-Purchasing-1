@@ -8,7 +8,7 @@
     <div class="py-12 bg-gray-50 min-h-screen">
         <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
             
-            <!-- 返回按鈕 -->
+             <!-- 返回按鈕 -->
             <div class="mb-6">
                 <a href="{{ route('dashboard') }}" class="text-gray-500 hover:text-gray-700 flex items-center gap-2 transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
@@ -33,6 +33,12 @@
                             {{ session('success') }}
                         </div>
                     @endif
+                    @if (session('error'))
+                        <div class="mb-6 p-4 bg-red-50 text-red-700 border border-red-200 rounded-xl flex items-center gap-3">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            {{ session('error') }}
+                        </div>
+                    @endif
 
                     <form action="{{ route('agent.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
                         @csrf
@@ -42,7 +48,7 @@
                             <!-- 姓名 -->
                             <div>
                                 <label for="name" class="block text-sm font-medium text-gray-700 mb-1">真實姓名</label>
-                                <input type="text" name="name" id="name" value="{{ old('name') }}" required
+                                <input type="text" name="name" id="name" value="{{ old('name', $application->name ?? '') }}" required
                                     class="w-full border-gray-200 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 shadow-sm"
                                     placeholder="請輸入身分證姓名">
                                 @error('name') <p class="mt-1 text-sm text-red-500">{{ $message }}</p> @enderror
@@ -54,15 +60,16 @@
                                 <select name="country" id="country" required
                                     class="w-full border-gray-200 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 shadow-sm">
                                     <option value="">請選擇您的出生地</option>
-                                    <option value="台灣">台灣</option>
-                                    <option value="中國">中國</option>
-                                    <option value="香港">香港</option>
-                                    <option value="澳門">澳門</option>
-                                    <option value="日本">日本</option>
-                                    <option value="韓國">韓國</option>
-                                    <option value="馬來西亞">馬來西亞</option>
-                                    <option value="新加坡">新加坡</option>
-                                    <option value="美國">美國</option>
+                                    @php $selectedCountry = old('country', $application->country ?? ''); @endphp
+                                    <option value="台灣" {{ $selectedCountry === '台灣' ? 'selected' : '' }}>台灣</option>
+                                    <option value="中國" {{ $selectedCountry === '中國' ? 'selected' : '' }}>中國</option>
+                                    <option value="香港" {{ $selectedCountry === '香港' ? 'selected' : '' }}>香港</option>
+                                    <option value="澳門" {{ $selectedCountry === '澳門' ? 'selected' : '' }}>澳門</option>
+                                    <option value="日本" {{ $selectedCountry === '日本' ? 'selected' : '' }}>日本</option>
+                                    <option value="韓國" {{ $selectedCountry === '韓國' ? 'selected' : '' }}>韓國</option>
+                                    <option value="馬來西亞" {{ $selectedCountry === '馬來西亞' ? 'selected' : '' }}>馬來西亞</option>
+                                    <option value="新加坡" {{ $selectedCountry === '新加坡' ? 'selected' : '' }}>新加坡</option>
+                                    <option value="美國" {{ $selectedCountry === '美國' ? 'selected' : '' }}>美國</option>
                                 </select>
                                 @error('country') <p class="mt-1 text-sm text-red-500">{{ $message }}</p> @enderror
                             </div>
@@ -70,7 +77,7 @@
                             <!-- 電話 -->
                             <div>
                                 <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">聯絡電話</label>
-                                <input type="text" name="phone" id="phone" value="{{ old('phone') }}" required
+                                <input type="text" name="phone" id="phone" value="{{ old('phone', $application->phone ?? '') }}" required
                                     class="w-full border-gray-200 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 shadow-sm"
                                     placeholder="0912-345-678">
                                 @error('phone') <p class="mt-1 text-sm text-red-500">{{ $message }}</p> @enderror
@@ -79,7 +86,7 @@
                             <!-- 身分證字號 -->
                             <div>
                                 <label for="id_number" class="block text-sm font-medium text-gray-700 mb-1">身分證字號</label>
-                                <input type="text" name="id_number" id="id_number" value="{{ old('id_number') }}" required
+                                <input type="text" name="id_number" id="id_number" value="{{ old('id_number', $application->id_number ?? '') }}" required
                                     class="w-full border-gray-200 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 shadow-sm"
                                     placeholder="例如：A123456789">
                                 @error('id_number') <p class="mt-1 text-sm text-red-500">{{ $message }}</p> @enderror

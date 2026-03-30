@@ -13,15 +13,19 @@ class AgentApplicationController extends Controller
     /**
      * 顯示代購人申請表單
      */
-    public function create()
+    public function create(Request $request)
     {
         $application = AgentApplication::where('user_id', Auth::id())->first();
+
+        if ($application && $application->status === 'rejected' && $request->boolean('resubmit')) {
+            return view('agent.apply', compact('application'));
+        }
 
         if ($application) {
             return view('agent.status', compact('application'));
         }
 
-        return view('agent.apply');
+        return view('agent.apply', compact('application'));
     }
 
     /**
@@ -45,16 +49,13 @@ class AgentApplicationController extends Controller
             'id_image_back.required' => '請上傳身分證反面',
         ]);
 
-        $exists = AgentApplication::where('user_id', Auth::id())->exists();
-        if ($exists) {
+        $existingApplication = AgentApplication::where('user_id', Auth::id())->first();
+
+        if ($existingApplication && $existingApplication->status !== 'rejected') {
             return redirect()->back()->with('error', '您已經提交過申請，請耐心等候審核。');
         }
 
-        $frontImagePath = $request->file('id_image_front')->store('agent-applications', 'public');
-        $backImagePath = $request->file('id_image_back')->store('agent-applications', 'public');
-
-        // 使用逐欄位賦值，避免舊版 fillable 或欄位差異造成必填欄位遺漏
-        $application = new AgentApplication();
+        $application = $existingApplication ?? new AgentApplication();
         $application->user_id = Auth::id();
         $application->name = $request->name;
         $application->country = $request->country;
@@ -70,9 +71,9 @@ class AgentApplicationController extends Controller
         }
 
         $application->id_number = $request->id_number;
-        $application->id_image_front = $frontImagePath;
-        $application->id_image_back = $backImagePath;
-        $application->status = 'pending';
+        $application->id_image_front = $request->file('id_image_front')->store('agent-applications', 'public');
+        $application->id_image_back = $request->file('id_image_back')->store('agent-applications', 'public');
+        $application->status = $existingApplication ? 'resubmitted' : 'pending';
         $application->admin_remark = null;
 
         // 相容舊結構：若資料庫仍有 ID_Card 欄位，則同步寫入
@@ -81,6 +82,10 @@ class AgentApplicationController extends Controller
         }
 
         $application->save();
+
+        if ($application->status === 'resubmitted') {
+            return redirect()->route('agent.status')->with('success', '已重新提交申請，狀態更新為「重新申請中」。');
+        }
 
         return redirect()->route('agent.apply')->with('success', '申請已成功提交！我們將在 3-5 個工作天內完成審核。');
     }

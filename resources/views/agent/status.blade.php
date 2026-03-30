@@ -18,7 +18,7 @@
 
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <!-- 狀態顏色條 -->
-                @if($application->status == 'pending')
+                @if(in_array($application->status, ['pending', 'resubmitted']))
                     <div class="h-2 bg-yellow-400"></div>
                 @elseif($application->status == 'approved')
                     <div class="h-2 bg-green-500"></div>
@@ -35,6 +35,12 @@
                             </div>
                             <h3 class="text-2xl font-bold text-gray-800 mt-4">申請審核中</h3>
                             <p class="text-gray-500 mt-2">您的資料已成功提交，管理員正在努力審核中，請耐心等候。</p>
+                        @elseif($application->status == 'resubmitted')
+                            <div class="w-20 h-20 bg-yellow-50 text-yellow-500 rounded-full flex items-center justify-center mx-auto text-4xl shadow-sm">
+                                <i class="bi bi-arrow-repeat"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-gray-800 mt-4">重新申請中</h3>
+                            <p class="text-gray-500 mt-2">已收到您重新提交的資料，目前由管理員重新審核中。</p>
                         @elseif($application->status == 'approved')
                             <div class="w-20 h-20 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto text-4xl shadow-sm">
                                 <i class="bi bi-check-circle-fill"></i>
@@ -56,7 +62,7 @@
                                 </div>
                             @endif
                             <div class="mt-6">
-                                <a href="{{ route('agent.apply') }}" class="text-indigo-600 font-bold hover:underline">重新提交申請</a>
+                                <a href="{{ route('agent.apply', ['resubmit' => 1]) }}" class="text-indigo-600 font-bold hover:underline">重新提交申請</a>
                             </div>
                         @endif
                     </div>

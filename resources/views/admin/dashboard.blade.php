@@ -59,6 +59,8 @@
                                                 <span class="badge text-bg-success">通過</span>
                                             @elseif ($status === 'rejected')
                                                 <span class="badge text-bg-danger">不通過</span>
+                                            @elseif ($status === 'resubmitted')
+                                                <span class="badge text-bg-warning text-dark">重新申請中...</span>
                                             @else
                                                 <span class="badge text-bg-secondary">待審核</span>
                                             @endif
@@ -66,7 +68,7 @@
                                         <td class="text-end">
                                             <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#agentViewModal-{{ $application->id }}">檢視</button>
 
-                                            @if ($status === 'pending')
+                                            @if (in_array($status, ['pending', 'resubmitted']))
                                                 <form method="POST" action="{{ route('admin.agent-applications.approve', $application) }}" class="d-inline">
                                                     @csrf
                                                     @method('PATCH')
@@ -97,6 +99,7 @@
                     $idNumber = $application->id_number ?? $application->ID_Card ?? '未提供';
                     $statusLabel = [
                         'pending' => '待審核',
+                        'resubmitted' => '重新申請中...',
                         'approved' => '通過',
                         'rejected' => '不通過',
                     ][$application->status] ?? $application->status;
@@ -114,6 +117,32 @@
                                 <p class="mb-1"><strong>電話號碼：</strong>{{ $application->phone ?? '未提供' }}</p>
                                 <p class="mb-1"><strong>身份證字號：</strong>{{ $idNumber }}</p>
                                 <p class="mb-0"><strong>狀態：</strong>{{ $statusLabel }}</p>
+
+                                <div class="mt-3">
+                                    <p class="mb-2"><strong>身份證正面：</strong></p>
+                                    @if($application->id_image_front)
+                                        <a href="{{ asset('storage/' . $application->id_image_front) }}" target="_blank" rel="noopener noreferrer">
+                                            <img src="{{ asset('storage/' . $application->id_image_front) }}"
+                                                alt="身份證正面"
+                                                class="img-fluid rounded border mb-3"
+                                                style="max-height: 260px; object-fit: contain;">
+                                        </a>
+                                    @else
+                                        <p class="text-muted small">未提供身份證正面照片</p>
+                                    @endif
+
+                                    <p class="mb-2"><strong>身份證背面：</strong></p>
+                                    @if($application->id_image_back)
+                                        <a href="{{ asset('storage/' . $application->id_image_back) }}" target="_blank" rel="noopener noreferrer">
+                                            <img src="{{ asset('storage/' . $application->id_image_back) }}"
+                                                alt="身份證背面"
+                                                class="img-fluid rounded border"
+                                                style="max-height: 260px; object-fit: contain;">
+                                        </a>
+                                    @else
+                                        <p class="text-muted small">未提供身份證背面照片</p>
+                                    @endif
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -235,7 +264,7 @@
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table align-middle">
-                            <thead>
+                             <thead>
                                 <tr>
                                     <th>貼文標題</th>
                                     <th>狀態</th>
