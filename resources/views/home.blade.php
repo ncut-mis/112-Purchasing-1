@@ -160,12 +160,26 @@
 
                             <div id="agent-post-details-{{ $agentPost->id }}" class="agent-post-details d-none mt-4 pt-2">
                                 <div class="border-top pt-4">
-                                    <div class="d-flex flex-wrap gap-2 mb-3">
-                                        @forelse($agentPost->products->take(3) as $product)
-                                            <span class="badge rounded-pill border text-dark bg-white px-3 py-2 fw-semibold">{{ $product->name }}</span>
-                                        @empty
-                                            <span class="badge rounded-pill border text-dark bg-white px-3 py-2 fw-semibold">尚未建立商品明細</span>
-                                        @endforelse
+                                     <div class="mb-3">
+                                        <div class="small text-uppercase text-muted fw-bold mb-2">商品資訊（名稱 / 單價 / 目前可下單上限）</div>
+                                        <div class="d-flex flex-column gap-2">
+                                            @forelse($agentPost->products as $product)
+                                                @php
+                                                    $maxQuantity = (int) ($product->max_quantity ?? 0);
+                                                    $soldQuantity = (int) ($product->sold_quantity ?? 0);
+                                                    $currentMaxQuantity = max($maxQuantity - $soldQuantity, 0);
+                                                @endphp
+                                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 rounded-3 border bg-white px-3 py-2">
+                                                    <span class="fw-semibold text-dark">{{ $product->name }}</span>
+                                                    <div class="d-flex align-items-center gap-2 small text-muted">
+                                                        <span class="badge rounded-pill text-bg-light border">單價：NT$ {{ number_format((float) ($product->price ?? 0), 0) }}</span>
+                                                        <span class="badge rounded-pill text-bg-light border">目前可下單上限：{{ $currentMaxQuantity }}</span>
+                                                    </div>
+                                                </div>
+                                            @empty
+                                                <span class="badge rounded-pill border text-dark bg-white px-3 py-2 fw-semibold">尚未建立商品明細</span>
+                                            @endforelse
+                                        </div>
                                     </div>
 
                                     <p class="text-dark mb-4" style="font-size: 1rem; line-height: 1.75;">
