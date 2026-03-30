@@ -55,7 +55,7 @@
                                 <span>通知中心</span>
                             </a>
 
-                            <a href="{{ route('dashboard', ['section' => 'follow-orders']) }}" class="flex items-center space-x-3 p-3 rounded-lg {{ $currentSection === 'follow-orders' ? 'bg-indigo-50 text-indigo-600 font-medium' : 'text-gray-600 hover:bg-gray-50 transition' }}">
+                            <a href="{{ route('dashboard', ['section' => 'follow-orders']) }}" class="flex items-center space-x-3 p-3 rounded-lg {{ $currentSection === 'follow-orders' ? 'bg-purple-50 text-purple-600 font-medium' : 'text-gray-600 hover:bg-gray-50 transition' }}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
                                 <span>跟單紀錄</span>
                             </a>
@@ -287,7 +287,7 @@
                                             value="{{ request('follow_search') }}"
                                             style="padding: 8px 12px; border: 2px solid #0e0e0f; border-radius: 8px; font-size: 14px; min-width: 220px; flex: 1;"
                                         >
-                                        <button type="submit" style="padding: 8px 16px; background: #6366f1; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                                        <button type="submit" style="padding: 8px 16px; background: #bb63f1; color: white; border: none; border-radius: 8px; cursor: pointer;">
                                             🔍
                                         </button>
                                     </form>
@@ -295,7 +295,7 @@
                             </div>
 
                             @if(request('follow_search'))
-                                <div class="mb-4 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700">
+                                <div class="mb-4 rounded-lg border border-purple-200 bg-purple-50 px-4 py-3 text-sm text-purple-700">
                                     搜尋「{{ request('follow_search') }}」找到 {{ $followOrders->total() }} 筆跟單紀錄。
                                     <a href="{{ route('dashboard', ['section' => 'follow-orders']) }}" class="ml-2 font-semibold hover:underline">清除搜尋</a>
                                 </div>
@@ -308,8 +308,8 @@
                                             ?? data_get($followOrder->recipient_data, 'post_title')
                                             ?? '未命名貼文';
                                     @endphp
-                                    <article class="flex flex-col gap-2.5 rounded-[20px] border border-indigo-100 bg-[#f8f9ff] px-3.5 py-3 shadow-sm lg:flex-row lg:items-center">
-                                        <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-[18px] bg-white text-indigo-400 shadow-sm">
+                                    <article class="flex flex-col gap-2.5 rounded-[20px] border border-purple-100 bg-[#fdf8ff] px-3.5 py-3 shadow-sm lg:flex-row lg:items-center">
+                                        <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-[18px] bg-white text-purple-400 shadow-sm">
                                             <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
                                             </svg>
@@ -348,12 +348,12 @@
                                                             default => $followOrder->status,
                                                         };
                                                     @endphp
-                                                    <span class="inline-flex items-center rounded-full bg-indigo-100 px-3 py-1 text-[0.8rem] font-semibold text-indigo-700">
+                                                    <span class="inline-flex items-center rounded-full bg-purple-100 px-3 py-1 text-[0.8rem] font-semibold text-purple-700">
                                                         {{ $statusText }}
                                                     </span>
                                                     <button
                                                         type="button"
-                                                        class="inline-flex items-center rounded-full bg-white px-3 py-1 text-[0.8rem] font-semibold text-indigo-600 shadow-sm ring-1 ring-indigo-200 transition hover:bg-indigo-50"
+                                                        class="inline-flex items-center rounded-full bg-white px-3 py-1 text-[0.8rem] font-semibold text-purple-600 shadow-sm ring-1 ring-purple-200 transition hover:bg-purple-50"
                                                         onclick="openFollowOrderModal({{ $followOrder->id }})"
                                                     >
                                                         檢視
@@ -363,7 +363,7 @@
                                         </div>
                                     </article>
                                 @empty
-                                    <div class="rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/40 px-6 py-12 text-center text-sm text-gray-500">
+                                    <div class="rounded-2xl border border-dashed border-purple-200 bg-purple-50/40 px-6 py-12 text-center text-sm text-gray-500">
                                         @if(request('follow_search'))
                                             找不到符合「{{ request('follow_search') }}」的跟單紀錄。
                                         @else
@@ -397,9 +397,9 @@
                                 @endphp
                                 <div id="follow-order-modal-{{ $followOrder->id }}" class="follow-order-modal hidden fixed inset-0 z-[72] flex items-center justify-center bg-slate-900/55 px-4 py-6" onclick="handleFollowOrderBackdrop(event, {{ $followOrder->id }})">
                                     <div class="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl">
-                                        <div class="flex items-start justify-between gap-3 border-b border-indigo-100 bg-indigo-50 px-5 py-4">
+                                        <div class="flex items-start justify-between gap-3 border-b border-purple-100 bg-purple-50 px-5 py-4">
                                             <div>
-                                                <p class="text-xs font-semibold uppercase tracking-wider text-indigo-500">跟單完整資料</p>
+                                                <p class="text-xs font-semibold uppercase tracking-wider text-purple-500">跟單完整資料</p>
                                                 <h4 class="mt-1 text-lg font-bold text-slate-800">{{ $followOrderTitle }}</h4>
                                             </div>
                                             <button type="button" class="rounded-full bg-white px-2.5 py-1 text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-50" onclick="closeFollowOrderModal({{ $followOrder->id }})" aria-label="關閉跟單完整資料視窗">✕</button>
