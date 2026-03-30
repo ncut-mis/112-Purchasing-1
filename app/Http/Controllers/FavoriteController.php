@@ -20,10 +20,25 @@ class FavoriteController extends Controller
 
         $user = Auth::user();
 
-        [$favoriteableType, $favoriteableId] = match ($validated['type']) {
-            'request_list' => [RequestList::class, RequestList::query()->findOrFail($validated['id'])->id],
-            'agent_post' => [AgentPost::class, AgentPost::query()->findOrFail($validated['id'])->id],
-        };
+        if ($validated['type'] === 'request_list') {
+            $requestList = RequestList::query()->findOrFail($validated['id']);
+            if ((int) $requestList->user_id === (int) $user->id) {
+                return response()->json(['message' => '不能收藏自己的請購清單'], 422);
+            }
+
+            $favoriteableType = RequestList::class;
+            $favoriteableId = $requestList->id;
+        }
+
+        if ($validated['type'] === 'agent_post') {
+            $agentPost = AgentPost::query()->findOrFail($validated['id']);
+            if ((int) $agentPost->user_id === (int) $user->id) {
+                return response()->json(['message' => '不能收藏自己的代購貼文'], 422);
+            }
+
+            $favoriteableType = AgentPost::class;
+            $favoriteableId = $agentPost->id;
+        }
 
         $favorite = $user->favorites()
             ->where('favoriteable_type', $favoriteableType)

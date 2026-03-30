@@ -123,6 +123,9 @@
                         $countryTag = $countryLabels[$countryCode] ?? $countryCode;
                         $firstItem = $requestList->items->first();
                         $title = $requestList->title ?: ($firstItem->name ?? '未命名請購');
+
+                        $isOwner = auth()->check() && (int) $requestList->user_id === (int) auth()->id();
+                        $isFavorited = in_array((int) $requestList->id, $favoritedRequestListIds ?? [], true);
                         
                         // 準備 JSON 資料
                         $orderData = [
@@ -154,7 +157,14 @@
                                 </div>
                             </div>
 
-                            <button type="button" class="favorite-toggle w-9 h-9 rounded-full transition flex items-center justify-center bg-gray-100 text-gray-400 hover:bg-pink-50 hover:text-pink-400" data-request-list-id="{{ $requestList->id }}">
+                             <button
+                                type="button"
+                                class="favorite-toggle w-9 h-9 rounded-full transition flex items-center justify-center {{ $isFavorited ? 'bg-pink-50 text-pink-500' : 'bg-gray-100 text-gray-400 hover:bg-pink-50 hover:text-pink-400' }} {{ $isOwner ? 'opacity-50 cursor-not-allowed' : '' }}"
+                                data-request-list-id="{{ $requestList->id }}"
+                                @disabled($isOwner)
+                                title="{{ $isOwner ? '不能收藏自己的請購清單' : '收藏請購清單' }}"
+                                aria-label="{{ $isOwner ? '不能收藏自己的請購清單' : '收藏請購清單' }}"
+                            >
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M12.001 4.529c2.349-2.532 6.15-2.533 8.498-.001 2.41 2.6 2.41 6.815 0 9.416l-7.66 8.266a1.14 1.14 0 0 1-1.677 0l-7.66-8.266c-2.41-2.601-2.41-6.817 0-9.416 2.348-2.532 6.149-2.531 8.499.001Z"/></svg>
                             </button>
                         </div>
@@ -178,7 +188,7 @@
                                 <span class="text-xs text-gray-500 truncate">請購人：{{ $requestList->user->name ?? '未知使用者' }}</span>
                             </div>
 
-                            @if(auth()->check() && $requestList->user_id === auth()->id())
+                           @if($isOwner)
                                 <span class="text-xs text-red-500 font-bold flex items-center gap-1">
                                     <i class="bi bi-emoji-frown"></i> 不能代購自己的清單
                                 </span>
@@ -326,6 +336,9 @@
         document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.favorite-toggle').forEach(button => {
                 button.addEventListener('click', function () {
+                    if (this.disabled) {
+                        return;
+                    }
                     const id = this.getAttribute('data-request-list-id');
                     fetch("{{ route('favorite.toggle') }}", {
                         method: 'POST',
@@ -336,7 +349,13 @@
                         },
                         body: JSON.stringify({ type: 'request_list', id: id })
                     })
-                    .then(res => res.json())
+                    .then(async res => {
+                        const data = await res.json();
+                        if (!res.ok) {
+                            throw new Error(data.message || '收藏操作失敗');
+                        }
+                        return data;
+                    })
                     .then(data => {
                         if (data.status === 'added') {
                             this.classList.add('text-pink-500', 'bg-pink-50');
@@ -345,6 +364,9 @@
                             this.classList.remove('text-pink-500', 'bg-pink-50');
                             this.classList.add('text-gray-400', 'bg-gray-100');
                         }
+   })
+                    .catch(error => {
+                        alert(error.message || '收藏操作失敗');
                     });
                 });
             });

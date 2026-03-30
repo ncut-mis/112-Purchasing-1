@@ -6,6 +6,7 @@ use App\Models\RequestList;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Favorite;
 
 class AgentDashboardController extends Controller
 {
@@ -56,10 +57,20 @@ class AgentDashboardController extends Controller
         // 5. 執行查詢與分頁
         $requests = $query->paginate(12)->withQueryString();
 
+        $favoritedRequestListIds = Auth::check()
+            ? Favorite::query()
+                ->where('user_id', Auth::id())
+                ->where('favoriteable_type', RequestList::class)
+                ->pluck('favoriteable_id')
+                ->map(fn ($id) => (int) $id)
+                ->all()
+            : [];
+
         // 6. 回傳視圖
         return view('agent.dashboard', [
             'requests' => $requests,
             'requestLists' => $requests, // 保持相容性
+            'favoritedRequestListIds' => $favoritedRequestListIds,
             'selectedCountry' => $country ?? 'all',
             'selectedTime' => $selectedTime,
             'keyword' => $keyword,

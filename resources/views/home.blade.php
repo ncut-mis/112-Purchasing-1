@@ -129,14 +129,17 @@
                                 <h5 class="card-title fw-bold mb-0 flex-grow-1">{{ $agentPost->title }}</h5>
                                 @php
                                     $isFavorited = in_array((int) $agentPost->id, $favoritedAgentPostIds ?? [], true);
+                                    $isOwner = auth()->check() && (int) auth()->id() === (int) $agentPost->user_id;
                                 @endphp
                                 <button
                                     type="button"
                                     class="favorite-toggle rounded-circle d-inline-flex align-items-center justify-content-center border-0 shadow-sm flex-shrink-0"
-                                    style="width: 2.25rem; height: 2.25rem; background: {{ $isFavorited ? '#fce7f3' : '#f3f4f6' }}; color: {{ $isFavorited ? '#ec4899' : '#9ca3af' }}; transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;"
-                                    aria-label="收藏代購貼文"
+                                    style="width: 2.25rem; height: 2.25rem; background: {{ $isFavorited ? '#fce7f3' : '#f3f4f6' }}; color: {{ $isFavorited ? '#ec4899' : '#9ca3af' }}; transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease; {{ $isOwner ? 'opacity:0.5;cursor:not-allowed;' : '' }}"
+                                    aria-label="{{ $isOwner ? '不能收藏自己的代購貼文' : '收藏代購貼文' }}"
                                     aria-pressed="{{ $isFavorited ? 'true' : 'false' }}"
                                     data-agent-post-id="{{ $agentPost->id }}"
+                                    @disabled($isOwner)
+                                    title="{{ $isOwner ? '不能收藏自己的代購貼文' : '收藏代購貼文' }}"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5" style="width: 1.1rem; height: 1.1rem;">
                                         <path d="M12.001 4.529c2.349-2.532 6.15-2.533 8.498-.001 2.41 2.6 2.41 6.815 0 9.416l-7.66 8.266a1.14 1.14 0 0 1-1.677 0l-7.66-8.266c-2.41-2.601-2.41-6.817 0-9.416 2.348-2.532 6.149-2.531 8.499.001Z"/>
@@ -414,11 +417,14 @@
                         body: JSON.stringify({ type: 'agent_post', id: agentPostId }),
                     });
                     const data = await response.json();
+                     if (!response.ok) {
+                        throw new Error(data.message || '收藏失敗');
+                    }
                     const isAdded = data.status === 'added';
                     button.style.background = isAdded ? '#fce7f3' : '#f3f4f6';
                     button.style.color = isAdded ? '#ec4899' : '#9ca3af';
                 } catch (error) {
-                    alert('操作失敗，請稍後再試。');
+                     alert(error.message || '操作失敗，請稍後再試。');
                 } finally {
                     button.disabled = false;
                 }

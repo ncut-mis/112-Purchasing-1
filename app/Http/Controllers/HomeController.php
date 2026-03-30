@@ -61,6 +61,14 @@ class HomeController extends Controller
         }
 
         $posts = $query->paginate(12)->withQueryString();
+
+            $favoritedAgentPostIds = auth()->check()
+            ? auth()->user()->favorites()
+                ->where('favoriteable_type', AgentPost::class)
+                ->pluck('favoriteable_id')
+                ->map(fn ($id) => (int) $id)
+                ->all()
+            : [];
         
         $requests = RequestList::with('user')
             ->where('status', 'pending')
@@ -71,6 +79,7 @@ class HomeController extends Controller
         return view('home', [
             'agentPosts' => $posts,
             'requests' => $requests,
+            'favoritedAgentPostIds' => $favoritedAgentPostIds,
             'countries' => ['日本', '韓國', '美國', '歐洲', '澳洲', '其他'],
             'selectedCountry' => $request->country ?? '',
             'searchQuery' => $request->search ?? ''
