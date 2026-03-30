@@ -19,7 +19,7 @@
                     <div class="text-sm text-gray-500 mb-1">未讀訊息</div>
                     <div class="text-2xl font-bold text-gray-800">{{ $stats['unread_messages'] }}</div>
                 </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-yellow-500">
+                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-pink-500">
                     <div class="text-sm text-gray-500 mb-1">收藏貼文</div>
                      <div id="favorite-posts-count" class="text-2xl font-bold text-gray-800" data-count="{{ $stats['favorite_posts'] }}">{{ $stats['favorite_posts'] }}</div>
                 </div>
@@ -49,8 +49,8 @@
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
                                 <span>收藏貼文</span>
                             </a>
-
-                            <a href="#" class="flex items-center space-x-3 p-3 rounded-lg text-gray-600 hover:bg-gray-50 transition">
+                            
+                            <a href="{{ route('dashboard', ['section' => 'notifications']) }}" class="flex items-center space-x-3 p-3 rounded-lg {{ $currentSection === 'notifications' ? 'bg-amber-50 text-amber-700 font-medium' : 'text-gray-600 hover:bg-gray-50 transition' }}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
                                 <span>通知中心</span>
                             </a>
@@ -77,6 +77,11 @@
                                 <span>歷史紀錄</span>
                             </a>
 
+                            <!-- 評價 (新移動位置) -->
+                            <a href="#" class="flex items-center space-x-3 p-3 rounded-lg text-gray-600 hover:bg-gray-50 transition">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.382-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>
+                                <span>評價中心</span>
+                            </a>
 
                             <!-- 動態身分判斷區域 -->
                             <div class="border-t mt-2 pt-2">
@@ -245,7 +250,25 @@
                                     </button>
                                 </div>
                             </div>
+                    </div>
+                    <!-- 通知中心區塊頭-->
+                        @elseif($currentSection === 'notifications')
+                        <div class="bg-white rounded-2xl shadow-sm p-6">
+                             <div>
+                                    <h3 class="text-lg font-bold text-gray-800">通知中心</h3>
+                                    <p class="mt-1 text-sm text-gray-500">這裡會顯示您的清單被帶購人接單的訊息,您可以接受或拒絕該帶購人幫您代購</p>
+                            </div>
+                            <div class="space-y-2.5 mt-6">
+                                    <div class="rounded-2xl border border-dashed border-amber-200 bg-amber-50/40 px-6 py-12 text-center text-sm text-gray-500">
+                                        @if(request('follow_search'))
+                                            找不到符合「{{ request('follow_search') }}」的通知紀錄。
+                                        @else
+                                            目前尚有帶購人接單的請購清單請耐心等候吧！
+                                        @endif
+                                    </div>
+                            </div>
                         </div>
+                        <!-- 通知中心區塊尾-->
                          @elseif($currentSection === 'follow-orders')
                         <div class="bg-white rounded-2xl shadow-sm p-6">
                             <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
