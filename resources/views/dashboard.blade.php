@@ -15,6 +15,10 @@
                     <div class="text-sm text-gray-500 mb-1">進行中的請購</div>
                     <div class="text-2xl font-bold text-gray-800">{{ $stats['ongoing_requests'] }}</div>
                 </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-purple-500">
+                    <div class="text-sm text-gray-500 mb-1">進行中的跟單</div>
+                    <div class="text-2xl font-bold text-gray-800">0</div>
+                </div>
                 <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500">
                     <div class="text-sm text-gray-500 mb-1">未讀訊息</div>
                     <div class="text-2xl font-bold text-gray-800">{{ $stats['unread_messages'] }}</div>
