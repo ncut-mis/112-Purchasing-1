@@ -620,7 +620,14 @@
                                                         </form>
                                                     @elseif($requestList->status === 'pending')
                                                         <button type="button" class="inline-flex items-center rounded-lg bg-blue-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-600" onclick="openRequestDetailModal({{ $requestList->id }})">檢視</button>
-                                                        <button type="button" class="inline-flex items-center rounded-lg bg-green-400 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-green-500"onclick="window.location.href='{{ url('/messages') }}'">聊天</button>                     
+                                                        <button type="button" class="inline-flex items-center rounded-lg bg-green-400 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-green-500"onclick="window.location.href='{{ url('/messages') }}'">聊天</button>     
+                                                        <button
+                                                            type="button"
+                                                            class="inline-flex items-center rounded-lg bg-orange-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-600"onclick="openRequestCountdownModal({{ $requestList->id }})">
+                                                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                           </svg>
+                                                        </button>                
                                                     @endif
                                                 </div>
                                             </td>
@@ -665,6 +672,9 @@
                                         : ($activeAgent
                                             ? 'https://ui-avatars.com/api/?name=' . urlencode($activeAgent->name) . '&background=2563eb&color=fff&size=128'
                                             : null);
+
+                                    $deadlineDisplayDate = optional($requestList->deadline)->format('Y-m-d');
+                                    $countdownEndAt = optional($requestList->deadline)->format('Y-m-d') ? optional($requestList->deadline)->format('Y-m-d') . ' 23:59:00' : null;
                                 @endphp
 
                                 <div id="request-detail-modal-{{ $requestList->id }}" class="request-detail-modal hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4 py-4" onclick="handleRequestDetailBackdrop(event, {{ $requestList->id }})">
@@ -771,6 +781,32 @@
                                         </div>
                                     </div>
                                 </div>
+
+                              <div id="request-countdown-modal-{{ $requestList->id }}" class="request-countdown-modal hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4 py-4" onclick="handleRequestCountdownBackdrop(event, {{ $requestList->id }})">
+                                    <div class="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
+                                        <div class="flex items-start justify-between gap-3 border-b border-orange-100 bg-orange-500 px-5 py-4 text-white">
+                                            <div>
+                                                <p class="text-sm font-medium text-orange-100">請購清單截止倒數</p>
+                                                <h4 class="mt-1 text-xl font-bold">{{ $requestList->title }}</h4>
+                                            </div>
+                                            <button type="button" class="rounded-full bg-white/20 p-2 text-white transition hover:bg-white/30" onclick="closeRequestCountdownModal({{ $requestList->id }})" aria-label="關閉倒數視窗">✕</button>
+                                        </div>
+                                        <div class="px-5 py-6 text-center">
+                                            <p class="text-sm text-slate-500">距離截止尚餘</p>
+                                            <p
+                                                id="request-countdown-text-{{ $requestList->id }}"
+                                                class="mt-2 text-3xl font-extrabold tracking-wide text-orange-600"
+                                                data-end-at="{{ $countdownEndAt }}"
+                                            >
+                                                --:--:--
+                                            </p>
+                                            <p class="mt-4 rounded-xl bg-orange-50 px-4 py-3 text-sm text-orange-700">
+                                                此清單將在 {{ $deadlineDisplayDate ?? '未提供' }} 23:59 移除
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
                             @endif
 
                             @if($requestList->status === 'editing')
@@ -951,6 +987,74 @@
             }
         }
 
+         function openRequestCountdownModal(id) {
+            const modal = document.getElementById(`request-countdown-modal-${id}`);
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+            startRequestCountdown(id);
+        }
+
+        function closeRequestCountdownModal(id) {
+            const modal = document.getElementById(`request-countdown-modal-${id}`);
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.add('hidden');
+            if (window[`requestCountdownTimer_${id}`]) {
+                clearInterval(window[`requestCountdownTimer_${id}`]);
+                window[`requestCountdownTimer_${id}`] = null;
+            }
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        function startRequestCountdown(id) {
+            const target = document.getElementById(`request-countdown-text-${id}`);
+            if (!target) {
+                return;
+            }
+
+            const endAtRaw = target.dataset.endAt;
+            if (!endAtRaw) {
+                target.textContent = '未提供截止時間';
+                return;
+            }
+
+            const endAt = new Date(endAtRaw.replace(' ', 'T'));
+            if (Number.isNaN(endAt.getTime())) {
+                target.textContent = '時間格式錯誤';
+                return;
+            }
+
+            const tick = () => {
+                const now = new Date();
+                const diffMs = endAt.getTime() - now.getTime();
+
+                if (diffMs <= 0) {
+                    target.textContent = '已截止';
+                    return;
+                }
+
+                const totalSeconds = Math.floor(diffMs / 1000);
+                const days = Math.floor(totalSeconds / 86400);
+                const hours = Math.floor((totalSeconds % 86400) / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = totalSeconds % 60;
+
+                target.textContent = `${days}天 ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            };
+
+            tick();
+            if (window[`requestCountdownTimer_${id}`]) {
+                clearInterval(window[`requestCountdownTimer_${id}`]);
+            }
+            window[`requestCountdownTimer_${id}`] = setInterval(tick, 1000);
+        }
+
         document.addEventListener('keydown', (event) => {
             if (event.key !== 'Escape') {
                 return;
@@ -967,6 +1071,14 @@
                     document.body.classList.remove('overflow-hidden');
                 }
             });
+
+            document.querySelectorAll('.request-countdown-modal').forEach((modal) => {
+                if (!modal.classList.contains('hidden')) {
+                    modal.classList.add('hidden');
+                    document.body.classList.remove('overflow-hidden');
+                }
+            });
+
         });
 
         document.querySelectorAll('.follow-order-modal').forEach((modal) => {
@@ -984,6 +1096,12 @@
         function handleFollowOrderBackdrop(event, id) {
             if (event.target.id === `follow-order-modal-${id}`) {
                 closeFollowOrderModal(id);
+            }
+        }
+
+        function handleRequestCountdownBackdrop(event, id) {
+            if (event.target.id === `request-countdown-modal-${id}`) {
+                closeRequestCountdownModal(id);
             }
         }
 
