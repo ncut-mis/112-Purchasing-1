@@ -18,6 +18,7 @@ class AgentDashboardController extends Controller
         // 1. 初始化查詢
         $query = RequestList::with(['items', 'user'])
             ->where('status', 'pending')
+            ->whereDate('deadline', '>=', now()->toDateString())
             ->latest();
 
         // 2. 處理關鍵字搜尋

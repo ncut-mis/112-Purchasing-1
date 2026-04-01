@@ -18,6 +18,12 @@ class DashboardController extends Controller
         $currentSection = $request->query('section', 'request-lists');
 
         $query = RequestList::with(['items', 'offers.agent'])->where('user_id', $user->id);
+        $today = now()->toDateString();
+
+        $query->where(function ($q) use ($today) {
+            $q->where('status', '!=', 'pending')
+                ->orWhereDate('deadline', '>=', $today);
+        });
 
         if ($requestSearch = $request->get('request_search')) {
             $query->where(function ($q) use ($requestSearch) {

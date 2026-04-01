@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\RequestItem;
 use App\Models\RequestList;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
@@ -17,9 +18,12 @@ class RequestListController extends Controller
 
     public function store(Request $request)
     {
+       $today = Carbon::today()->toDateString();
+       $maxDeadline = Carbon::today()->addMonth()->toDateString();
+
         $validated = $request->validate([
             'country' => ['required', 'string', 'max:255'],
-            'deadline' => ['required', 'date'],
+            'deadline' => ['required', 'date', "after_or_equal:{$today}", "before_or_equal:{$maxDeadline}"],
             'store_name' => ['nullable', 'string', 'max:255'],
             'detail_address' => ['nullable', 'string', 'max:1000'],
             'note' => ['nullable', 'string', 'max:1000'],
@@ -74,9 +78,14 @@ class RequestListController extends Controller
             return redirect()->route('dashboard')->with('status', '僅編輯中的請購清單可修改');
         }
 
+         $createdDate = $requestList->created_at
+            ? $requestList->created_at->copy()->startOfDay()->toDateString()
+            : Carbon::today()->toDateString();
+        $maxDeadline = Carbon::parse($createdDate)->addMonth()->toDateString();
+
         $validated = $request->validate([
             'country' => ['required', 'string', 'max:255'],
-            'deadline' => ['required', 'date'],
+            'deadline' => ['required', 'date', "after_or_equal:{$createdDate}", "before_or_equal:{$maxDeadline}"],
             'store_name' => ['nullable', 'string', 'max:255'],
             'detail_address' => ['nullable', 'string', 'max:1000'],
             'note' => ['nullable', 'string', 'max:1000'],

@@ -56,7 +56,15 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold">商品截止日</label>
-                                    <input type="date" class="form-control" name="deadline" required>
+                                    <input
+                                        type="date"
+                                        class="form-control"
+                                        name="deadline"
+                                        min="{{ now()->toDateString() }}"
+                                        max="{{ now()->addMonth()->toDateString() }}"
+                                        required
+                                    >
+                                    <div class="form-text">截止日僅能設定為建立當天起1個月內。</div>
                                 </div>
                             </div>
 
