@@ -15,6 +15,7 @@ use App\Models\RequestList;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use Illuminate\Http\Request;
+use App\Http\Controllers\NotifyController;
 
 Route::get('/agent/member', function() { 
     return view('agent.member'); 
@@ -147,7 +148,6 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::post('/request-lists/agent-quote', [RequestListController::class, 'submitAgentQuote']);
-Route::get('/dashboard', [RequestListController::class, 'index'])->name('dashboard');
-
+Route::get('/dashboard/notifications', [NotifyController::class, 'index'])->name('notifications.index');
 
 require __DIR__.'/auth.php';
