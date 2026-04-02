@@ -50,4 +50,9 @@ class AgentPost extends Model
     {
         return $this->morphMany(Favorite::class, 'favoriteable');
     }
+
+    public function orders()
+    {
+        return $this->morphMany(Order::class, 'source');
+    }
 }

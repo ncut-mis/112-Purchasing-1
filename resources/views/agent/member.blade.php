@@ -69,8 +69,8 @@
                                 <span>訂單管理</span>
                             </a>
                             <!-- 3. 代購商品管理 -->
-                            <a href="#" class="flex items-center gap-3 p-3 rounded-xl text-gray-600 hover:bg-gray-50 transition">
-                                <i class="bi bi-box-seam text-blue-500 text-lg"></i>
+                            <a href="#" @click.prevent="activeTab = 'product-management'" :class="activeTab === 'product-management' ? 'bg-blue-50 text-blue-600 font-bold' : 'text-gray-600'" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition">
+                                <i class="bi bi-box text-blue-500 text-lg"></i>
                                 <span>代購商品管理</span>
                             </a>
                             <!-- 4. 聊天訊息 -->
@@ -439,7 +439,54 @@
 
                     </div>
 
-                    <!-- 分頁二：我的收藏請購清單 (覆蓋顯示) -->
+                    <!-- 分頁二：代購商品管理 -->
+                    <div x-show="activeTab === 'product-management'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4">
+                        <section id="product-management" class="bg-white rounded-2xl shadow-sm border border-blue-100 p-6">
+                            <h3 class="text-lg font-bold text-blue-600 mb-6">代購商品管理</h3>
+                            @php
+                                $managedProducts = \App\Models\PostProduct::query()
+                                    ->whereHas('post', function ($query) {
+                                        $query->where('user_id', Auth::id());
+                                    })
+                                    ->with('post:id,title,country,status,start_date,end_date')
+                                    ->latest('id')
+                                    ->get();
+                            @endphp
+
+                            <div class="space-y-4">
+                                @forelse($managedProducts as $product)
+                                    <div class="flex items-center gap-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                                        <div class="w-16 h-16 rounded-xl bg-white border border-blue-100 overflow-hidden flex items-center justify-center text-blue-200">
+                                            @if($product->display_image_url)
+                                                <img src="{{ $product->display_image_url }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
+                                            @else
+                                                <i class="bi bi-image text-2xl"></i>
+                                            @endif
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="font-bold text-gray-800 truncate">{{ $product->name }}</div>
+                                            <div class="text-xs text-gray-500 mt-1">單價：NT$ {{ number_format((float) $product->price, 0) }} ・ 上限：{{ $product->max_quantity }}</div>
+                                            <div class="text-xs text-gray-400 mt-1 truncate">來源貼文：{{ optional($product->post)->country ? '【'.optional($product->post)->country.'】' : '' }}{{ optional($product->post)->title ?? '未命名貼文' }}</div>
+                                        </div>
+                                        <div class="text-right">
+                                            @php
+                                                $postStatus = optional($product->post)->status;
+                                                $statusLabel = $postStatus === 'draft' ? '編輯中' : ($postStatus === 'open' ? '進行中' : ($postStatus ?? '未知'));
+                                                $statusClasses = $postStatus === 'draft' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600';
+                                            @endphp
+                                            <span class="inline-flex text-[10px] font-bold px-2 py-0.5 rounded {{ $statusClasses }}">{{ $statusLabel }}</span>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="text-gray-400 text-sm text-center py-8 border border-dashed border-blue-200 rounded-xl">
+                                        尚未建立任何代購商品，請先到「我的代購貼文」新增商品。
+                                    </div>
+                                @endforelse
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- 分頁三：我的收藏請購清單 (覆蓋顯示) -->
                     <div x-show="activeTab === 'favorites'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4">
                         <section id="favorites" class="bg-white rounded-2xl shadow-sm border border-pink-100 p-6">
                             <h3 class="text-lg font-bold text-pink-600 mb-6">我的收藏請購清單</h3>
