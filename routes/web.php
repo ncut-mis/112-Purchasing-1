@@ -36,6 +36,11 @@ Route::get('/admin/dashboard', [AdminAuthController::class, 'dashboard'])->middl
 Route::post('/admin/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
 Route::patch('/admin/agent-applications/{agentApplication}/approve', [AdminAuthController::class, 'approveAgentApplication'])->middleware('admin.auth')->name('admin.agent-applications.approve');
 Route::patch('/admin/agent-applications/{agentApplication}/reject', [AdminAuthController::class, 'rejectAgentApplication'])->middleware('admin.auth')->name('admin.agent-applications.reject');
+
+Route::get('/admin/agent-applications/{agentApplication}/identity-image/{side}', [AdminAuthController::class, 'identityImage'])
+    ->middleware('admin.auth')
+    ->name('admin.agent-applications.identity-image');
+
 Route::delete('/admin/request-lists/{requestList}', [AdminAuthController::class, 'deleteRequestList'])->middleware('admin.auth')->name('admin.request-lists.delete');
 Route::middleware('auth')->get('/api/latest-orders', [DashboardController::class, 'getLatestOrders'])->name('api.orders.latest');
 

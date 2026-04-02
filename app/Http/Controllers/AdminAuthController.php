@@ -9,6 +9,7 @@ use App\Models\RequestList;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class AdminAuthController extends Controller
 {
@@ -83,6 +84,37 @@ class AdminAuthController extends Controller
         $requestList->forceDelete();
 
         return redirect()->route('admin.dashboard')->with('status', '請購清單已刪除');
+    }
+
+       public function identityImage(AgentApplication $agentApplication, string $side)
+    {
+        if (! in_array($side, ['front', 'back'], true)) {
+            abort(404);
+        }
+
+        $rawPath = $side === 'front'
+            ? $agentApplication->id_image_front
+            : $agentApplication->id_image_back;
+
+        if (! $rawPath) {
+            abort(404);
+        }
+
+        $normalized = ltrim($rawPath, '/');
+
+        if (Str::startsWith($normalized, 'storage/')) {
+            $normalized = Str::after($normalized, 'storage/');
+        }
+
+        if (Str::startsWith($normalized, 'public/')) {
+            $normalized = Str::after($normalized, 'public/');
+        }
+
+        if (! Storage::disk('public')->exists($normalized)) {
+            abort(404);
+        }
+
+        return response()->file(Storage::disk('public')->path($normalized));
     }
 
     public function logout(Request $request)

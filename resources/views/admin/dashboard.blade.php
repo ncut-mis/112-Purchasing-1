@@ -121,11 +121,11 @@
                                 <div class="mt-3">
                                     <p class="mb-2"><strong>身份證正面：</strong></p>
                                     @if($application->id_image_front)
-                                        <a href="{{ asset('storage/' . $application->id_image_front) }}" target="_blank" rel="noopener noreferrer">
-                                            <img src="{{ asset('storage/' . $application->id_image_front) }}"
+                                        <a href="{{ route('admin.agent-applications.identity-image', ['agentApplication' => $application->id, 'side' => 'front']) }}" target="_blank" rel="noopener noreferrer">
+                                            <img src="{{ route('admin.agent-applications.identity-image', ['agentApplication' => $application->id, 'side' => 'front']) }}"
                                                 alt="身份證正面"
                                                 class="img-fluid rounded border mb-3"
-                                                style="max-height: 260px; object-fit: contain;">
+                                                style="max-height: 160px; object-fit: contain;">
                                         </a>
                                     @else
                                         <p class="text-muted small">未提供身份證正面照片</p>
@@ -133,11 +133,11 @@
 
                                     <p class="mb-2"><strong>身份證背面：</strong></p>
                                     @if($application->id_image_back)
-                                        <a href="{{ asset('storage/' . $application->id_image_back) }}" target="_blank" rel="noopener noreferrer">
-                                            <img src="{{ asset('storage/' . $application->id_image_back) }}"
+                                        <a href="{{ route('admin.agent-applications.identity-image', ['agentApplication' => $application->id, 'side' => 'back']) }}" target="_blank" rel="noopener noreferrer">
+                                            <img src="{{ route('admin.agent-applications.identity-image', ['agentApplication' => $application->id, 'side' => 'back']) }}"
                                                 alt="身份證背面"
                                                 class="img-fluid rounded border"
-                                                style="max-height: 260px; object-fit: contain;">
+                                                style="max-height: 160px; object-fit: contain;">
                                         </a>
                                     @else
                                         <p class="text-muted small">未提供身份證背面照片</p>
