@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use App\Models\Favorite;
 
 class RequestListController extends Controller
 {
@@ -212,5 +213,98 @@ class RequestListController extends Controller
 
         return response()->file(Storage::disk('public')->path($requestItem->reference_image));
     }
+        public function submitAgentQuote(Request $request)
+    {
+        // 1. 驗證資料（注意：這裡 id 建議改為 request_list_id 以免混淆，但沿用你的 id 也可以）
+        $validated = $request->validate([
+            'id' => 'required|exists:request_lists,id',
+            'agent_quote_total' => 'required|numeric|min:0.01',
+            'time' => 'required|string|max:500',
+            'items' => 'nullable|array' 
+        ]);
+
+        // 2. 找到該筆需求單
+        $requestList = RequestList::findOrFail($validated['id']);
+
+        // 3. 【關鍵安全檢查】防止「搶單衝突」
+        // 如果這張單子已經有 people (被接走了)，就報錯不讓別人再更新
+        if ($requestList->people && $requestList->people != auth()->id()) {
+            return response()->json(['message' => '這張需求單已被其他代購承接！'], 422);
+        }
+
+        // 4. 更新 RequestList 
+        // 加入 status 和 people 欄位更新
+        $requestList->update([
+            'agent_quote_total' => $request->agent_quote_total, // 假設你用這個存報價總額
+            'time'         => $validated['time'],
+            'people'       => auth()->id(),    // ✅ 存入當前登入的代購人 ID
+            'status'       => 'offered',    // ✅ 將狀態改為進行中 (或是你定義的狀態碼)
+        ]);
+
+        // 5. 若有逐項報價，更新 RequestItem
+        if (isset($validated['items'])) {
+            foreach ($validated['items'] as $itemData) {
+                RequestItem::where('id', $itemData['id'])->update([
+                    'expected_price' => $itemData['agent_quote'],
+                    'specification'  => $validated['time'] 
+                ]);
+            }
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => '報價成功，已為您承接此單！'
+        ]);
+    }
+  public function index(Request $request)
+{
+    $user = auth()->user();
+
+    // 1. 主要請求清單 (分頁物件)
+   $requestLists = \App\Models\RequestList::where('user_id', $user->id)
+        ->with(['items'])
+        ->latest()
+        ->paginate(10);
+
+    // 2. 為了修復 hasPages() 錯誤，收藏貼文也必須是「分頁物件」
+    // 如果你還沒做收藏功能，我們用 LengthAwarePaginator 模擬一個空的分頁器
+    $favoriteAgentPosts = new \Illuminate\Pagination\LengthAwarePaginator(
+        collect([]), // 空資料
+        0,           // 總數 0
+        10,          // 每頁 10 筆
+        1            // 當前第 1 頁
+    );
+
+    // 3. 統計數據 (包含你提到的 favorite_posts)
+    $stats = [
+        'total_requests'     => \App\Models\RequestList::where('user_id', $user->id)->count(),
+        'ongoing_requests'   => \App\Models\RequestList::where('user_id', $user->id)
+                                ->whereIn('status', ['offered', 'matched'])
+                                ->count(),
+        'completed_requests' => \App\Models\RequestList::where('user_id', $user->id)
+                                ->where('status', 'completed')
+                                ->count(),
+        'unread_messages'    => 0,
+        'favorite_posts'     => $favoriteAgentPosts->total(), // 對應你剛剛貼出的 HTML 區塊
+    ];
+
+    $offeredRequests = \App\Models\RequestList::where('user_id', $user->id)
+        ->where('status', 'offered')
+        ->latest()
+        ->get();
+
+    $currentSection = $request->query('section', 'all');
+    $agentApplication = \App\Models\AgentApplication::where('user_id', $user->id)->first();
+
+    return view('dashboard', compact(
+        'requestLists', 
+        'offeredRequests', 
+        'stats', 
+        'favoriteAgentPosts', 
+        'currentSection',
+        'user',
+        'agentApplication'
+    ));
+}
 
 }

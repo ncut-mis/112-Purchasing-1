@@ -95,4 +95,9 @@ class User extends Authenticatable
     {
     return $this->hasMany(AgentPost::class, 'user_id');
     }
+
+    public function favoriteAgentPosts()
+    {
+        return $this->hasMany(Favorite::class)->where('favoriteable_type', 'App\Models\AgentPost');
+    }
 }

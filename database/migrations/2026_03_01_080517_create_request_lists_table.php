@@ -46,6 +46,11 @@ return new class extends Migration
             // 保留建立請購清單時使用者輸入/選擇的完整欄位快照
             $table->json('form_snapshot')->nullable();
 
+            //人跟時間
+            
+            $table->text('people')->nullable();
+            $table->text('time')->nullable();
+
             $table->timestamps();
             $table->softDeletes();
         });

@@ -14,6 +14,7 @@ use App\Models\PurchasingRequest;
 use App\Models\RequestList;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
+use Illuminate\Http\Request;
 
 Route::get('/agent/member', function() { 
     return view('agent.member'); 
@@ -145,7 +146,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/agent-posts/{agentPost}/follow-order', [OrderController::class, 'store'])->name('orders.store');
 });
 
-
+Route::post('/request-lists/agent-quote', [RequestListController::class, 'submitAgentQuote']);
+Route::get('/dashboard', [RequestListController::class, 'index'])->name('dashboard');
 
 
 require __DIR__.'/auth.php';

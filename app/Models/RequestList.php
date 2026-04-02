@@ -11,7 +11,7 @@ class RequestList extends Model
 
     protected $fillable = [
         'user_id', 'title', 'country', 'city', 'deadline',
-        'budget_total', 'currency', 'status', 'detail_address', 'note'
+        'budget_total', 'currency', 'status', 'detail_address', 'note','people','time'
     ];
 
     protected $casts = [
