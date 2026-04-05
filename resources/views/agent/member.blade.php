@@ -448,33 +448,153 @@
                                     ->whereHas('post', function ($query) {
                                         $query->where('user_id', Auth::id());
                                     })
-                                    ->with('post:id,title,country,status,start_date,end_date')
+                                    ->with('post:id,title,country,city,description,status,start_date,end_date')
                                     ->latest('id')
                                     ->get();
+                                $managedPostGroups = $managedProducts
+                                    ->groupBy('agent_post_id')
+                                    ->sortByDesc(function ($products) {
+                                        return optional($products->first()->post)->id ?? 0;
+                                    });
+                                $productFollowers = collect();
+                                $productOrderedTotals = collect();
+                                $managedPostIds = $managedPostGroups
+                                    ->keys()
+                                    ->filter(function ($id) {
+                                        return ! empty($id);
+                                    })
+                                    ->map(function ($id) {
+                                        return (int) $id;
+                                    })
+                                    ->values();
+
+                                if ($managedPostIds->isNotEmpty()) {
+                                    $relatedOrders = \App\Models\Order::query()
+                                        ->where('seller_id', Auth::id())
+                                        ->where('source_type', \App\Models\AgentPost::class)
+                                        ->whereIn('source_id', $managedPostIds)
+                                        ->with([
+                                            'buyer:id,name',
+                                            'items:id,order_id,product_id,quantity',
+                                        ])
+                                        ->latest('id')
+                                        ->get();
+
+                                    $productFollowRows = $relatedOrders
+                                        ->flatMap(function ($order) {
+                                            return $order->items->map(function ($item) use ($order) {
+                                                return [
+                                                    'product_id' => (int) $item->product_id,
+                                                    'buyer_id' => (int) $order->buyer_id,
+                                                    'buyer_name' => optional($order->buyer)->name ?? '未知會員',
+                                                    'quantity' => (int) $item->quantity,
+                                                ];
+                                            });
+                                        })
+                                        ->filter(function ($record) {
+                                            return ! empty($record['product_id']);
+                                        });
+
+                                    $productOrderedTotals = $productFollowRows
+                                        ->groupBy('product_id')
+                                        ->map(function ($rows) {
+                                            return (int) $rows->sum('quantity');
+                                        });
+
+                                    $productFollowers = $productFollowRows
+                                        ->groupBy('product_id')
+                                        ->map(function ($rows) {
+                                            return $rows
+                                                ->groupBy('buyer_id')
+                                                ->map(function ($buyerRows) {
+                                                    return [
+                                                        'buyer_name' => $buyerRows->first()['buyer_name'] ?? '未知會員',
+                                                        'quantity' => (int) $buyerRows->sum('quantity'),
+                                                    ];
+                                                })
+                                                ->values();
+                                        });
+                                }
                             @endphp
 
                             <div class="space-y-4">
-                                @forelse($managedProducts as $product)
-                                    <div class="flex items-center gap-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
-                                        <div class="w-16 h-16 rounded-xl bg-white border border-blue-100 overflow-hidden flex items-center justify-center text-blue-200">
-                                            @if($product->display_image_url)
-                                                <img src="{{ $product->display_image_url }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
-                                            @else
-                                                <i class="bi bi-image text-2xl"></i>
-                                            @endif
+                                @forelse($managedPostGroups as $products)
+                                    @php
+                                        $post = optional($products->first())->post;
+                                        $postStatus = optional($post)->status;
+                                        $statusLabel = $postStatus === 'draft' ? '編輯中' : ($postStatus === 'open' ? '進行中' : ($postStatus ?? '未知'));
+                                        $statusClasses = $postStatus === 'draft' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600';
+                                    @endphp
+                                    <div class="p-4 bg-blue-50 rounded-xl border border-blue-100 space-y-3" x-data="{ showPostDetails: false }">
+                                        <div class="flex flex-wrap items-center justify-between gap-3">
+                                            <div>
+                                                <div class="font-bold text-gray-800">
+                                                    {{ optional($post)->country ? '【'.optional($post)->country.'】' : '' }}{{ optional($post)->title ?? '未命名貼文' }}
+                                                </div>
+                                                <div class="text-xs text-gray-500 mt-1">
+                                                    代購期間：{{ optional(optional($post)->start_date)->format('Y/m/d') ?? '-' }} - {{ optional(optional($post)->end_date)->format('Y/m/d') ?? '-' }}
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="inline-flex text-[10px] font-bold px-2 py-0.5 rounded {{ $statusClasses }}">{{ $statusLabel }}</span>
+                                                <button type="button"
+                                                    class="inline-flex items-center px-3 py-1.5 text-xs font-bold text-blue-600 bg-white border border-blue-200 rounded-lg hover:bg-blue-100 transition"
+                                                    @click="showPostDetails = !showPostDetails"
+                                                    x-text="showPostDetails ? '收合檢視' : '檢視貼文'">
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div class="flex-1 min-w-0">
-                                            <div class="font-bold text-gray-800 truncate">{{ $product->name }}</div>
-                                            <div class="text-xs text-gray-500 mt-1">單價：NT$ {{ number_format((float) $product->price, 0) }} ・ 上限：{{ $product->max_quantity }}</div>
-                                            <div class="text-xs text-gray-400 mt-1 truncate">來源貼文：{{ optional($product->post)->country ? '【'.optional($product->post)->country.'】' : '' }}{{ optional($product->post)->title ?? '未命名貼文' }}</div>
-                                        </div>
-                                        <div class="text-right">
-                                            @php
-                                                $postStatus = optional($product->post)->status;
-                                                $statusLabel = $postStatus === 'draft' ? '編輯中' : ($postStatus === 'open' ? '進行中' : ($postStatus ?? '未知'));
-                                                $statusClasses = $postStatus === 'draft' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600';
-                                            @endphp
-                                            <span class="inline-flex text-[10px] font-bold px-2 py-0.5 rounded {{ $statusClasses }}">{{ $statusLabel }}</span>
+
+                                        <div x-show="showPostDetails" x-transition class="space-y-3">
+                                            <div class="rounded-lg border border-blue-100 bg-white/80 px-4 py-3">
+                                                <p class="text-sm text-gray-700 leading-relaxed">
+                                                    {{ optional($post)->description ?: '此貼文尚未填寫詳細說明。' }}
+                                                </p>
+                                                <p class="text-xs text-gray-500 mt-2">
+                                                    地區：{{ optional($post)->country ?? '-' }}{{ optional($post)->city ? '・'.optional($post)->city : '' }}
+                                                </p>
+                                            </div>
+
+                                            <div class="space-y-2">
+                                                @foreach($products as $product)
+                                                    <div class="flex items-center gap-3 p-3 rounded-lg border border-blue-100 bg-white/80">
+                                                        <div class="w-14 h-14 rounded-lg bg-white border border-blue-100 overflow-hidden flex items-center justify-center text-blue-200 shrink-0">
+                                                            @if($product->display_image_url)
+                                                                <img src="{{ $product->display_image_url }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
+                                                            @else
+                                                                <i class="bi bi-image text-xl"></i>
+                                                            @endif
+                                                        </div>
+                                                        <div class="min-w-0 flex-1">
+                                                            <div class="font-bold text-gray-800 truncate">{{ $product->name }}</div>
+                                                            @php
+                                                                $orderedTotal = (int) $productOrderedTotals->get((int) $product->id, 0);
+                                                                $remainingQty = is_null($product->max_quantity)
+                                                                    ? '無限制'
+                                                                    : max(0, (int) $product->max_quantity - $orderedTotal);
+                                                            @endphp
+                                                            <div class="text-xs text-gray-500 mt-1">
+                                                                單價：NT$ {{ number_format((float) $product->price, 0) }}
+                                                                ・ 上限：{{ $product->max_quantity ?? '無限制' }}
+                                                                ・ 剩餘可跟單：{{ $remainingQty }}
+                                                            </div>
+                                                            @php
+                                                                $followers = $productFollowers->get((int) $product->id, collect());
+                                                            @endphp
+                                                            <div class="mt-2 text-xs text-gray-600">
+                                                                <div class="font-semibold text-gray-700 mb-1">跟單紀錄：</div>
+                                                                @forelse($followers as $follower)
+                                                                    <div class="mb-0.5">
+                                                                        {{ $follower['buyer_name'] }}：{{ $follower['quantity'] }} 件
+                                                                    </div>
+                                                                @empty
+                                                                    <div class="text-gray-400">目前尚無人跟單</div>
+                                                                @endforelse
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
                                         </div>
                                     </div>
                                 @empty
