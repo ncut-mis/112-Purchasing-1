@@ -40,6 +40,9 @@ Route::patch('/admin/agent-applications/{agentApplication}/reject', [AdminAuthCo
 Route::get('/admin/agent-applications/{agentApplication}/identity-image/{side}', [AdminAuthController::class, 'identityImage'])
     ->middleware('admin.auth')
     ->name('admin.agent-applications.identity-image');
+Route::get('/admin/request-items/{requestItem}/image', [AdminAuthController::class, 'requestItemImage'])
+    ->middleware('admin.auth')
+    ->name('admin.request-items.image');
 
 Route::delete('/admin/request-lists/{requestList}', [AdminAuthController::class, 'deleteRequestList'])->middleware('admin.auth')->name('admin.request-lists.delete');
 Route::middleware('auth')->get('/api/latest-orders', [DashboardController::class, 'getLatestOrders'])->name('api.orders.latest');

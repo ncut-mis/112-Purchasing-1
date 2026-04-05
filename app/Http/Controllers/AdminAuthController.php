@@ -4,7 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Admin;
 use App\Models\AgentApplication;
-use App\Models\Post;
+use App\Models\AgentPost;
+use App\Models\RequestItem;
 use App\Models\RequestList;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -43,8 +44,8 @@ class AdminAuthController extends Controller
     {
         $adminName = $request->session()->get('admin_auth_name');
         $agentApplications = AgentApplication::with('user')->latest()->take(10)->get();
-        $requestLists = RequestList::with('items')->latest()->take(10)->get();
-        $posts = Post::latest()->take(10)->get();
+        $requestLists = RequestList::with(['items', 'user'])->latest()->take(10)->get();
+        $posts = AgentPost::with(['user', 'products'])->latest()->take(10)->get();
 
         return view('admin.dashboard', compact('adminName', 'agentApplications', 'requestLists', 'posts'));
     }
@@ -86,7 +87,7 @@ class AdminAuthController extends Controller
         return redirect()->route('admin.dashboard')->with('status', '請購清單已刪除');
     }
 
-       public function identityImage(AgentApplication $agentApplication, string $side)
+    public function identityImage(AgentApplication $agentApplication, string $side)
     {
         if (! in_array($side, ['front', 'back'], true)) {
             abort(404);
@@ -95,6 +96,31 @@ class AdminAuthController extends Controller
         $rawPath = $side === 'front'
             ? $agentApplication->id_image_front
             : $agentApplication->id_image_back;
+
+        if (! $rawPath) {
+            abort(404);
+        }
+
+        $normalized = ltrim($rawPath, '/');
+
+        if (Str::startsWith($normalized, 'storage/')) {
+            $normalized = Str::after($normalized, 'storage/');
+        }
+
+        if (Str::startsWith($normalized, 'public/')) {
+            $normalized = Str::after($normalized, 'public/');
+        }
+
+        if (! Storage::disk('public')->exists($normalized)) {
+            abort(404);
+        }
+
+        return response()->file(Storage::disk('public')->path($normalized));
+    }
+
+    public function requestItemImage(RequestItem $requestItem)
+    {
+        $rawPath = $requestItem->reference_image;
 
         if (! $rawPath) {
             abort(404);

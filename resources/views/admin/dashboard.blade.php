@@ -96,7 +96,7 @@
                 @php
                     $applicantName = $application->name ?? optional($application->user)->name ?? '未提供';
                     $country = $application->country ?? $application->main_region ?? '未提供';
-                    $idNumber = $application->id_number ?? $application->ID_Card ?? '未提供';
+                                        $idNumber = $application->id_number ?? $application->ID_Card ?? '未提供';
                     $statusLabel = [
                         'pending' => '待審核',
                         'resubmitted' => '重新申請中...',
@@ -125,7 +125,7 @@
                                             <img src="{{ route('admin.agent-applications.identity-image', ['agentApplication' => $application->id, 'side' => 'front']) }}"
                                                 alt="身份證正面"
                                                 class="img-fluid rounded border mb-3"
-                                                style="max-height: 160px; object-fit: contain;">
+                                                style="max-height: 150px; object-fit: contain;">
                                         </a>
                                     @else
                                         <p class="text-muted small">未提供身份證正面照片</p>
@@ -137,7 +137,7 @@
                                             <img src="{{ route('admin.agent-applications.identity-image', ['agentApplication' => $application->id, 'side' => 'back']) }}"
                                                 alt="身份證背面"
                                                 class="img-fluid rounded border"
-                                                style="max-height: 160px; object-fit: contain;">
+                                                style="max-height: 150px; object-fit: contain;">
                                         </a>
                                     @else
                                         <p class="text-muted small">未提供身份證背面照片</p>
@@ -157,6 +157,7 @@
                         <table class="table align-middle">
                             <thead>
                                 <tr>
+                                    <th>請購人</th>
                                     <th>商品</th>
                                     <th>國家</th>
                                     <th>截止日</th>
@@ -186,6 +187,7 @@
                                         ][$request->status] ?? $request->status;
                                     @endphp
                                     <tr>
+                                        <td>{{ optional($request->user)->name ?? '未提供' }}</td>
                                         <td>
                                             @if($extraItems->isNotEmpty())
                                                 <details>
@@ -213,7 +215,7 @@
                                         </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="5" class="text-center text-muted">目前沒有請購清單資料</td></tr>
+                                    <tr><td colspan="6" class="text-center text-muted">目前沒有請購清單資料</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -230,28 +232,59 @@
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
-                                <p class="mb-1"><strong>國家：</strong>{{ [
-                                    'jp' => '日本',
-                                    'kr' => '韓國',
-                                    'us' => '美國',
-                                    'gb' => '英國',
-                                ][$request->country] ?? $request->country }}</p>
-                                <p class="mb-1"><strong>截止日：</strong>{{ optional($request->deadline)->format('Y-m-d') }}</p>
-                                <p class="mb-2"><strong>狀態：</strong>{{ [
-                                    'editing' => '編輯中',
-                                    'pending' => '等待接單',
-                                    'offered' => '代購人已關注',
-                                    'matched' => '已確認代購人',
-                                    'completed' => '訂單已完成',
-                                    'cancelled' => '訂單已取消',
-                                ][$request->status] ?? $request->status }}</p>
+                                @php
+                                    $firstItemWithImage = $request->items->first(fn ($item) => !empty($item->reference_image));
+                                @endphp
+                                <div class="row g-3 align-items-start">
+                                    <div class="col-md-7">
+                                        <p class="mb-1"><strong>國家：</strong>{{ [
+                                            'jp' => '日本',
+                                            'kr' => '韓國',
+                                            'us' => '美國',
+                                            'gb' => '英國',
+                                        ][$request->country] ?? $request->country }}</p>
+                                        <p class="mb-1"><strong>截止日：</strong>{{ optional($request->deadline)->format('Y-m-d') }}</p>
+                                        <p class="mb-2"><strong>狀態：</strong>{{ [
+                                            'editing' => '編輯中',
+                                            'pending' => '等待接單',
+                                            'offered' => '代購人已關注',
+                                            'matched' => '已確認代購人',
+                                            'completed' => '訂單已完成',
+                                            'cancelled' => '訂單已取消',
+                                        ][$request->status] ?? $request->status }}</p>
 
-                                <div class="fw-semibold mb-1">商品清單</div>
-                                <ul class="mb-0">
-                                    @foreach($request->items as $item)
-                                        <li>{{ $item->name }}</li>
-                                    @endforeach
-                                </ul>
+                                        <div class="fw-semibold mb-1">商品清單</div>
+                                        <ul class="mb-0 ps-0 list-unstyled">
+                                            @foreach($request->items as $item)
+                                                <li class="mb-2">
+                                                    <button
+                                                        type="button"
+                                                        class="btn btn-link p-0 text-start text-decoration-none request-item-preview-trigger"
+                                                        data-preview-image="{{ $item->reference_image ? route('admin.request-items.image', $item) : '' }}"
+                                                        data-preview-name="{{ $item->name }}"
+                                                    >
+                                                        • {{ $item->name }}　需求量: {{ (int) ($item->quantity ?? 0) }}
+                                                    </button>
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+
+                                    <div class="col-md-5">
+                                        <div class="border rounded-3 bg-light d-flex align-items-center justify-content-center overflow-hidden"
+                                             style="min-height: 180px;">
+                                            <img
+                                                src="{{ $firstItemWithImage ? route('admin.request-items.image', $firstItemWithImage) : '' }}"
+                                                alt="{{ $firstItemWithImage?->name ?? '商品圖片預覽' }}"
+                                                class="request-item-preview-image img-fluid w-100 h-100"
+                                                style="object-fit: contain; {{ $firstItemWithImage ? '' : 'display:none;' }}"
+                                            >
+                                            <span class="request-item-preview-empty text-muted small {{ $firstItemWithImage ? 'd-none' : '' }}">
+                                                尚未提供商品圖片
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -266,20 +299,53 @@
                         <table class="table align-middle">
                              <thead>
                                 <tr>
-                                    <th>貼文標題</th>
+                                    <th>代購人</th>
+                                    <th>商品</th>
+                                    <th>國家</th>
+                                    <th>代購期間</th>
                                     <th>狀態</th>
-                                    <th>建立時間</th>
+                                    <th class="text-end">操作</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse($posts as $post)
+                                    @php
+                                        $products = $post->products ?? collect();
+                                        $firstProductName = optional($products->first())->name ?? '未提供商品';
+                                        $extraProductCount = max($products->count() - 1, 0);
+                                    @endphp
                                     <tr>
-                                        <td>{{ $post->title }}</td>
+                                        <td>{{ optional($post->user)->name ?? '未提供' }}</td>
+                                        <td>
+                                            @if($extraProductCount > 0)
+                                                <details>
+                                                    <summary class="cursor-pointer">{{ $firstProductName }}（另有 {{ $extraProductCount }} 項）</summary>
+                                                    <ul class="mb-0 mt-2 ps-3 text-muted small">
+                                                        @foreach($products->slice(1) as $product)
+                                                            <li>{{ $product->name }}</li>
+                                                        @endforeach
+                                                    </ul>
+                                                </details>
+                                            @else
+                                                {{ $firstProductName }}
+                                            @endif
+                                        </td>
+                                        <td>
+                                            {{ $post->country ?? '未提供' }}{{ $post->city ? '・' . $post->city : '' }}
+                                        </td>
+                                        <td>
+                                            {{ optional($post->start_date)->format('Y-m-d') ?? '未提供' }}
+                                            ~
+                                            {{ optional($post->end_date)->format('Y-m-d') ?? '未提供' }}
+                                        </td>
                                         <td>{{ $post->status }}</td>
-                                        <td>{{ optional($post->created_at)->format('Y-m-d H:i') }}</td>
+                                        <td class="text-end">
+                                            <button type="button" class="btn btn-sm btn-outline-primary">檢視</button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger">刪除</button>
+                                        </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="3" class="text-center text-muted">目前沒有代購貼文資料</td></tr>
+                                    <tr><td colspan="6" class="text-center text-muted">目前沒有代購貼文資料</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -289,4 +355,35 @@
         </div>
     </div>
 </div>
+<script>
+document.addEventListener('click', function (event) {
+    const trigger = event.target.closest('.request-item-preview-trigger');
+    if (!trigger) {
+        return;
+    }
+
+    const modalBody = trigger.closest('.modal-body');
+    if (!modalBody) {
+        return;
+    }
+
+    const image = modalBody.querySelector('.request-item-preview-image');
+    const empty = modalBody.querySelector('.request-item-preview-empty');
+    const imageUrl = trigger.dataset.previewImage || '';
+    const imageName = trigger.dataset.previewName || '商品圖片預覽';
+
+    if (imageUrl) {
+        image.src = imageUrl;
+        image.alt = imageName;
+        image.style.display = '';
+        empty?.classList.add('d-none');
+        return;
+    }
+
+    image.removeAttribute('src');
+    image.alt = imageName;
+    image.style.display = 'none';
+    empty?.classList.remove('d-none');
+});
+</script>
 @endsection
