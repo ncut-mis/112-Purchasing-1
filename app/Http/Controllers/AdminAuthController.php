@@ -8,6 +8,7 @@ use App\Models\AgentPost;
 use App\Models\RequestItem;
 use App\Models\RequestList;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -85,6 +86,28 @@ class AdminAuthController extends Controller
         $requestList->forceDelete();
 
         return redirect()->route('admin.dashboard')->with('status', '請購清單已刪除');
+    }
+
+    public function deleteAgentPost(AgentPost $agentPost)
+    {
+        $agentPost->load('products');
+
+        DB::transaction(function () use ($agentPost) {
+            foreach ($agentPost->products as $product) {
+                if ($product->image_path) {
+                    Storage::disk('public')->delete($product->image_path);
+                }
+                $product->delete();
+            }
+
+            if ($agentPost->cover_image) {
+                Storage::disk('public')->delete($agentPost->cover_image);
+            }
+
+            $agentPost->forceDelete();
+        });
+
+        return redirect()->route('admin.dashboard')->with('status', '代購貼文已刪除');
     }
 
     public function identityImage(AgentApplication $agentApplication, string $side)

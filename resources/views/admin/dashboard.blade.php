@@ -299,7 +299,7 @@
                         <table class="table align-middle">
                              <thead>
                                 <tr>
-                                    <th>代購人</th>
+                                     <th>代購人</th>
                                     <th>商品</th>
                                     <th>國家</th>
                                     <th>代購期間</th>
@@ -340,8 +340,12 @@
                                         </td>
                                         <td>{{ $post->status }}</td>
                                         <td class="text-end">
-                                            <button type="button" class="btn btn-sm btn-outline-primary">檢視</button>
-                                            <button type="button" class="btn btn-sm btn-outline-danger">刪除</button>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#postViewModal-{{ $post->id }}">檢視</button>
+                                            <form method="POST" action="{{ route('admin.agent-posts.delete', $post) }}" class="d-inline" onsubmit="return confirm('確定要刪除此代購貼文嗎？');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">刪除</button>
+                                            </form>
                                         </td>
                                     </tr>
                                 @empty
@@ -352,6 +356,80 @@
                     </div>
                 </div>
             </div>
+
+            @foreach($posts as $post)
+                <div class="modal fade" id="postViewModal-{{ $post->id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content rounded-4">
+                            <div class="modal-header">
+                                <h5 class="modal-title">代購貼文檢視</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                @php
+                                    $firstPostProductWithImage = $post->products->first(fn ($product) => !empty($product->image_path));
+                                @endphp
+                                <div class="row g-3 align-items-start">
+                                    <div class="col-md-8">
+                                        <p class="mb-1"><strong>國家：</strong>{{ $post->country ?? '未提供' }}{{ $post->city ? '・' . $post->city : '' }}</p>
+                                        <p class="mb-1"><strong>貼文標題：</strong>{{ $post->title ?? '未提供' }}</p>
+                                        <p class="mb-1"><strong>貼文描述：</strong>{{ $post->description ?? '未提供' }}</p>
+                                        <p class="mb-1"><strong>代購期間：</strong>
+                                            {{ optional($post->start_date)->format('Y-m-d') ?? '未提供' }}
+                                            ~
+                                            {{ optional($post->end_date)->format('Y-m-d') ?? '未提供' }}
+                                        </p>
+                                        <p class="mb-3"><strong>狀態：</strong>{{ $post->status ?? '未提供' }}</p>
+
+                                        <div class="fw-semibold mb-2">商品清單</div>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm align-middle mb-0">
+                                                <thead>
+                                                    <tr>
+                                                        <th>商品名稱</th>
+                                                        <th>單價</th>
+                                                        <th>最高數量</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @forelse($post->products as $product)
+                                                        <tr class="post-product-preview-trigger" style="cursor: pointer;"
+                                                            data-preview-image="{{ $product->image_path ? route('post-product.image', $product) : '' }}"
+                                                            data-preview-name="{{ $product->name ?? '商品圖片' }}">
+                                                            <td>{{ $product->name ?? '未提供' }}</td>
+                                                            <td>NT$ {{ number_format((float) ($product->price ?? 0), 0) }}</td>
+                                                            <td>{{ (int) ($product->max_quantity ?? 0) }}</td>
+                                                        </tr>
+                                                    @empty
+                                                        <tr>
+                                                            <td colspan="3" class="text-center text-muted">目前沒有商品資料</td>
+                                                        </tr>
+                                                    @endforelse
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <div class="border rounded-3 bg-light d-flex align-items-center justify-content-center overflow-hidden"
+                                             style="min-height: 200px;">
+                                            <img
+                                                src="{{ $firstPostProductWithImage ? route('post-product.image', $firstPostProductWithImage) : '' }}"
+                                                alt="{{ $firstPostProductWithImage?->name ?? '商品圖片預覽' }}"
+                                                class="post-product-preview-image img-fluid w-100 h-100"
+                                                style="object-fit: contain; {{ $firstPostProductWithImage ? '' : 'display:none;' }}"
+                                            >
+                                            <span class="post-product-preview-empty text-muted small {{ $firstPostProductWithImage ? 'd-none' : '' }}">
+                                                尚未提供商品圖片
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
         </div>
     </div>
 </div>
@@ -369,6 +447,36 @@ document.addEventListener('click', function (event) {
 
     const image = modalBody.querySelector('.request-item-preview-image');
     const empty = modalBody.querySelector('.request-item-preview-empty');
+    const imageUrl = trigger.dataset.previewImage || '';
+    const imageName = trigger.dataset.previewName || '商品圖片預覽';
+
+    if (imageUrl) {
+        image.src = imageUrl;
+        image.alt = imageName;
+        image.style.display = '';
+        empty?.classList.add('d-none');
+        return;
+    }
+
+    image.removeAttribute('src');
+    image.alt = imageName;
+    image.style.display = 'none';
+    empty?.classList.remove('d-none');
+});
+
+document.addEventListener('click', function (event) {
+    const trigger = event.target.closest('.post-product-preview-trigger');
+    if (!trigger) {
+        return;
+    }
+
+    const modalBody = trigger.closest('.modal-body');
+    if (!modalBody) {
+        return;
+    }
+
+    const image = modalBody.querySelector('.post-product-preview-image');
+    const empty = modalBody.querySelector('.post-product-preview-empty');
     const imageUrl = trigger.dataset.previewImage || '';
     const imageName = trigger.dataset.previewName || '商品圖片預覽';
 
