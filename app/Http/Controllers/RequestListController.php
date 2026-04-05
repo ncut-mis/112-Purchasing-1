@@ -220,7 +220,9 @@ class RequestListController extends Controller
             'id' => 'required|exists:request_lists,id',
             'agent_quote_total' => 'required|numeric|min:0.01',
             'time' => 'required|string|max:500',
-            'items' => 'nullable|array' 
+            'items' => 'nullable|array',
+        'items.*.id' => 'required|exists:request_items,id',
+        'items.*.agent_quote' => 'required|numeric|min:0'
         ]);
 
         // 2. 找到該筆需求單
@@ -256,5 +258,5 @@ class RequestListController extends Controller
             'message' => '報價成功，已為您承接此單！'
         ]);
     }
-
+        
 }

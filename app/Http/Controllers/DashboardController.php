@@ -67,12 +67,20 @@ class DashboardController extends Controller
         $favoriteAgentPosts = $favoriteAgentPostsQuery->latest()->paginate(9, ['*'], 'favorite_page');
 
 
-        // --- 4. 被報價的需求 (用於 Dashboard 提醒) ---
-        $offeredRequests = RequestList::where('user_id', $user->id)
-            ->where('status', 'offered')
-            ->latest()
-            ->get();
+            // ---4. // 加上預加載，顯示名字才快
+             $offeredRequests = RequestList::with('agent') 
+                ->where('user_id', $user->id)
+                ->where('status', 'offered')
+                ->latest() 
+                ->get();
 
+            // --- 5. 我承接的報價 (我當代購，去幫別人買) ---
+            // 這裡用一個新變數名稱，例如 $myWorkingOrders
+            $myWorkingOrders = RequestList::with('user') // 加上預加載發案人的資訊
+                ->where('people', $user->id) // 篩選代購人是我自己
+                ->where('status', 'offered')
+                ->latest()
+                ->get();
 
         // --- 5. 跟單/訂單 (Orders) 邏輯 ---
         $followOrders = new LengthAwarePaginator([], 0, 9, (int) $request->query('follow_page', 1), [
@@ -119,7 +127,8 @@ class DashboardController extends Controller
             'followOrders',
             'currentSection',
             'stats',
-            'offeredRequests'
+            'offeredRequests',
+            'myWorkingOrders'
         ));
     }
 }

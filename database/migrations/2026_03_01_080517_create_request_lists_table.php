@@ -48,7 +48,7 @@ return new class extends Migration
 
             //人跟時間
             
-            $table->text('people')->nullable();
+            $table->unsignedBigInteger('people')->nullable();
             $table->text('time')->nullable();
 
             $table->timestamps();

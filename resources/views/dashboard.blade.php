@@ -298,14 +298,23 @@
                                     <h4 class="font-bold text-gray-800">有人想幫您代購！</h4>
                                     <span class="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-full uppercase tracking-wider">待處理報價</span>
                                 </div>
-                                <p class="text-sm text-gray-500 mt-1">
-                                    針對項目：<span class="font-medium text-gray-700">#{{ $noti->id }} {{ $noti->title }}</span>
-                                </p>
-                                
+                                    <p class="text-sm text-gray-500 mt-1">
+                                        代購人：
+                                        <span class="font-medium text-gray-700">
+                                            {{ $noti->agent->name ?? '尚未指派' }}
+                                        </span>
+                                    </p>
                                 <div class="mt-3 flex flex-wrap gap-2">
                                     <div class="flex items-center gap-1.5 px-3 py-1 bg-gray-50 rounded-lg border border-gray-100 text-xs text-gray-600">
                                         <i class="bi bi-currency-dollar text-amber-600"></i>
-                                        報價總額：<span class="font-bold text-gray-900">${{ number_format($noti->agent_quote_total) }}</span>
+                                        報價總額：
+                                        <span class="font-bold text-gray-900">
+                                            {{-- 1. 顯示資料庫存的幣別 (例如 TWD, JPY) --}}
+                                            {{ $noti->currency }} 
+                                            
+                                            {{-- 2. 顯示金額，並移除原本前面的 $ 符號 --}}
+                                            {{ number_format($noti->agent_quote_total) }}
+                                        </span>
                                     </div>
                                     <div class="flex items-center gap-1.5 px-3 py-1 bg-gray-50 rounded-lg border border-gray-100 text-xs text-gray-600">
                                         <i class="bi bi-clock text-blue-500"></i>
