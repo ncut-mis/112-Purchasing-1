@@ -64,7 +64,7 @@
                                 <span>我的代購貼文</span>
                             </a>
                             <!-- 2. 訂單管理 -->
-                            <a href="#" class="flex items-center gap-3 p-3 rounded-xl text-gray-600 hover:bg-gray-50 transition">
+                            <a href="#" @click.prevent="activeTab = 'order-management'" :class="activeTab === 'order-management' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-gray-600'" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition">
                                 <i class="bi bi-file-earmark-medical text-indigo-500 text-lg"></i>
                                 <span>訂單管理</span>
                             </a>
@@ -439,10 +439,25 @@
 
                     </div>
 
-                    <!-- 分頁二：代購商品管理 -->
+
+
+
+                      <!-- 分頁二：訂單管理 -->
+                    <div x-show="activeTab === 'order-management'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4">
+                        <section id="order-management" class="bg-white rounded-2xl shadow-sm border border-indigo-100 p-6">
+                            <h3 class="text-lg font-bold text-indigo-600 mb-6">【請託單】訂單管理</h3>
+                            <div class="space-y-4">
+                                    <div class="text-gray-400 text-sm text-center py-8 border border-dashed border-indigo-200 rounded-xl">
+                                         尚未接取任何請託單，請先到「接單大廳」接取會員的請託單。
+                                    </div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- 分頁三：代購商品管理 -->
                     <div x-show="activeTab === 'product-management'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4">
                         <section id="product-management" class="bg-white rounded-2xl shadow-sm border border-blue-100 p-6">
-                            <h3 class="text-lg font-bold text-blue-600 mb-6">代購商品管理</h3>
+                            <h3 class="text-lg font-bold text-blue-600 mb-6">【代購貼文】代購商品管理</h3>
                             @php
                                 $managedProducts = \App\Models\PostProduct::query()
                                     ->whereHas('post', function ($query) {

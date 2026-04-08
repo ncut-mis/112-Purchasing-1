@@ -326,7 +326,7 @@
                         </div>
 
                         <div class="flex gap-2 w-full md:w-auto">
-                            <button class="flex-1 md:flex-none px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-bold shadow-sm shadow-emerald-200 transition-all active:scale-95">
+                            <button class="flex-1 md:flex-none px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-bold shadow-sm shadow-amber-200 transition-all active:scale-95">
                                 接受代購
                             </button>
                             <button class="flex-1 md:flex-none px-6 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 rounded-xl text-sm font-bold transition-all">
@@ -577,6 +577,7 @@
                                         <th class="pb-3 font-medium">國家</th>
                                         <th class="pb-3 font-medium">截止日</th>
                                         <th class="pb-3 font-medium">狀態</th>
+                                        <th class="pb-3 font-medium">注意事項</th>
                                         <th class="pb-3 font-medium text-right">操作</th>
                                     </tr>
                                 </thead>
@@ -617,7 +618,7 @@
                                                 'editing' => '編輯中',
                                                 'pending' => '等待接單',
 
-                                                'offered' => '代購人已關注',
+                                                'offered' => '代購人已下單',
 
                                                 'matched' => '已確認代購人',
 
@@ -666,8 +667,28 @@
                                             <td class="py-4 text-gray-500">{{ $countryLabel }}</td>
                                             <td class="py-4 text-gray-800">{{ optional($requestList->deadline)->format('Y-m-d') ?? '-' }}</td>
                                             <td class="py-4">
-                                                <span class="px-2 py-1 rounded-full text-[10px] {{ $statusClass }}">{{ $statusLabel }}</span>
+                                               <span class="px-2 py-1 rounded-full text-[10px] {{ $statusClass }}">{{ $statusLabel }}</span>
                                             </td>
+
+                                            <td class="py-4">
+                                                @php
+                                                    $noticeMap = [
+                                                        'editing' => ['text' => '清單送出後將不能修改與刪除,請先確認內容后再按「送出」', 'class' => 'bg-slate-100 text-slate-700'],
+                                                        'pending' => ['text' => '等待代購人接單中,請留意通知中心或這裡的變動', 'class' => 'bg-yellow-50 text-yellow-700'],
+                                                        'offered' => ['text' => '請至通知中心確認代購人', 'class' => 'bg-blue-50 text-blue-700'],
+                                                    ];
+                                                    $notice = $noticeMap[$requestList->status] ?? null;
+                                                @endphp
+
+                                                @if($notice)
+                                                    <span class="inline-flex items-center rounded-md px-2 py-1 text-[11px] font-medium {{ $notice['class'] }}">
+                                                        {{ $notice['text'] }}
+                                                    </span>
+                                                @else
+                                                    <span class="text-xs text-gray-300">—</span>
+                                                @endif
+                                            </td>
+
                                             <td class="py-4 text-right">
                                                 @php
                                                     $acceptedOffer = $requestList->offers->firstWhere('status', 'accepted');
@@ -691,7 +712,7 @@
                                                             @method('PATCH')
                                                             <button type="submit" class="text-green-600 hover:underline">送出</button>
                                                         </form>
-                                                    @elseif($requestList->status === 'pending')
+                                                    @elseif(in_array($requestList->status, ['pending', 'offered'], true))
                                                         <button type="button" class="inline-flex items-center rounded-lg bg-blue-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-600" onclick="openRequestDetailModal({{ $requestList->id }})">檢視</button>
                                                         <button type="button" class="inline-flex items-center rounded-lg bg-green-400 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-green-500"onclick="window.location.href='{{ url('/messages') }}'">聊天</button>     
                                                         <button
@@ -709,7 +730,7 @@
                                     @empty
 
                                         <tr>
-                                            <td colspan="5" class="py-6 text-center text-gray-400">
+                                            <td colspan="6" class="py-6 text-center text-gray-400">
                                                 @if(request('request_search'))
                                                     沒有找到「{{ request('request_search') }}」相關的請購清單
                                                 @else
@@ -729,7 +750,7 @@
 
 
                         @foreach($requestLists ?? [] as $requestList)
-                            @if($requestList->status === 'pending')
+                             @if(in_array($requestList->status, ['pending', 'offered'], true))
                                 @php
                                     $modalCountryLabel = [
                                         'jp' => '日本',
@@ -740,23 +761,32 @@
                                     $acceptedOffer = $requestList->offers->firstWhere('status', 'accepted');
                                     $activeOffer = $acceptedOffer ?? $requestList->offers->first();
                                     $activeAgent = optional($activeOffer)->agent;
-                                    $agentAvatar = $activeAgent && $activeAgent->avatar
-                                        ? asset('storage/' . $activeAgent->avatar)
-                                        : ($activeAgent
-                                            ? 'https://ui-avatars.com/api/?name=' . urlencode($activeAgent->name) . '&background=2563eb&color=fff&size=128'
+                                    $assignedAgentUser = ($requestList->status === 'offered' && !empty($requestList->people))
+                                        ? \App\Models\User::find($requestList->people)
+                                        : null;
+                                    $displayAgent = $assignedAgentUser ?: $activeAgent;
+                                    $agentAvatar = $displayAgent && $displayAgent->avatar
+                                        ? asset('storage/' . $displayAgent->avatar)
+                                        : ($displayAgent
+                                            ? 'https://ui-avatars.com/api/?name=' . urlencode($displayAgent->name) . '&background=2563eb&color=fff&size=128'
                                             : null);
 
                                     $deadlineDisplayDate = optional($requestList->deadline)->format('Y-m-d');
                                     $countdownEndAt = optional($requestList->deadline)->format('Y-m-d') ? optional($requestList->deadline)->format('Y-m-d') . ' 23:59:00' : null;
+
+                                    $isOffered = $requestList->status === 'offered';
+                                    $modalHeading = $isOffered ? '代購人已下單的請購清單' : '等待接單中的請購清單';
+                                    $modalSubHeading = $isOffered ? '可查看商品明細與目前接單狀況。' : '可查看商品明細與目前接單狀況。';
+
                                 @endphp
 
                                 <div id="request-detail-modal-{{ $requestList->id }}" class="request-detail-modal hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4 py-4" onclick="handleRequestDetailBackdrop(event, {{ $requestList->id }})">
                                     <div class="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
                                         <div class="flex items-start justify-between gap-4 border-b border-slate-200 bg-gradient-to-r from-blue-600 to-cyan-500 px-5 py-4 text-white">
                                             <div>
-                                                <p class="text-sm font-medium text-blue-100">等待接單中的請購清單</p>
+                                                 <p class="text-sm font-medium text-blue-100">{{ $modalHeading }}</p>
                                                 <h4 class="mt-1 text-2xl font-bold">{{ $requestList->title }}</h4>
-                                                <p class="mt-2 text-sm text-blue-50">可查看商品明細與目前接單狀況。</p>
+                                               <p class="mt-2 text-sm text-blue-50">{{ $modalSubHeading }}</p>
                                             </div>
                                             <button type="button" class="rounded-full bg-white/15 p-2 text-white transition hover:bg-white/25" onclick="closeRequestDetailModal({{ $requestList->id }})" aria-label="關閉檢視視窗">✕</button>
                                         </div>
@@ -787,7 +817,7 @@
                                                                             @endif
                                                                         </div>
                                                                         @if($item->specification)
-                                                                            <p class="mt-2 rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-600">規格／補充：{{ $item->specification }}</p>
+                                                                            <p class="mt-2 rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-600">可代購時段：{{ $item->specification }}</p>
                                                                         @endif
                                                                     </div>
                                                                 </div>
@@ -834,14 +864,37 @@
 
                                                 <aside class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                                                     <h5 class="text-base font-bold text-slate-800">目前接單狀況</h5>
-                                                    @if($activeAgent)
+                                                    @if($displayAgent)
                                                         <div class="mt-4 rounded-2xl bg-white p-4 text-center shadow-sm">
                                                             <div class="mx-auto flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-4 border-blue-100 bg-slate-100">
-                                                                <img src="{{ $agentAvatar }}" alt="{{ $activeAgent->name }}" class="h-full w-full object-cover">
+                                                                <img src="{{ $agentAvatar }}" alt="{{ $displayAgent->name }}" class="h-full w-full object-cover">
                                                             </div>
-                                                            <p class="mt-3 text-base font-semibold text-slate-800">{{ $activeAgent->name }}</p>
-                                                            <p class="mt-1 text-sm text-slate-500">{{ $acceptedOffer ? '已確認接單的代購人' : '已有代購人提出接單意願' }}</p>
+                                                            <p class="mt-3 text-base font-semibold text-slate-800">{{ $displayAgent->name }}</p>
+                                                            <p class="mt-1 text-sm text-slate-500">{{ $requestList->status === 'offered' ? '此代購人已下單並提供商品單價' : ($acceptedOffer ? '已確認接單的代購人' : '已有代購人提出接單意願') }}</p>
                                                         </div>
+
+                                                       @if($requestList->status === 'offered')
+                                                            <div class="mt-4 rounded-2xl border border-blue-100 bg-white p-4">
+                                                                <h6 class="text-sm font-bold text-blue-700">代購人填寫的商品單價</h6>
+                                                                <div class="mt-3 space-y-2">
+                                                                    @forelse($requestList->items as $item)
+                                                                        <div class="flex items-start justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2 text-sm">
+                                                                            <span class="text-slate-700">{{ $item->name }}</span>
+                                                                            <span class="font-semibold text-slate-800">
+                                                                                @if(!is_null($item->expected_price))
+                                                                                    NT$ {{ number_format((float) $item->expected_price, 0) }}
+                                                                                @else
+                                                                                    未提供
+                                                                                @endif
+                                                                            </span>
+                                                                        </div>
+                                                                    @empty
+                                                                        <p class="text-xs text-slate-400">尚無商品單價資料。</p>
+                                                                    @endforelse
+                                                                </div>
+                                                            </div>
+                                                        @endif
+
                                                     @else
                                                         <div class="mt-4 rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center">
                                                             <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-2xl">🕒</div>
@@ -874,7 +927,7 @@
                                                 --:--:--
                                             </p>
                                             <p class="mt-4 rounded-xl bg-orange-50 px-4 py-3 text-sm text-orange-700">
-                                                此清單將在 {{ $deadlineDisplayDate ?? '未提供' }} 23:59 移除
+                                                此清單將在截止日 {{ $deadlineDisplayDate ?? '未提供' }} 隔天 00:00 移除
                                             </p>
                                         </div>
                                     </div>

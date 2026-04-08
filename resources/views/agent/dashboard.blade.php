@@ -278,7 +278,7 @@ submitQuote() {
                     <div class="flex items-center">
                         @if($isOwner)
                             {{-- 1. 自己的單 --}}
-                            <span class="text-[10px] px-2 py-1 bg-red-50 text-red-400 rounded-lg font-bold">本人清單</span>
+                            <span class="text-[10px] px-2 py-1 bg-red-50 text-red-400 rounded-lg font-bold">無法接取本人的清單</span>
                         @elseif($requestList->people)
                             {{-- 2. 已經有人承接 --}}
                             @if((int)$requestList->people === (int)auth()->id())
