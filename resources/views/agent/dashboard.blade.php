@@ -282,7 +282,7 @@ submitQuote() {
                         @elseif($requestList->people)
                             {{-- 2. 已經有人承接 --}}
                             @if((int)$requestList->people === (int)auth()->id())
-                                <a href="{{ route('messages.index', ['id' => $requestList->id]) }}" 
+                                <a href="{{ route('request-list.chat.show', $requestList) }}"  
                                    class="px-4 py-2 bg-green-500 text-white rounded-xl text-xs font-bold hover:bg-green-600 transition shadow-sm">
                                     聊一聊
                                 </a>

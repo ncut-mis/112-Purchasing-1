@@ -164,6 +164,31 @@
             }
         }
 
+        function openRequestChatModal(id) {
+            const modal = document.getElementById(`request-chat-modal-${id}`);
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+
+            const messagesBox = document.getElementById(`request-chat-messages-${id}`);
+            if (messagesBox) {
+                messagesBox.scrollTop = messagesBox.scrollHeight;
+            }
+        }
+
+        function closeRequestChatModal(id) {
+            const modal = document.getElementById(`request-chat-modal-${id}`);
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+
         function openFollowOrderModal(id) {
             const modal = document.getElementById(`follow-order-modal-${id}`);
 
@@ -267,7 +292,14 @@
                 }
             });
 
-            document.querySelectorAll('.request-countdown-modal').forEach((modal) => {
+            document.querySelectorAll('.request-chat-modal').forEach((modal) => {
+                if (!modal.classList.contains('hidden')) {
+                    modal.classList.add('hidden');
+                    document.body.classList.remove('overflow-hidden');
+                }
+            });
+
+            document.querySelectorAll('.request-chat-modal').forEach((modal) => {
                 if (!modal.classList.contains('hidden')) {
                     modal.classList.add('hidden');
                     document.body.classList.remove('overflow-hidden');
@@ -299,6 +331,92 @@
                 closeRequestCountdownModal(id);
             }
         }
+
+        function handleRequestChatBackdrop(event, id) {
+            if (event.target.id === `request-chat-modal-${id}`) {
+                closeRequestChatModal(id);
+            }
+        }
+
+        function appendRequestChatMessage(requestListId, message) {
+            const messagesBox = document.getElementById(`request-chat-messages-${requestListId}`);
+            if (!messagesBox || !message) {
+                return;
+            }
+
+            const row = document.createElement('div');
+            row.className = 'mb-3 flex justify-end';
+            row.innerHTML = `
+                <div class="max-w-[75%]">
+                    <div class="rounded-xl border px-3 py-2 bg-emerald-100 border-emerald-200">
+                        <p class="text-xs text-slate-500">${message.sender_name ?? ''}</p>
+                        <p class="mt-1 text-sm text-slate-800 break-words"></p>
+                    </div>
+                    <p class="mt-1 text-xs text-slate-500 text-right">${message.created_at ?? ''}</p>
+                </div>
+            `;
+
+            const bodyNode = row.querySelector('.break-words');
+            if (bodyNode) {
+                bodyNode.textContent = message.body ?? '';
+            }
+
+            const emptyState = messagesBox.querySelector('p.py-12');
+            if (emptyState) {
+                emptyState.remove();
+            }
+
+            messagesBox.appendChild(row);
+            messagesBox.scrollTop = messagesBox.scrollHeight;
+        }
+
+        document.addEventListener('submit', async (event) => {
+            const form = event.target.closest('.request-chat-form');
+            if (!form) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const input = form.querySelector('input[name="body"]');
+            const submitButton = form.querySelector('button[type="submit"]');
+            const requestListId = form.dataset.requestListId;
+            const messageText = (input?.value || '').trim();
+
+            if (!messageText || !submitButton) {
+                return;
+            }
+
+            submitButton.disabled = true;
+            const originalText = submitButton.textContent;
+            submitButton.textContent = '送出中...';
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': dashboardCsrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: new FormData(form),
+                });
+
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok || payload.status !== 'success') {
+                    throw new Error(payload?.message || '訊息送出失敗');
+                }
+
+                appendRequestChatMessage(requestListId, payload.message);
+                input.value = '';
+                input.focus();
+            } catch (error) {
+                alert(error.message || '訊息送出失敗，請稍後再試。');
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = originalText || '送出';
+            }
+        });
 
         const favoriteUnfavoriteModal = document.getElementById('favorite-unfavorite-modal');
         const favoriteUnfavoriteCancelButton = document.getElementById('favorite-unfavorite-cancel');

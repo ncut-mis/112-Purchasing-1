@@ -442,14 +442,135 @@
 
 
 
-                      <!-- 分頁二：訂單管理 -->
+                    <!-- 分頁二：訂單管理 -->
                     <div x-show="activeTab === 'order-management'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4">
                         <section id="order-management" class="bg-white rounded-2xl shadow-sm border border-indigo-100 p-6">
                             <h3 class="text-lg font-bold text-indigo-600 mb-6">【請託單】訂單管理</h3>
+                            @php
+                                $managedRequestLists = \App\Models\RequestList::query()
+                                    ->with(['user:id,name', 'items:id,request_list_id,name,quantity'])
+                                    ->where('people', Auth::id())
+                                    ->whereIn('status', ['offered', 'matched', 'completed'])
+                                    ->latest('updated_at')
+                                    ->get();
+
+                                $statusLabelMap = [
+                                    'offered' => '已接單（待請購人確認）',
+                                    'matched' => '已配對成功',
+                                    'completed' => '已完成',
+                                ];
+
+                                $statusClassMap = [
+                                    'offered' => 'bg-amber-50 text-amber-700 border-amber-200',
+                                    'matched' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                    'completed' => 'bg-slate-100 text-slate-700 border-slate-200',
+                                ];
+                            @endphp
                             <div class="space-y-4">
+                                @forelse($managedRequestLists as $requestList)
+                                    @php
+                                        $statusLabel = $statusLabelMap[$requestList->status] ?? $requestList->status;
+                                        $statusClass = $statusClassMap[$requestList->status] ?? 'bg-slate-100 text-slate-700 border-slate-200';
+                                        $firstItem = $requestList->items->first();
+                                    @endphp
+                                    <div class="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4">
+                                        <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                                            <div class="min-w-0">
+                                                <div class="flex items-center gap-2 flex-wrap">
+                                                    <h4 class="text-base font-bold text-gray-800 truncate">{{ $requestList->title }}</h4>
+                                                    <span class="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold {{ $statusClass }}">
+                                                        {{ $statusLabel }}
+                                                    </span>
+                                                </div>
+                                                <p class="mt-1 text-xs text-gray-500">
+                                                    請購人：{{ $requestList->user->name ?? '未知會員' }} ・
+                                                    截止日：{{ optional($requestList->deadline)->format('Y-m-d') ?? '-' }}
+                                                </p>
+                                                @if($firstItem)
+                                                    <p class="mt-2 text-sm text-gray-700">
+                                                        商品：{{ $firstItem->name }} × {{ (int) $firstItem->quantity }}
+                                                        @if($requestList->items->count() > 1)
+                                                            <span class="text-xs text-gray-500">（另有 {{ $requestList->items->count() - 1 }} 項）</span>
+                                                        @endif
+                                                    </p>
+                                                @endif
+                                                <p class="mt-1 text-sm text-indigo-700 font-semibold">
+                                                    報價：NT$ {{ number_format((float) ($requestList->agent_quote_total ?? 0), 0) }}
+                                                </p>
+                                            </div>
+
+                                            <div class="flex items-center gap-2 shrink-0">
+                                                <button type="button"
+                                                   onclick="openAgentRequestChatModal({{ $requestList->id }})"
+                                                   class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700 transition">
+                                                    聊天
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    @php
+                                        $agentChatMessages = \App\Models\Message::query()
+                                            ->where('request_list_id', $requestList->id)
+                                            ->where(function ($query) use ($requestList) {
+                                                $query->where(function ($inner) use ($requestList) {
+                                                    $inner->where('sender_id', $requestList->user_id)
+                                                        ->where('receiver_id', $requestList->people);
+                                                })->orWhere(function ($inner) use ($requestList) {
+                                                    $inner->where('sender_id', $requestList->people)
+                                                        ->where('receiver_id', $requestList->user_id);
+                                                });
+                                            })
+                                            ->with(['sender:id,name'])
+                                            ->orderBy('created_at')
+                                            ->get();
+                                    @endphp
+                                    <div id="agent-request-chat-modal-{{ $requestList->id }}" class="agent-request-chat-modal fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4" onclick="handleAgentRequestChatBackdrop(event, {{ $requestList->id }})">
+                                        <div class="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+                                            <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+                                                <div>
+                                                    <p class="text-xs text-gray-500">請託單 #{{ $requestList->id }}</p>
+                                                    <h4 class="text-lg font-bold text-gray-800">{{ $requestList->title }}</h4>
+                                                </div>
+                                                <button type="button" class="text-2xl text-gray-500 hover:text-gray-700" onclick="closeAgentRequestChatModal({{ $requestList->id }})" aria-label="關閉聊天室">✕</button>
+                                            </div>
+
+                                            <div id="agent-request-chat-messages-{{ $requestList->id }}" class="max-h-[55vh] overflow-y-auto bg-gray-50 px-5 py-4">
+                                                @forelse($agentChatMessages as $message)
+                                                    @php
+                                                        $isMine = (int) $message->sender_id === (int) auth()->id();
+                                                    @endphp
+                                                    <div class="mb-3 flex {{ $isMine ? 'justify-end' : 'justify-start' }}">
+                                                        <div class="max-w-[75%]">
+                                                            <div class="rounded-xl border px-3 py-2 {{ $isMine ? 'bg-indigo-100 border-indigo-200' : 'bg-white border-gray-200' }}">
+                                                                <p class="text-xs text-gray-500">{{ $message->sender->name ?? '使用者' }}</p>
+                                                                <p class="mt-1 text-sm text-gray-800 break-words">{{ $message->body }}</p>
+                                                            </div>
+                                                            <p class="mt-1 text-xs text-gray-500 {{ $isMine ? 'text-right' : 'text-left' }}">
+                                                                {{ optional($message->created_at)->format('Y-m-d H:i') }}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                @empty
+                                                    <p class="agent-request-chat-empty py-12 text-center text-sm text-gray-400">目前尚無訊息，開始第一句對話吧。</p>
+                                                @endforelse
+                                            </div>
+
+                                            <form method="POST"
+                                                  action="{{ route('request-list.chat.store', $requestList) }}"
+                                                  class="agent-request-chat-form flex items-center gap-2 border-t border-gray-200 px-4 py-3"
+                                                  data-request-list-id="{{ $requestList->id }}">
+                                                @csrf
+                                                <input type="text" name="body" class="w-full rounded-full border-gray-300 px-4 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="輸入訊息..." maxlength="2000" required>
+                                                <button type="submit" class="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">送出</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                @empty
                                     <div class="text-gray-400 text-sm text-center py-8 border border-dashed border-indigo-200 rounded-xl">
                                          尚未接取任何請託單，請先到「接單大廳」接取會員的請託單。
                                     </div>
+                                @endforelse
                             </div>
                         </section>
                     </div>
@@ -746,6 +867,135 @@
                     modal.classList.remove('flex');
                     pendingRemoveId = null;
                 });
+            });
+        });
+    </script>
+
+    <script>
+        function openAgentRequestChatModal(id) {
+            const modal = document.getElementById(`agent-request-chat-modal-${id}`);
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.classList.add('overflow-hidden');
+
+            const messagesBox = document.getElementById(`agent-request-chat-messages-${id}`);
+            if (messagesBox) {
+                messagesBox.scrollTop = messagesBox.scrollHeight;
+            }
+        }
+
+        function closeAgentRequestChatModal(id) {
+            const modal = document.getElementById(`agent-request-chat-modal-${id}`);
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        function handleAgentRequestChatBackdrop(event, id) {
+            if (event.target.id === `agent-request-chat-modal-${id}`) {
+                closeAgentRequestChatModal(id);
+            }
+        }
+
+        function appendAgentRequestChatMessage(requestListId, message) {
+            const messagesBox = document.getElementById(`agent-request-chat-messages-${requestListId}`);
+            if (!messagesBox || !message) {
+                return;
+            }
+
+            const row = document.createElement('div');
+            row.className = 'mb-3 flex justify-end';
+            row.innerHTML = `
+                <div class="max-w-[75%]">
+                    <div class="rounded-xl border px-3 py-2 bg-indigo-100 border-indigo-200">
+                        <p class="text-xs text-gray-500">${message.sender_name ?? ''}</p>
+                        <p class="mt-1 text-sm text-gray-800 break-words"></p>
+                    </div>
+                    <p class="mt-1 text-xs text-gray-500 text-right">${message.created_at ?? ''}</p>
+                </div>
+            `;
+
+            const bodyNode = row.querySelector('.break-words');
+            if (bodyNode) {
+                bodyNode.textContent = message.body ?? '';
+            }
+
+            const emptyState = messagesBox.querySelector('.agent-request-chat-empty');
+            if (emptyState) {
+                emptyState.remove();
+            }
+
+            messagesBox.appendChild(row);
+            messagesBox.scrollTop = messagesBox.scrollHeight;
+        }
+
+        document.addEventListener('submit', async (event) => {
+            const form = event.target.closest('.agent-request-chat-form');
+            if (!form) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const input = form.querySelector('input[name="body"]');
+            const submitButton = form.querySelector('button[type="submit"]');
+            const requestListId = form.dataset.requestListId;
+            const messageText = (input?.value || '').trim();
+
+            if (!submitButton || !messageText) {
+                return;
+            }
+
+            submitButton.disabled = true;
+            const originalText = submitButton.textContent;
+            submitButton.textContent = '送出中...';
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content'),
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: new FormData(form),
+                });
+
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok || payload.status !== 'success') {
+                    throw new Error(payload?.message || '訊息送出失敗');
+                }
+
+                appendAgentRequestChatMessage(requestListId, payload.message);
+                input.value = '';
+                input.focus();
+            } catch (error) {
+                alert(error.message || '訊息送出失敗，請稍後再試。');
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = originalText || '送出';
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key !== 'Escape') {
+                return;
+            }
+
+            document.querySelectorAll('.agent-request-chat-modal').forEach((modal) => {
+                if (!modal.classList.contains('hidden')) {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                    document.body.classList.remove('overflow-hidden');
+                }
             });
         });
     </script>

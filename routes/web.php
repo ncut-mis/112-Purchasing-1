@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use Illuminate\Http\Request;
 use App\Http\Controllers\NotifyController;
+use App\Http\Controllers\MessageController;
+use App\Http\Controllers\RequestListChatController;
 
 Route::get('/agent/member', function() { 
     return view('agent.member'); 
@@ -123,6 +125,9 @@ Route::middleware('auth')->group(function () {
     Route::patch('/request-list/{requestList}/submit', [RequestListController::class, 'submit'])->name('request-list.submit');
     Route::delete('/request-list/{requestList}', [RequestListController::class, 'destroy'])->name('request-list.destroy');
     Route::get('/request-item-image/{requestItem}', [RequestListController::class, 'image'])->name('request-item.image');
+
+    Route::get('/request-list/{requestList}/chat', [RequestListChatController::class, 'show'])->name('request-list.chat.show');
+    Route::post('/request-list/{requestList}/chat', [RequestListChatController::class, 'store'])->name('request-list.chat.store');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
