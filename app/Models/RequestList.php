@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\AgentApplication;
+use App\Models\User;
+
     class RequestList extends Model
     {
         use SoftDeletes;
@@ -38,6 +40,6 @@ use App\Models\AgentApplication;
         public function agent()
         {
             // 現在 people 是數字了，這座橋樑會非常穩固！
-            return $this->belongsTo(AgentApplication::class, 'people', 'user_id');
+            return $this->belongsTo(User::class, 'people', 'id');
         }
     }
