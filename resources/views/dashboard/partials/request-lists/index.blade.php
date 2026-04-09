@@ -285,8 +285,15 @@
                                                                                 <a href="{{ $item->reference_url }}" target="_blank" rel="noopener noreferrer" class="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline">參考連結</a>
                                                                             @endif
                                                                         </div>
-                                                                        @if($item->specification)
-                                                                            <p class="mt-2 rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-600">可代購時段：{{ $item->specification }}</p>
+                                                                        @if($requestList->status === 'offered')
+                                                                            <p class="mt-2 rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                                                                                代購人填寫單價：
+                                                                                @if(!is_null($item->expected_price))
+                                                                                    NT$ {{ number_format((float) $item->expected_price, 0) }}
+                                                                                @else
+                                                                                    未提供
+                                                                                @endif
+                                                                            </p>
                                                                         @endif
                                                                     </div>
                                                                 </div>
@@ -340,29 +347,18 @@
                                                             </div>
                                                             <p class="mt-3 text-base font-semibold text-slate-800">{{ $displayAgent->name }}</p>
                                                             <p class="mt-1 text-sm text-slate-500">{{ $requestList->status === 'offered' ? '此代購人已下單並提供商品單價' : ($acceptedOffer ? '已確認接單的代購人' : '已有代購人提出接單意願') }}</p>
+
+                                                            @if($requestList->status === 'offered')
+                                                                @php
+                                                                    $specification = $requestList->time ?: collect($requestList->items ?? [])->pluck('specification')->filter()->unique()->implode('、');
+                                                                @endphp
+                                                                <p class="mt-2 rounded-xl bg-blue-50 px-3 py-2 text-sm text-blue-700">
+                                                                    可代購時段：{{ $specification ?: '未提供' }}
+                                                                </p>
+                                                            @endif
                                                         </div>
 
-                                                       @if($requestList->status === 'offered')
-                                                            <div class="mt-4 rounded-2xl border border-blue-100 bg-white p-4">
-                                                                <h6 class="text-sm font-bold text-blue-700">代購人填寫的商品單價</h6>
-                                                                <div class="mt-3 space-y-2">
-                                                                    @forelse($requestList->items as $item)
-                                                                        <div class="flex items-start justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2 text-sm">
-                                                                            <span class="text-slate-700">{{ $item->name }}</span>
-                                                                            <span class="font-semibold text-slate-800">
-                                                                                @if(!is_null($item->expected_price))
-                                                                                    NT$ {{ number_format((float) $item->expected_price, 0) }}
-                                                                                @else
-                                                                                    未提供
-                                                                                @endif
-                                                                            </span>
-                                                                        </div>
-                                                                    @empty
-                                                                        <p class="text-xs text-slate-400">尚無商品單價資料。</p>
-                                                                    @endforelse
-                                                                </div>
-                                                            </div>
-                                                        @endif
+                                                       
 
                                                     @else
                                                         <div class="mt-4 rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center">
