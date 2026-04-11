@@ -6,10 +6,9 @@
             </h2>
             
             <div class="flex items-center gap-3">
-                <a href="{{ route('agent.dashboard') }}" class="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-sm font-medium text-indigo-600 hover:bg-indigo-50 transition shadow-sm">
-                    <i class="bi bi-speedometer2"></i>
-                    <span>返回接單大廳</span>
-                </a>
+                <a href="{{ url('/agent/member') }}" class="text-gray-400 hover:text-gray-600 transition flex items-center">
+                <i class="bi bi-chevron-left text-xl"></i>
+            </a>
             </div>
         </div>
     </x-slot>
@@ -95,9 +94,12 @@
                                 <span>評價中心</span>
                             </a>
                             <!-- 8. 物流設定 -->
-                            <a href="#" class="flex items-center gap-3 p-3 rounded-xl text-gray-600 hover:bg-gray-50 transition">
-                                <i class="bi bi-truck text-indigo-500 text-lg"></i>
-                                <span>物流設定</span>
+                           <a href="{{ route('logistics.index') }}" 
+                            class="flex items-center gap-3 p-3 rounded-xl transition {{ request()->routeIs('logistics.*') ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-gray-600 hover:bg-gray-50' }}">
+                                
+                                <i class="bi bi-truck text-lg {{ request()->routeIs('logistics.*') ? 'text-indigo-600' : 'text-indigo-500' }}"></i>
+                                
+                                <span class="font-bold">物流設定</span>
                             </a>
 
                             <div class="border-t border-gray-50 my-2 pt-2"></div>

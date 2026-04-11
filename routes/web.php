@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\NotifyController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\RequestListChatController;
+use App\Http\Controllers\LogisticsController;
 
 Route::get('/agent/member', function() { 
     return view('agent.member'); 
@@ -169,5 +170,14 @@ Route::get('/dashboard/notifications', [NotifyController::class, 'index'])->name
 // 確保是 POST 方法，並且 ID 對應到你的需求單
 Route::post('/request-chat/{id}/reject', [RequestListChatController::class, 'reject'])
     ->name('request.chat.reject');
+
+//物流設定路徑
+Route::middleware(['auth'])->prefix('dashboard/settings')->group(function () {
+    // 網址將會是 /dashboard/settings/logistics
+    Route::get('/logistics', [LogisticsController::class, 'index'])->name('logistics.index');
+    
+    // 儲存功能 /dashboard/settings/logistics/save
+    Route::post('/logistics/save', [LogisticsController::class, 'save'])->name('logistics.save');
+});
 
 require __DIR__.'/auth.php';
