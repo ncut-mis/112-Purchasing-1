@@ -258,5 +258,6 @@ class RequestListController extends Controller
             'message' => '報價成功，已為您承接此單！'
         ]);
     }
+   
         
 }

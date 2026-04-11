@@ -164,4 +164,10 @@ Route::middleware('auth')->group(function () {
 Route::post('/request-lists/agent-quote', [RequestListController::class, 'submitAgentQuote']);
 Route::get('/dashboard/notifications', [NotifyController::class, 'index'])->name('notifications.index');
 
+
+//拒絕的路徑
+// 確保是 POST 方法，並且 ID 對應到你的需求單
+Route::post('/request-chat/{id}/reject', [RequestListChatController::class, 'reject'])
+    ->name('request.chat.reject');
+
 require __DIR__.'/auth.php';

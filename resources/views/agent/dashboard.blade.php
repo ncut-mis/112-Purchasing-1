@@ -281,13 +281,22 @@ submitQuote() {
                             <span class="text-[10px] px-2 py-1 bg-red-50 text-red-400 rounded-lg font-bold">無法接取本人的清單</span>
                         @elseif($requestList->people)
                             {{-- 2. 已經有人承接 --}}
-                            @if((int)$requestList->people === (int)auth()->id())
-                                <a href="{{ route('request-list.chat.show', $requestList) }}"  
-                                   class="px-4 py-2 bg-green-500 text-white rounded-xl text-xs font-bold hover:bg-green-600 transition shadow-sm">
+                            @if($requestList->status === 'offered' || $requestList->status === 'matched')
+                                {{-- 只有在有人承接的狀態下，才去分「我」還是「別人」 --}}
+                                @if((int)$requestList->people === (int)auth()->id())
+                                    <a href="{{ route('request-list.chat.show', $requestList) }}"  
+                                    class="px-4 py-2 bg-green-500 text-white rounded-xl text-xs font-bold hover:bg-green-600 transition shadow-sm">
                                     聊一聊
-                                </a>
-                            @else
-                                <span class="text-[10px] px-2 py-1 bg-gray-100 text-gray-400 rounded-lg font-bold">已被承接</span>
+                                    </a>
+                                @else
+                                    <span class="text-[10px] px-2 py-1 bg-gray-100 text-gray-400 rounded-lg font-bold">已被承接</span>
+                                @endif
+                            @else   
+                                {{-- 如果狀態是 pending 或其他，顯示原始的按鈕（例如：我要報價） --}}
+                                <button type="button" @click="openDetail(@js($orderData))"
+                                    class="px-5 py-2 bg-indigo-600 text-white rounded-xl font-bold text-xs hover:bg-indigo-700 transition shadow-md shadow-indigo-100 active:scale-95 flex items-center gap-1">
+                                <i class="bi bi-cart-plus"></i> 查看詳情
+                                </button>
                             @endif
                         @else
                             {{-- 3. 開放接單：呼叫 JS 函數處理獨立報價 --}}

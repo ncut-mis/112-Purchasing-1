@@ -82,4 +82,24 @@ class RequestListChatController extends Controller
         $isParticipant = in_array($userId, [$ownerId, $agentId], true);
         abort_unless($isParticipant, 403);
     }
+        public function reject($id)
+        {
+            $request = RequestList::findOrFail($id);
+
+            // 1. 修正欄位名稱：將 agent_id 移除，因為你的表中沒有這個欄位
+            $request->status = 'pending';
+            $request->people = null;  // 這是你用來存放承接人 ID 的欄位
+            $request->time = null;    // 清除時間訊息
+            $request->agent_quote_total = 0; // 重置金額
+
+            // 2. 儲存變更
+            $request->save();
+
+            // 3. 同步清除商品明細的單價
+            if ($request->items) {
+                $request->items()->update(['expected_price' => null]);
+            }
+
+            return back()->with('success', '已拒絕報價，單據已恢復徵求狀態。');
+        }
 }
