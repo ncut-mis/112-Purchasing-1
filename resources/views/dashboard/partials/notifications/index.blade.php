@@ -41,12 +41,26 @@
                         </div>
                     </div>
 
-                    <div class="flex gap-2 w-full md:w-auto">
+                    <div class="flex flex-wrap gap-2 w-full md:w-auto">
                         <button type="button" 
                                 class="inline-flex items-center rounded-lg bg-yellow-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-yellow-600" 
                                 onclick="openDetail({{ $noti->id }})">
                             詳細內容
                         </button>
+                        @if(!empty($noti->people))
+                            <button type="button"
+                                    class="inline-flex items-center rounded-lg bg-emerald-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-600"
+                                    onclick="openRequestChatModal({{ $noti->id }})">
+                                聊一聊
+                            </button>
+                        @else
+                            <button type="button"
+                                    class="inline-flex items-center rounded-lg bg-gray-300 px-4 py-2 text-xs font-semibold text-white cursor-not-allowed"
+                                    title="目前尚未有已接單代購人，暫時無法聊天"
+                                    disabled>
+                                聊一聊
+                            </button>
+                        @endif
                         <button class="flex-1 md:flex-none px-6 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-bold shadow-sm shadow-green-200 transition-all active:scale-95">
                             接受代購
                         </button>
@@ -164,6 +178,65 @@
                     </div> {{-- End Modal Body --}}
                 </div> {{-- End Modal Content --}}
             </div> {{-- End Modal Wrapper --}}
+
+
+            @if(!empty($noti->people))
+                @php
+                    $chatMessages = \App\Models\Message::query()
+                        ->where('request_list_id', $noti->id)
+                        ->where(function ($query) use ($noti) {
+                            $query->where(function ($inner) use ($noti) {
+                                $inner->where('sender_id', $noti->user_id)
+                                    ->where('receiver_id', $noti->people);
+                            })->orWhere(function ($inner) use ($noti) {
+                                $inner->where('sender_id', $noti->people)
+                                    ->where('receiver_id', $noti->user_id);
+                            });
+                        })
+                        ->with(['sender:id,name'])
+                        ->orderBy('created_at')
+                        ->get();
+                @endphp
+                <div id="request-chat-modal-{{ $noti->id }}" class="request-chat-modal hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4 py-4" onclick="handleRequestChatBackdrop(event, {{ $noti->id }})">
+                    <div class="w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+                        <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+                            <div>
+                                <p class="text-xs text-slate-500">請購單 #{{ $noti->id }}</p>
+                                <h4 class="text-lg font-bold text-slate-800">{{ $noti->title }}</h4>
+                            </div>
+                            <button type="button" class="text-slate-500 text-2xl leading-none hover:text-slate-700" onclick="closeRequestChatModal({{ $noti->id }})" aria-label="關閉聊天室">✕</button>
+                        </div>
+
+                        <div id="request-chat-messages-{{ $noti->id }}" class="max-h-[55vh] overflow-y-auto bg-slate-50 px-5 py-4">
+                            @forelse($chatMessages as $message)
+                                @php($isMine = (int) $message->sender_id === (int) auth()->id())
+                                <div class="mb-3 flex {{ $isMine ? 'justify-end' : 'justify-start' }}">
+                                    <div class="max-w-[75%]">
+                                        <div class="rounded-xl border px-3 py-2 {{ $isMine ? 'bg-emerald-100 border-emerald-200' : 'bg-white border-slate-200' }}">
+                                            <p class="text-xs text-slate-500">{{ $message->sender->name ?? '使用者' }}</p>
+                                            <p class="mt-1 text-sm text-slate-800 break-words">{{ $message->body }}</p>
+                                        </div>
+                                        <p class="mt-1 text-xs text-slate-500 {{ $isMine ? 'text-right' : 'text-left' }}">
+                                            {{ optional($message->created_at)->format('Y-m-d H:i') }}
+                                        </p>
+                                    </div>
+                                </div>
+                            @empty
+                                <p class="py-12 text-center text-sm text-slate-400">目前尚無訊息，開始第一句對話吧。</p>
+                            @endforelse
+                        </div>
+
+                        <form method="POST"
+                              action="{{ route('request-list.chat.store', $noti) }}"
+                              class="request-chat-form flex items-center gap-2 border-t border-slate-200 px-4 py-3"
+                              data-request-list-id="{{ $noti->id }}">
+                            @csrf
+                            <input type="text" name="body" class="w-full rounded-full border-slate-300 px-4 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" placeholder="輸入訊息..." maxlength="2000" required>
+                            <button type="submit" class="rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600">送出</button>
+                        </form>
+                    </div>
+                </div>
+            @endif
         @empty
             <div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50/50 px-6 py-16 text-center">
                 <i class="bi bi-bell-slash text-2xl text-gray-300"></i>

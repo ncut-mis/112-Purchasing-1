@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AgentPost;
+use App\Models\Message;
 use App\Models\Order;
 use App\Models\RequestList;
 use Illuminate\Http\Request;
@@ -109,13 +110,22 @@ class DashboardController extends Controller
             $followOrders = $followOrdersQuery->latest()->paginate(9, ['*'], 'follow_page');
         }
 
+        $unreadMessagesCount = Message::query()
+            ->whereNull('read_at')
+            ->where('receiver_id', $user->id)
+            ->whereNotNull('request_list_id')
+            ->whereHas('requestList', function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+            })
+            ->count();
+
 
         // --- 6. 統計數據 ---
         $stats = [
             'ongoing_requests' => RequestList::where('user_id', $user->id)
                 ->whereIn('status', ['pending', 'offered', 'matched'])
                 ->count(),
-            'unread_messages' => 0,
+            'unread_messages' => $unreadMessagesCount,
             'favorite_posts' => count($favoriteAgentPostIds), // 這裡顯示的是過濾後的收藏總數
             'reviews_score' => '4.9 / 5',
         ];
