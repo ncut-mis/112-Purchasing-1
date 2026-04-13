@@ -213,44 +213,78 @@ class RequestListController extends Controller
 
         return response()->file(Storage::disk('public')->path($requestItem->reference_image));
     }
-        public function submitAgentQuote(Request $request)
+            public function submitAgentQuote(Request $request)
     {
-        // 1. 驗證資料（注意：這裡 id 建議改為 request_list_id 以免混淆，但沿用你的 id 也可以）
         $validated = $request->validate([
             'id' => 'required|exists:request_lists,id',
             'agent_quote_total' => 'required|numeric|min:0.01',
             'time' => 'required|string|max:500',
-            'items' => 'nullable|array',
-        'items.*.id' => 'required|exists:request_items,id',
-        'items.*.agent_quote' => 'required|numeric|min:0'
+            'items' => 'required|array|min:1',
+            'items.*.id' => 'required|integer|exists:request_items,id',
+            'items.*.agent_quote' => 'required|numeric|min:0'
         ]);
 
-        // 2. 找到該筆需求單
         $requestList = RequestList::findOrFail($validated['id']);
 
-        // 3. 【關鍵安全檢查】防止「搶單衝突」
-        // 如果這張單子已經有 people (被接走了)，就報錯不讓別人再更新
         if ($requestList->people && $requestList->people != auth()->id()) {
             return response()->json(['message' => '這張需求單已被其他代購承接！'], 422);
         }
 
-        // 4. 更新 RequestList 
-        // 加入 status 和 people 欄位更新
+        $requestList->load('items');
+        $requestItemsById = $requestList->items->keyBy('id');
+
+        if (count($validated['items']) !== $requestItemsById->count()) {
+            return response()->json(['message' => '請針對需求單中的每一項商品都填寫報價。'], 422);
+        }
+
+        $submittedIds = collect($validated['items'])->pluck('id')->map(fn ($id) => (int) $id);
+        if ($submittedIds->unique()->count() !== $submittedIds->count()) {
+            return response()->json(['message' => '商品報價資料重複，請重新送出。'], 422);
+        }
+
+        $calculatedTotal = 0.0;
+        $resolvedItems = [];
+
+        foreach ($validated['items'] as $itemData) {
+            $itemId = (int) $itemData['id'];
+            $requestItem = $requestItemsById->get($itemId);
+
+            if (! $requestItem) {
+                return response()->json(['message' => '含有不屬於此需求單的商品，請重新整理後再送出。'], 422);
+            }
+
+            $unitPrice = (float) $itemData['agent_quote'];
+            $quantity = max(0, (int) $requestItem->quantity);
+            $calculatedTotal += $unitPrice * $quantity;
+
+            $resolvedItems[] = [
+                'model' => $requestItem,
+                'unit_price' => $unitPrice,
+            ];
+        }
+
+        $calculatedTotal = round($calculatedTotal, 2);
+        $submittedTotal = round((float) $validated['agent_quote_total'], 2);
+
+        if (abs($submittedTotal - $calculatedTotal) > 0.01) {
+            return response()->json([
+                'message' => '報價總額驗證失敗，請確認「單價 × 需求數量」後重新送出。',
+                'expected_total' => $calculatedTotal,
+            ], 422);
+        }
+
         $requestList->update([
-            'agent_quote_total' => $request->agent_quote_total, // 假設你用這個存報價總額
-            'time'         => $validated['time'],
-            'people'       => auth()->id(),    // ✅ 存入當前登入的代購人 ID
-            'status'       => 'offered',    // ✅ 將狀態改為進行中 (或是你定義的狀態碼)
+            'agent_quote_total' => $calculatedTotal,
+            'time' => $validated['time'],
+            'people' => auth()->id(),
+            'status' => 'offered',
         ]);
 
-        // 5. 若有逐項報價，更新 RequestItem
-        if (isset($validated['items'])) {
-            foreach ($validated['items'] as $itemData) {
-                RequestItem::where('id', $itemData['id'])->update([
-                    'expected_price' => $itemData['agent_quote'],
-                    'specification'  => $validated['time'] 
-                ]);
-            }
+        foreach ($resolvedItems as $item) {
+            $item['model']->update([
+                'expected_price' => $item['unit_price'],
+                'specification' => $validated['time'],
+            ]);
         }
 
         return response()->json([

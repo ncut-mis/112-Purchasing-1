@@ -55,7 +55,9 @@
     get totalQuote() {
             if (!this.selectedRequest || !this.selectedRequest.items) return 0;
             return this.selectedRequest.items.reduce((sum, item) => {
-                return sum + (parseFloat(item.agent_quote) || 0);
+                const unitPrice = parseFloat(item.agent_quote) || 0;
+                const quantity = parseInt(item.quantity, 10) || 0;
+                return sum + (unitPrice * quantity);
             }, 0);
         },
 
@@ -99,7 +101,9 @@
 submitQuote() {
     // 1. 計算所有商品的總額 (將每個 item 的 agent_quote 加起來)
     const total = this.selectedRequest.items.reduce((sum, item) => {
-        return sum + (parseFloat(item.agent_quote) || 0);
+        const unitPrice = parseFloat(item.agent_quote) || 0;
+        const quantity = parseInt(item.quantity, 10) || 0;
+        return sum + (unitPrice * quantity);
     }, 0);
     
     // 2. 驗證：檢查總額是否大於 0 以及是否有填寫時段
@@ -399,7 +403,7 @@ submitQuote() {
                                     <input type="number" 
                                         x-model="item.agent_quote"
                                         class="w-full pl-16 pr-6 py-4 bg-white border-2 border-indigo-100 rounded-2xl text-xl font-black text-indigo-600 focus:border-indigo-500 shadow-sm transition-all" 
-                                        placeholder="輸入此訂單之總報價">
+                                        placeholder="輸入此商品之單價">
                                 </div>
                             </div>
                         </template>
@@ -428,7 +432,7 @@ submitQuote() {
     :class="(totalQuote <= 0 || !availableTime.trim()) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-700'"
     class="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black transition-all">
     
-    確認送出 (NT$ <span x-text="totalQuote"></span>)
+    確認送出 (總報價:NT$<span x-text="totalQuote"></span>)
 </button>
                             </div>
                         </div>
