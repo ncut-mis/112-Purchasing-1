@@ -143,10 +143,6 @@
         @yield('content')
     </main>
 
-
-
-
-
     <!-- Footer -->
     <footer class="mt-5">
         <div class="container">
@@ -164,6 +160,53 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
+    @stack('scripts')
+
+    <!-- 身分選擇彈跳視窗 (僅在登入後且符合身分時觸發) -->
+    @if(session('show_role_selector'))
+    <div class="modal fade" id="roleSelectorModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-body text-center p-5">
+                    <div class="role-modal-icon">
+                        <i class="bi bi-person-check-fill"></i>
+                    </div>
+                    <h4 class="fw-bold mb-3">歡迎回來！職人代購</h4>
+                    <p class="text-muted mb-4">系統偵測到您具備代購人身分。<br>今天想要先處理哪部分的工作呢？</p>
+                    
+                    <div class="d-grid gap-3">
+                        <!-- 選項 1：進入代購大廳 -->
+                        <a href="{{ route('agent.dashboard') }}" class="btn btn-success-custom py-3 rounded-3 fw-bold shadow-sm">
+                            <i class="bi bi-shop me-2"></i>進入代購接單大廳
+                        </a>
+                        
+                        <!-- 選項 2：留在目前頁面 (買家模式) -->
+                        <button type="button" class="btn btn-outline-secondary py-3 rounded-3 fw-bold" data-bs-dismiss="modal">
+                            留在首頁 (買家模式)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- JavaScripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    @if(session('show_role_selector'))
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // 實例化並顯示 Modal
+            const roleModalElement = document.getElementById('roleSelectorModal');
+            if (roleModalElement) {
+                const roleModal = new bootstrap.Modal(roleModalElement);
+                roleModal.show();
+            }
+        });
+    </script>
+    @endif
+
     @stack('scripts')
 </body>
 </html>

@@ -20,9 +20,7 @@ use App\Http\Controllers\MessageController;
 use App\Http\Controllers\RequestListChatController;
 use App\Http\Controllers\LogisticsController;
 
-Route::get('/agent/member', function() { 
-    return view('agent.member'); 
-})->name('agent.member');
+
 
 Route::get('/agent/dashboard', [AgentDashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
@@ -77,8 +75,23 @@ Route::get('/', function () {
 
     // 代購人會員專區
     Route::get('/agent/member', function () {
-        return view('agent.member');
-    })->name('agent.member');
+    $user = Auth::user();
+    // 1. 取得該代購人處理中的訂單數
+    $finishedOrdersCount = RequestList::where('user_id', $user->id) 
+        ->where('status', 'completed')
+        ->count();
+    // 2. 修正點：暫時將累計收入設為 0
+    // 錯誤原因：您的資料表中沒有 total_price 欄位。
+    // 如果您有其他代表金額的欄位（例如 budget），請將 'total_price' 改為該名稱。
+    // 如果還沒有金額欄位，請先保留為 0 以避免頁面報錯。
+    $totalIncome = 0; 
+    /* 如果您確定了欄位名稱，可以取消下方註解並修改欄位名：
+    $totalIncome = RequestList::where('user_id', $user->id)
+        ->where('status', 'completed')
+        ->sum('budget'); // 假設欄位叫 budget
+    */
+    return view('agent.member', compact('finishedOrdersCount', 'totalIncome'));
+})->name('agent.member')->middleware(['auth', 'verified']);
 
      // 1. 申請頁面
     Route::get('/agent/apply', [AgentApplicationController::class, 'create'])->name('agent.apply');

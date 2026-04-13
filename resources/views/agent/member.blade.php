@@ -451,7 +451,7 @@
                             @php
                                 $managedRequestLists = \App\Models\RequestList::query()
                                     ->with(['user:id,name', 'items:id,request_list_id,name,quantity'])
-                                    ->where('people', Auth::id())
+                                    ->where('user_id', Auth::id())
                                     ->whereIn('status', ['offered', 'matched', 'completed'])
                                     ->latest('updated_at')
                                     ->get();

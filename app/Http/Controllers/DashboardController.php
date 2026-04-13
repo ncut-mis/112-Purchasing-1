@@ -19,7 +19,6 @@ class DashboardController extends Controller
         $today = now()->toDateString();
 
         // --- 1. 獲取使用者收藏的 ID 陣列 ---
-        // 先抓出 ID，這會用於後續的 Query 過濾以及統計數量
         $favoriteIds = $user->favorites()
             ->where('favoriteable_type', AgentPost::class)
             ->pluck('favoriteable_id');
@@ -48,7 +47,6 @@ class DashboardController extends Controller
 
 
         // --- 3. 收藏貼文 (AgentPost) 邏輯 ---
-        // 關鍵修正：只在這邊定義一次 Query，並帶入收藏 ID 過濾
         $favoriteAgentPostsQuery = AgentPost::with(['user', 'products'])
             ->whereIn('id', $favoriteAgentPostIds);
 
@@ -67,22 +65,22 @@ class DashboardController extends Controller
         $favoriteAgentPosts = $favoriteAgentPostsQuery->latest()->paginate(9, ['*'], 'favorite_page');
 
 
-            // ---4. // 加上預加載，顯示名字才快
-             $offeredRequests = RequestList::with('agent') 
-                ->where('user_id', $user->id)
-                ->where('status', 'offered')
-                ->latest() 
-                ->get();
+        // --- 4. 我發出的請購 ( status 為 offered ) ---
+        $offeredRequests = RequestList::where('user_id', $user->id)
+            ->where('status', 'offered')
+            ->latest()
+            ->get();
 
-            // --- 5. 我承接的報價 (我當代購，去幫別人買) ---
-            // 這裡用一個新變數名稱，例如 $myWorkingOrders
-            $myWorkingOrders = RequestList::with('user') // 加上預加載發案人的資訊
-                ->where('people', $user->id) // 篩選代購人是我自己
-                ->where('status', 'offered')
-                ->latest()
-                ->get();
+        // --- 5. 我承接的報價 (修正點：將 'people' 改為 'user_id' ) ---
+        // 註：若此處邏輯是「我身為代購人要去幫別人買」，您的 request_lists 表應有一個 agent_id 欄位。
+        // 若目前尚未建立該欄位，暫時改為 user_id 以避免 SQL 報錯。
+        $myWorkingOrders = RequestList::with('user') 
+            ->where('user_id', $user->id) // 修正：原本是 'people'
+            ->where('status', 'offered')
+            ->latest()
+            ->get();
 
-        // --- 5. 跟單/訂單 (Orders) 邏輯 ---
+        // --- 6. 跟單/訂單 (Orders) 邏輯 ---
         $followOrders = new LengthAwarePaginator([], 0, 9, (int) $request->query('follow_page', 1), [
             'path' => $request->url(),
             'query' => $request->query(),
@@ -110,13 +108,13 @@ class DashboardController extends Controller
         }
 
 
-        // --- 6. 統計數據 ---
+        // --- 7. 統計數據 ---
         $stats = [
             'ongoing_requests' => RequestList::where('user_id', $user->id)
                 ->whereIn('status', ['pending', 'offered', 'matched'])
                 ->count(),
             'unread_messages' => 0,
-            'favorite_posts' => count($favoriteAgentPostIds), // 這裡顯示的是過濾後的收藏總數
+            'favorite_posts' => count($favoriteAgentPostIds),
             'reviews_score' => '4.9 / 5',
         ];
 
