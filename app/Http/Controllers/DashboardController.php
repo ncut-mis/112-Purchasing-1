@@ -108,28 +108,21 @@ class DashboardController extends Controller
             $followOrders = $followOrdersQuery->latest()->paginate(9, ['*'], 'follow_page');
         }
 
-        $unreadMessagesCount = Message::query()
-            ->whereNull('read_at')
-            ->where('receiver_id', $user->id)
-            ->whereNotNull('request_list_id')
-            ->whereHas('requestList', function ($query) use ($user) {
-                $query->where('user_id', $user->id);
-            })
-            ->count();
 
 
-        // --- 7. 統計數據 ---
+        // --- 7. 統計數據 (關鍵修正區塊) ---
         $stats = [
             'ongoing_requests' => RequestList::where('user_id', $user->id)
                 ->whereIn('status', ['pending', 'offered', 'matched'])
                 ->count(),
+            
+            // 修正點：徹底移除 request_list_id 的過濾與 exists 子查詢
+            // 系統報錯是因為 messages 表沒有 request_list_id 欄位
+            'unread_messages' => Message::where('receiver_id', $user->id)
+                ->whereNull('read_at')
+                ->count(),
 
-            'unread_messages' => 0,
             'favorite_posts' => count($favoriteAgentPostIds),
-
-            'unread_messages' => $unreadMessagesCount,
-            'favorite_posts' => count($favoriteAgentPostIds), // 這裡顯示的是過濾後的收藏總數
-
             'reviews_score' => '4.9 / 5',
         ];
 
