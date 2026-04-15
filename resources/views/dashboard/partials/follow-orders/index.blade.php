@@ -86,6 +86,16 @@
                                                     >
                                                         檢視
                                                     </button>
+                                                    <form method="POST" action="{{ route('orders.complete', $followOrder) }}" onsubmit="return confirm('是否已完成？');">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button
+                                                            type="submit"
+                                                            class="inline-flex items-center rounded-full bg-emerald-500 px-3 py-1 text-[0.8rem] font-semibold text-white shadow-sm transition hover:bg-emerald-600"
+                                                        >
+                                                            完成
+                                                        </button>
+                                                    </form>
                                                 </div>
                                             </div>
                                         </div>

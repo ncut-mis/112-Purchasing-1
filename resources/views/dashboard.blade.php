@@ -75,8 +75,8 @@
                             </a>
 
 
-                            <!-- 歷史紀錄 (新移動位置) -->
-                            <a href="#" class="flex items-center space-x-3 p-3 rounded-lg text-gray-600 hover:bg-gray-50 transition">
+                            <!-- 歷史紀錄 (請購/跟單完成後可查詢) -->
+                            <a href="{{ route('dashboard', ['section' => 'history-records']) }}" class="flex items-center space-x-3 p-3 rounded-lg {{ $currentSection === 'history-records' ? 'bg-slate-100 text-slate-700 font-medium' : 'text-gray-600 hover:bg-gray-50 transition' }}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                 <span>歷史紀錄</span>
                             </a>
@@ -134,6 +134,8 @@
                         @includeIf('dashboard/partials/follow-orders/index')
                     @elseif($currentSection === 'messages')
                         @includeIf('dashboard/partials/messages/index')
+                    @elseif($currentSection === 'history-records')
+                        @includeIf('dashboard/partials/history-records/index')
                     @else
                         @includeIf('dashboard/partials/request-lists/index')
                     @endif
@@ -206,6 +208,30 @@
                 document.body.classList.remove('overflow-hidden');
             }
         }
+        function openHistoryRecordModal(id) {
+            const modal = document.getElementById(`history-record-modal-${id}`);
+
+            if (modal) {
+                modal.classList.remove('hidden');
+                document.body.classList.add('overflow-hidden');
+            }
+        }
+
+        function closeHistoryRecordModal(id) {
+            const modal = document.getElementById(`history-record-modal-${id}`);
+
+            if (modal) {
+                modal.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
+            }
+        }
+
+        function handleHistoryRecordBackdrop(event, id) {
+            if (event.target.id === `history-record-modal-${id}`) {
+                closeHistoryRecordModal(id);
+            }
+        }
+
 
          function openRequestCountdownModal(id) {
             const modal = document.getElementById(`request-countdown-modal-${id}`);

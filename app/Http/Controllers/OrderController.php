@@ -116,4 +116,24 @@ class OrderController extends Controller
             ->route('dashboard', ['section' => 'follow-orders'])
             ->with('status', '跟單成功，已建立訂單並加入跟單紀錄。');
     }
+    public function complete(Request $request, Order $order)
+    {
+        if ((int) $order->buyer_id !== (int) $request->user()->id) {
+            abort(403, '你沒有權限完成這筆跟單。');
+        }
+
+        if (in_array($order->status, ['completed', 'cancelled', 'refunded'], true)) {
+            return redirect()
+                ->route('dashboard', ['section' => 'follow-orders'])
+                ->with('status', '這筆跟單已是結案狀態。');
+        }
+
+        $order->update([
+            'status' => 'completed',
+        ]);
+
+        return redirect()
+            ->route('dashboard', ['section' => 'follow-orders'])
+            ->with('status', '跟單已標記為完成，已移至歷史紀錄。');
+    }
 }

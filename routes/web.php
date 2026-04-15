@@ -136,6 +136,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/request-list', [RequestListController::class, 'store'])->name('request-list.store');
     Route::put('/request-list/{requestList}', [RequestListController::class, 'update'])->name('request-list.update');
     Route::patch('/request-list/{requestList}/submit', [RequestListController::class, 'submit'])->name('request-list.submit');
+    Route::patch('/request-list/{requestList}/complete', [RequestListController::class, 'complete'])->name('request-list.complete');
     Route::delete('/request-list/{requestList}', [RequestListController::class, 'destroy'])->name('request-list.destroy');
     Route::get('/request-item-image/{requestItem}', [RequestListController::class, 'image'])->name('request-item.image');
 
@@ -153,6 +154,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/cart/empty', [CartController::class, 'empty'])->name('cart.empty');
     Route::post('/agent-posts/{agentPost}/follow-order', [OrderController::class, 'store'])->name('orders.store');
 });
+Route::patch('/orders/{order}/complete', [OrderController::class, 'complete'])->name('orders.complete');
 
     //建立搜尋自己清單的路由
 Route::middleware('auth')->group(function () {
