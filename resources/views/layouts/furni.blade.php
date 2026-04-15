@@ -48,18 +48,8 @@
                         <a class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}" href="{{ route('home') }}">首頁</a>
                     </li>
                     <li class="nav-item {{ request()->routeIs('store') ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('store') }}">找代購</a>
+                        <a class="nav-link" href="{{ route('store') }}">找代購人</a>
                     </li>
-                    
-                    @auth
-                        <a href="#" class="nav-link">
-                            建立清單
-                        </a>
-                    @else
-                        <a href="{{ route('login') }}" class="nav-link">
-                            建立清單
-                        </a>
-                    @endauth
                 </ul>
 
                 <ul class="custom-navbar-cta navbar-nav mb-2 mb-md-0 ms-5">
@@ -73,19 +63,7 @@
                     @else
                         <li><a class="nav-link" href="{{ route('login') }}"><img src="{{ asset('images/user.svg') }}"></a></li>
                     @endauth
-                        <li class="nav-item position-relative">
-                            <a class="nav-link" href="{{ route('cart.index') }}">
-                            <img src="{{ asset('images/cart.svg') }}" alt="購物車" width="24" height="24">
-                            @auth
-                                @php $cartCount = \App\Models\Cart::where('user_id', auth()->id())->sum('quantity'); @endphp
-                                @if($cartCount > 0)
-                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                        {{ $cartCount }}
-                                    </span>
-                                @endif
-                            @endauth
-                            </a>
-                        </li>
+                        
                 </ul>
             </div>
         </div>

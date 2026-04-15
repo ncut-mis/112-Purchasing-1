@@ -38,6 +38,12 @@
                         <x-nav-link :href="route('home')">
                             {{ __('返回首頁') }}
                         </x-nav-link>
+                        <x-nav-link :href="url('/shopping-cart')" :active="request()->is('shopping-cart')">
+                            <div class="flex items-center gap-2">
+                                <i class="bi bi-cart3 text-lg"></i>
+                                <span>{{ __('結帳') }}</span>
+                            </div>
+                        </x-nav-link>
                     @endif
                 </div>
             </div>

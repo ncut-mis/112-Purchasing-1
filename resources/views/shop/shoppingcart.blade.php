@@ -8,7 +8,7 @@
         <div class="row justify-content-between">
             <div class="col-lg-5">
                 <div class="intro-excerpt">
-                    <h1>購物車</h1>
+                    <h1>結帳區</h1>
                 </div>
             </div>
         </div>
@@ -41,7 +41,7 @@
                         <div class="row text-center py-5">
                             <div class="col-md-12">
                                 <i class="fas fa-shopping-cart fa-5x text-muted mb-4"></i>
-                                <h3>您的購物車是空的</h3>
+                                <h3>您的結帳區是空的</h3>
                                 <p class="text-muted">快去挑選喜歡的商品吧！</p>
                                 <a href="/store" class="btn btn-primary btn-lg">前往貼文</a>
                             </div>
