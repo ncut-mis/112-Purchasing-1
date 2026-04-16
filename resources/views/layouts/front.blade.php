@@ -114,14 +114,6 @@
                 
                 <div class="d-flex align-items-center gap-2">
                     @auth
-                        <!-- 已登入：顯示進入控制台與登出 -->
-                        <a href="{{ url('/dashboard') }}" class="btn btn-success rounded-pill px-4">
-                            <img src="{{ auth()->user()->avatar ?? asset('images/user.svg') }}" 
-                                alt="用戶頭像" width="24" height="24" class="rounded-circle" 
-                                style="filter: brightness(0) invert(1);">
-                        </a>
-
-
                         <form method="POST" action="{{ route('logout') }}" class="m-0">
                             @csrf
                             <button type="submit" class="btn btn-link text-danger text-decoration-none">登出</button>
