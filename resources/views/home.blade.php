@@ -135,10 +135,11 @@
                                     <button
                                         type="button"
                                         class="agent-post-report-btn rounded-circle d-inline-flex align-items-center justify-content-center border-0 shadow-sm flex-shrink-0"
-                                        style="width: 2.25rem; height: 2.25rem; background: #f3f4f6; transition: background-color 0.2s ease, transform 0.2s ease;"
-                                        aria-label="檢舉代購貼文"
+                                        style="width: 2.25rem; height: 2.25rem; background: #f3f4f6; transition: background-color 0.2s ease, transform 0.2s ease; {{ $isOwner ? 'opacity:0.5;cursor:not-allowed;' : '' }}"
+                                        aria-label="{{ $isOwner ? '不能檢舉自己的代購貼文' : '檢舉代購貼文' }}"
                                         data-agent-post-id="{{ $agentPost->id }}"
-                                        title="檢舉代購貼文"
+                                        @disabled($isOwner)
+                                        title="{{ $isOwner ? '不能檢舉自己的代購貼文' : '檢舉代購貼文' }}"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#ef4444" class="w-5 h-5" style="width: 1.2rem; height: 1.2rem; filter: drop-shadow(0 0 1px rgba(0,0,0,0.1));">
                                             <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
@@ -343,6 +344,74 @@
                     </div>
                 </div>
 
+                <!-- 檢舉貼文 Modal -->
+                <div class="modal fade" id="reportAgentPostModal-{{ $agentPost->id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                            <div class="modal-header border-0 bg-light py-3 px-4">
+                                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-exclamation-triangle me-2 text-danger"></i>檢舉代購貼文</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            
+                            <form class="report-form">
+                                @csrf
+                                <div class="modal-body p-4">
+                                    <input type="hidden" name="agent_post_id" value="{{ $agentPost->id }}">
+                                    
+                                    <!-- 檢舉違規類型 -->
+                                    <div class="mb-4">
+                                        <label for="reportType-{{ $agentPost->id }}" class="form-label fw-bold text-dark mb-2">
+                                            <i class="bi bi-list-check text-danger me-2"></i>檢舉違規類型 <span class="text-danger">*</span>
+                                        </label>
+                                        <select class="form-select rounded-3 border shadow-sm" id="reportType-{{ $agentPost->id }}" name="report_type" required>
+                                            <option value="" selected disabled>請選擇違規類型</option>
+                                            <option value="false_info">虛假信息</option>
+                                            <option value="fraud">詐騙嫌疑</option>
+                                            <option value="prohibited_items">違禁品</option>
+                                            <option value="copyright">侵權</option>
+                                            <option value="harassment">騷擾或威脅</option>
+                                            <option value="spam">垃圾訊息</option>
+                                            <option value="other">其他</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- 檢舉原因 -->
+                                    <div class="mb-3">
+                                        <label for="reportReason-{{ $agentPost->id }}" class="form-label fw-bold text-dark mb-2">
+                                            <i class="bi bi-chat-dots text-danger me-2"></i>檢舉原因 <span class="text-danger">*</span>
+                                        </label>
+                                        <textarea 
+                                            class="form-control rounded-3 border shadow-sm" 
+                                            id="reportReason-{{ $agentPost->id }}" 
+                                            name="reason" 
+                                            rows="4" 
+                                            placeholder="請詳細描述檢舉原因（最多500字）"
+                                            maxlength="500"
+                                            required
+                                            style="resize: none;"></textarea>
+                                        <div class="form-text mt-1">
+                                            <span class="char-count">0</span>/500 字
+                                        </div>
+                                    </div>
+
+                                    <!-- 提示信息 -->
+                                    <div class="alert alert-info border-0 rounded-3 mb-0" role="alert">
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        <small>感謝您的檢舉，我們會認真審查您提供的信息，維護平台安全。</small>
+                                    </div>
+                                </div>
+
+                                <div class="modal-footer border-0 p-4 pt-0 flex-column align-items-stretch">
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-light rounded-pill flex-grow-1 py-2 fw-bold" data-bs-dismiss="modal">取消</button>
+                                        <button type="submit" class="btn btn-danger rounded-pill flex-grow-1 py-2 fw-bold shadow report-submit-btn">提交檢舉</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
            @empty
                 @if(request()->has('search'))
                     <div class="col-12">
@@ -456,6 +525,66 @@
                 } finally {
                     button.disabled = false;
                 }
+            });
+        });
+
+        // 檢舉按鈕邏輯
+        document.querySelectorAll('.agent-post-report-btn').forEach(function (button) {
+            button.addEventListener('click', function () {
+                if (button.disabled) return; // 禁用狀態下不執行
+                
+                const agentPostId = button.dataset.agentPostId;
+                if (!isAuthenticated) {
+                    window.location.href = loginUrl;
+                    return;
+                }
+                const modalElement = document.getElementById('reportAgentPostModal-' + agentPostId);
+                if (modalElement) {
+                    const modal = new bootstrap.Modal(modalElement);
+                    modal.show();
+                }
+            });
+        });
+
+        // 檢舉原因字符計數
+        document.querySelectorAll('textarea[name="reason"]').forEach(function (textarea) {
+            textarea.addEventListener('input', function () {
+                const charCount = this.value.length;
+                const charCountSpan = this.parentElement.querySelector('.char-count');
+                if (charCountSpan) {
+                    charCountSpan.textContent = charCount;
+                }
+            });
+        });
+
+        // 檢舉表單提交
+        document.querySelectorAll('.report-form').forEach(function (form) {
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                const reportType = form.querySelector('select[name="report_type"]').value;
+                const reason = form.querySelector('textarea[name="reason"]').value;
+
+                if (!reportType) {
+                    alert('請選擇違規類型');
+                    return;
+                }
+                if (!reason.trim()) {
+                    alert('請輸入檢舉原因');
+                    return;
+                }
+
+                // 暫時顯示成功信息（實際提交邏輯後續再加）
+                alert('感謝您的檢舉！我們會盡快審查您的報告。');
+                
+                // 關閉 Modal
+                const modal = bootstrap.Modal.getInstance(form.closest('.modal'));
+                if (modal) modal.hide();
+                
+                // 重置表單
+                form.reset();
+                form.querySelectorAll('.char-count').forEach(el => {
+                    el.textContent = '0';
+                });
             });
         });
 

@@ -241,9 +241,10 @@ submitQuote() {
 
                 <div class="flex gap-2">
                     <button type="button" 
-                        class="request-list-report-btn w-9 h-9 rounded-full transition flex items-center justify-center bg-gray-100 hover:bg-red-50"
+                        class="request-list-report-btn w-9 h-9 rounded-full transition flex items-center justify-center bg-gray-100 hover:bg-red-50 {{ $isOwner ? 'opacity-50 cursor-not-allowed' : '' }}"
                         data-request-list-id="{{ $requestList->id }}"
-                        title="檢舉請託單">
+                        title="{{ $isOwner ? '無法檢舉自己的請託單' : '檢舉請託單' }}"
+                        @if($isOwner) disabled aria-disabled="true" @endif>
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#ef4444" class="w-5 h-5" style="filter: drop-shadow(0 0 1px rgba(0,0,0,0.1));">
                             <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
                         </svg>
@@ -322,6 +323,48 @@ submitQuote() {
                     </div>
                 </div>
             </div>
+
+            <div id="request-report-modal-{{ $requestList->id }}" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60">
+                <div class="absolute inset-0" onclick="closeRequestReportModal({{ $requestList->id }})"></div>
+                <div class="relative w-full max-w-xl rounded-[2rem] bg-white shadow-2xl overflow-hidden">
+                    <div class="flex items-center justify-between px-6 py-5 border-b border-slate-200">
+                        <div>
+                            <p class="text-sm text-slate-500">檢舉請託單</p>
+                            <h3 class="text-xl font-bold text-slate-900">選擇檢舉類型並填寫原因</h3>
+                        </div>
+                        <button type="button" class="text-slate-400 hover:text-slate-700 text-2xl" onclick="closeRequestReportModal({{ $requestList->id }})">&times;</button>
+                    </div>
+                    <form class="report-form p-6" onsubmit="handleRequestReportSubmit(event, {{ $requestList->id }})">
+                        @csrf
+                        <input type="hidden" name="request_list_id" value="{{ $requestList->id }}">
+
+                        <div class="mb-5">
+                            <label for="reportType-{{ $requestList->id }}" class="block text-sm font-semibold text-slate-700 mb-2">檢舉違規類型</label>
+                            <select id="reportType-{{ $requestList->id }}" name="report_type" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                                <option value="" selected disabled>請選擇違規類型</option>
+                                <option value="false_info">虛假信息</option>
+                                <option value="fraud">詐騙嫌疑</option>
+                                <option value="prohibited_items">違禁品</option>
+                                <option value="copyright">侵權</option>
+                                <option value="harassment">騷擾或威脅</option>
+                                <option value="spam">垃圾訊息</option>
+                                <option value="other">其他</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-6">
+                            <label for="reportReason-{{ $requestList->id }}" class="block text-sm font-semibold text-slate-700 mb-2">檢舉原因</label>
+                            <textarea id="reportReason-{{ $requestList->id }}" name="reason" rows="5" class="w-full rounded-[1.5rem] border border-slate-200 p-4 text-sm text-slate-700 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-200" placeholder="請詳細描述檢舉原因，最多 500 字"></textarea>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-3">
+                            <button type="button" class="flex-1 py-3 rounded-2xl border border-slate-300 text-slate-600 hover:bg-slate-100 transition" onclick="closeRequestReportModal({{ $requestList->id }})">取消</button>
+                            <button type="submit" class="flex-1 py-3 rounded-2xl bg-rose-500 text-white font-semibold hover:bg-rose-600 transition">提交檢舉</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
         </div> @empty
         <div class="col-span-full text-center py-20 bg-white rounded-[2rem] border-2 border-dashed border-gray-100">
             <div class="text-gray-300 mb-2"><i class="bi bi-inbox text-5xl"></i></div>
@@ -492,12 +535,52 @@ submitQuote() {
                             this.classList.remove('text-pink-500', 'bg-pink-50');
                             this.classList.add('text-gray-400', 'bg-gray-100');
                         }
-   })
+                    })
                     .catch(error => {
                         alert(error.message || '收藏操作失敗');
                     });
                 });
             });
+
+            document.querySelectorAll('.request-list-report-btn').forEach(button => {
+                button.addEventListener('click', function () {
+                    if (button.disabled) return;
+                    const id = this.getAttribute('data-request-list-id');
+                    if (!id) return;
+                    const modal = document.getElementById(`request-report-modal-${id}`);
+                    if (modal) {
+                        modal.classList.remove('hidden');
+                        document.body.classList.add('overflow-hidden');
+                    }
+                });
+            });
         });
+
+        function closeRequestReportModal(id) {
+            const modal = document.getElementById(`request-report-modal-${id}`);
+            if (!modal) return;
+            modal.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        function handleRequestReportSubmit(event, id) {
+            event.preventDefault();
+            const form = event.target;
+            const reportType = form.querySelector('select[name="report_type"]').value;
+            const reason = form.querySelector('textarea[name="reason"]').value.trim();
+
+            if (!reportType) {
+                alert('請選擇違規類型');
+                return;
+            }
+            if (!reason) {
+                alert('請輸入檢舉原因');
+                return;
+            }
+
+            alert('檢舉內容已建立（示意畫面）');
+            closeRequestReportModal(id);
+            form.reset();
+        }
     </script>
 </x-app-layout>
