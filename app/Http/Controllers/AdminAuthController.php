@@ -7,6 +7,7 @@ use App\Models\AgentPost;
 use App\Models\RequestItem;
 use App\Models\RequestList;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -25,7 +26,7 @@ class AdminAuthController extends Controller
 
     public function dashboard(Request $request)
     {
-        $adminName = $request->session()->get('admin_auth_name');
+         $adminName = Auth::guard('admin')->user()?->name ?? $request->session()->get('admin_auth_name');
         $agentApplications = AgentApplication::with('user')->latest()->take(10)->get();
         $requestLists = RequestList::with(['items', 'user'])->latest()->take(10)->get();
         $posts = AgentPost::with(['user', 'products'])->latest()->take(10)->get();
@@ -150,8 +151,10 @@ class AdminAuthController extends Controller
 
     public function logout(Request $request)
     {
+        Auth::guard('admin')->logout();
         $request->session()->forget(['admin_auth_id', 'admin_auth_name']);
-
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
          return redirect()->route('login');
     }
 }

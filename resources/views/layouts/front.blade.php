@@ -160,7 +160,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-    @stack('scripts')
+
 
     <!-- 身分選擇彈跳視窗 (僅在登入後且符合身分時觸發) -->
     @if(session('show_role_selector'))
@@ -171,7 +171,7 @@
                     <div class="role-modal-icon">
                         <i class="bi bi-person-check-fill"></i>
                     </div>
-                    <h4 class="fw-bold mb-3">歡迎回來！職人代購</h4>
+                    <h4 class="fw-bold mb-3">歡迎回來！</h4>
                     <p class="text-muted mb-4">系統偵測到您具備代購人身分。<br>今天想要先處理哪部分的工作呢？</p>
                     
                     <div class="d-grid gap-3">
@@ -191,8 +191,6 @@
     </div>
     @endif
 
-    <!-- JavaScripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     @if(session('show_role_selector'))
     <script>
