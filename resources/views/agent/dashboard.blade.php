@@ -189,11 +189,11 @@ submitQuote() {
             </div>
 
                 <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-lg font-bold text-gray-800">最新請購需求</h3>
-                    <span class="text-sm text-gray-400">找到 {{ $requestLists->total() }} 個符合條件的請購</span>
+                    <h3 class="text-lg font-bold text-gray-800">最新請託需求</h3>
+                    <span class="text-sm text-gray-400">找到 {{ $requestLists->total() }} 個符合條件的請託</span>
                 </div>
 
-                <!-- 請購單列表：保留您原本的卡片架構 -->
+                <!-- 請託單列表：保留您原本的卡片架構 -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
     @forelse($requestLists as $requestList)
         @php
@@ -201,7 +201,7 @@ submitQuote() {
             $countryCode = $requestList->country;
             $countryTag = $countryLabels[$countryCode] ?? $countryCode;
             $firstItem = $requestList->items->first();
-            $title = $requestList->title ?: ($firstItem->name ?? '未命名請購');
+            $title = $requestList->title ?: ($firstItem->name ?? '未命名請託');
 
             // 2. 權限與狀態判定
             $isOwner = auth()->check() && (int) $requestList->user_id === (int) auth()->id();
@@ -239,16 +239,26 @@ submitQuote() {
                     </div>
                 </div>
 
-                <button type="button" 
-                    class="favorite-toggle w-9 h-9 rounded-full transition flex items-center justify-center {{ $isFavorited ? 'bg-pink-50 text-pink-500' : 'bg-gray-100 text-gray-400 hover:bg-pink-50 hover:text-pink-400' }}"
-                    data-request-list-id="{{ $requestList->id }}"
-                    @if($isOwner) disabled title="不能收藏自己的請購清單" style="opacity: 0.5; cursor: not-allowed;" @endif>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M12.001 4.529c2.349-2.532 6.15-2.533 8.498-.001 2.41 2.6 2.41 6.815 0 9.416l-7.66 8.266a1.14 1.14 0 0 1-1.677 0l-7.66-8.266c-2.41-2.601-2.41-6.817 0-9.416 2.348-2.532 6.149-2.531 8.499.001Z"/></svg>
-                </button>
+                <div class="flex gap-2">
+                    <button type="button" 
+                        class="request-list-report-btn w-9 h-9 rounded-full transition flex items-center justify-center bg-gray-100 hover:bg-red-50"
+                        data-request-list-id="{{ $requestList->id }}"
+                        title="檢舉請託單">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#ef4444" class="w-5 h-5" style="filter: drop-shadow(0 0 1px rgba(0,0,0,0.1));">
+                            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+                        </svg>
+                    </button>
+                    <button type="button" 
+                        class="favorite-toggle w-9 h-9 rounded-full transition flex items-center justify-center {{ $isFavorited ? 'bg-pink-50 text-pink-500' : 'bg-gray-100 text-gray-400 hover:bg-pink-50 hover:text-pink-400' }}"
+                        data-request-list-id="{{ $requestList->id }}"
+                        @if($isOwner) disabled title="不能收藏自己的請託單" style="opacity: 0.5; cursor: not-allowed;" @endif>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M12.001 4.529c2.349-2.532 6.15-2.533 8.498-.001 2.41 2.6 2.41 6.815 0 9.416l-7.66 8.266a1.14 1.14 0 0 1-1.677 0l-7.66-8.266c-2.41-2.601-2.41-6.817 0-9.416 2.348-2.532 6.149-2.531 8.499.001Z"/></svg>
+                    </button>
+                </div>
             </div>
 
             <div class="mb-5 flex-1">
-                <p class="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">請購內容</p>
+                <p class="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">請託內容</p>
                 <ul class="space-y-1.5 text-sm text-gray-600">
                     @foreach($requestList->items as $item)
                         <li class="flex items-start gap-1">
@@ -269,11 +279,11 @@ submitQuote() {
 
             <div class="pt-4 border-t border-gray-100">
                 <div class="flex items-center justify-between">
-                    {{-- 左側：請購人資訊 --}}
+                    {{-- 左側：請託人資訊 --}}
                     <div class="flex items-center gap-2 min-w-0">
                         <img src="https://ui-avatars.com/api/?name={{ urlencode($requestList->user->name ?? 'User') }}&background=EEF2FF&color=4F46E5" class="w-7 h-7 rounded-full border border-gray-100" alt="avatar">
                         <div class="flex flex-col min-w-0">
-                            <span class="text-[10px] text-gray-400 leading-none">請購人</span>
+                            <span class="text-[10px] text-gray-400 leading-none">請託人</span>
                             <span class="text-xs text-gray-700 font-medium truncate">{{ $requestList->user->name ?? '未知' }}</span>
                         </div>
                     </div>
@@ -315,7 +325,7 @@ submitQuote() {
         </div> @empty
         <div class="col-span-full text-center py-20 bg-white rounded-[2rem] border-2 border-dashed border-gray-100">
             <div class="text-gray-300 mb-2"><i class="bi bi-inbox text-5xl"></i></div>
-            <p class="text-gray-400 font-bold text-lg">目前沒有符合條件的請購需求</p>
+            <p class="text-gray-400 font-bold text-lg">目前沒有符合條件的請託需求</p>
         </div>
     @endforelse
 </div>
@@ -376,7 +386,7 @@ submitQuote() {
                     
                     <div class="p-8 pb-4">
                         <h4 class="text-2xl font-black text-gray-800 mb-2">填寫代購報價單</h4>
-                        <p class="text-gray-400 text-sm">請針對請購單內的每一項商品提供報價 (NTD)</p>
+                        <p class="text-gray-400 text-sm">請針對請託單內的每一項商品提供報價 (NTD)</p>
                     </div>
 
                     <!-- 商品報價列表 (可滾動區) -->
