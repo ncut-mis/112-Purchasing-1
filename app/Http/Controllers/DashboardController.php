@@ -73,11 +73,10 @@ class DashboardController extends Controller
             ->latest()
             ->get();
 
-        // --- 5. 我承接的報價 (修正點：將 'people' 改為 'user_id' ) ---
-        // 註：若此處邏輯是「我身為代購人要去幫別人買」，您的 request_lists 表應有一個 agent_id 欄位。
-        // 若目前尚未建立該欄位，暫時改為 user_id 以避免 SQL 報錯。
+        // --- 5. 我承接的報價 (代購人接過的單子) ---
+        // 查詢 people = 代購人ID 的清單，即代購人接過的訂單
         $myWorkingOrders = RequestList::with('user') 
-            ->where('user_id', $user->id) // 修正：原本是 'people'
+            ->where('people', $user->id)
             ->where('status', 'offered')
             ->latest()
             ->get();
