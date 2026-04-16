@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <h2 class="font-semibold text-xl text-indigo-800 leading-tight">
-                {{ __('代購人會員專區') }}
+                {{ __('會員專區') }}
             </h2>
             
             <div class="flex items-center gap-3">
@@ -62,15 +62,15 @@
                                 <i class="bi bi-megaphone-fill text-lg"></i>
                                 <span>我的代購貼文</span>
                             </a>
-                            <!-- 2. 訂單管理 -->
+                            <!-- 2. 請託單管理 -->
                             <a href="#" @click.prevent="activeTab = 'order-management'" :class="activeTab === 'order-management' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-gray-600'" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition">
                                 <i class="bi bi-file-earmark-medical text-indigo-500 text-lg"></i>
-                                <span>訂單管理</span>
+                                <span>請託單管理</span>
                             </a>
-                            <!-- 3. 代購商品管理 -->
+                            <!-- 3. 代購貼文管理 -->
                             <a href="#" @click.prevent="activeTab = 'product-management'" :class="activeTab === 'product-management' ? 'bg-blue-50 text-blue-600 font-bold' : 'text-gray-600'" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition">
                                 <i class="bi bi-box text-blue-500 text-lg"></i>
-                                <span>代購商品管理</span>
+                                <span>代購貼文管理</span>
                             </a>
                             <!-- 4. 聊天訊息 -->
                             <a href="{{ route('agent.chat') }}" 
@@ -88,10 +88,13 @@
                                 <i class="bi bi-heart text-pink-500 text-lg"></i>
                                 <span>收藏請購清單</span>
                             </a>
-                            <!-- 7. 評價中心 -->
-                            <a href="#" class="flex items-center gap-3 p-3 rounded-xl text-gray-600 hover:bg-gray-50 transition">
-                                <i class="bi bi-star text-yellow-500 text-lg"></i>
-                                <span>評價中心</span>
+                            <!-- 7. 歷史紀錄 -->
+                            <a href="#" @click.prevent="activeTab = 'history-records'" :class="activeTab === 'history-records' ? 'bg-amber-50 text-amber-600 font-bold' : 'text-gray-600 hover:bg-gray-50'" 
+                            class="flex items-center gap-3 p-3 rounded-xl transition group">                               
+                                <!-- 使用時鐘歷史圖標，並根據選中狀態切換顏色 -->
+                                <i class="bi bi-clock-history text-lg" 
+                                :class="activeTab === 'history-records' ? 'text-amber-500' : 'text-amber-400'"></i>                                
+                                <span>歷史紀錄</span>
                             </a>
                             <!-- 8. 物流設定 -->
                            <a href="{{ route('logistics.index') }}" 

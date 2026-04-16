@@ -46,7 +46,7 @@
                         <nav class="p-2 space-y-1">
                             <a href="{{ route('dashboard', ['section' => 'request-lists']) }}" class="flex items-center space-x-3 p-3 rounded-lg {{ $currentSection === 'request-lists' ? 'bg-green-50 text-green-700 font-medium' : 'text-gray-600 hover:bg-gray-50 transition' }}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-                                <span>請購清單</span>
+                                <span>請託清單</span>
                             </a>
 
                             <a href="{{ route('dashboard', ['section' => 'favorite-posts']) }}" class="flex items-center space-x-3 p-3 rounded-lg {{ $currentSection === 'favorite-posts' ? 'bg-pink-50 text-pink-600 font-medium' : 'text-gray-600 hover:bg-gray-50 transition' }}">
@@ -74,9 +74,9 @@
                                 <span>聊天訊息</span>
                             </a>
 
-
-                            <!-- 歷史紀錄 (請購/跟單完成後可查詢) -->
-                            <a href="{{ route('dashboard', ['section' => 'history-records']) }}" class="flex items-center space-x-3 p-3 rounded-lg {{ $currentSection === 'history-records' ? 'bg-slate-100 text-slate-700 font-medium' : 'text-gray-600 hover:bg-gray-50 transition' }}">
+                            <!-- 歷史紀錄 -->
+                            <a href="{{ route('dashboard', ['section' => 'history-records']) }}" 
+                            class="flex items-center space-x-3 p-3 rounded-lg {{ $currentSection === 'history-records' ? 'bg-orange-50 text-orange-600 font-bold' : 'text-gray-600 hover:bg-gray-50 transition' }}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                 <span>歷史紀錄</span>
                             </a>

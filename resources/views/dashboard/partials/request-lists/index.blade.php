@@ -1,6 +1,6 @@
                          <div class="flex justify-between items-center mb-6">
 
-                            <h3 class="text-lg font-bold text-gray-800">目前請購清單</h3>
+                            <h3 class="text-lg font-bold text-gray-800">目前請託單</h3>
 
                             <div class="flex items-center gap-4">                        
 

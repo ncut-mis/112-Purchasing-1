@@ -91,7 +91,7 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h6 class="text-success fw-bold text-uppercase mb-1">Agent Posts</h6>
-                    <h2 class="fw-bold">最新代購連線</h2>
+                    <h2 class="fw-bold">最新代購貼文</h2>
                 </div>
                 <a href="{{ route('store') }}" class="text-decoration-none text-muted">查看全部 <i class="bi bi-arrow-right"></i></a>
             </div>
