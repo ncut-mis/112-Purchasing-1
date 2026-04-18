@@ -5,12 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\AgentPost;
 use App\Models\ContentReport;
 use App\Models\RequestList;
+use App\Services\ContentAutoReviewService;
+use App\Services\ModerationModeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ContentReportController extends Controller
 {
-    public function store(Request $request): JsonResponse
+    public function store(
+        Request $request,
+        ModerationModeService $moderationModeService,
+        ContentAutoReviewService $contentAutoReviewService
+    ): JsonResponse
     {
         $validated = $request->validate([
             'target_type' => ['required', 'string', 'in:request_list,agent_post'],
@@ -42,7 +48,7 @@ class ContentReportController extends Controller
             return response()->json(['message' => '你已檢舉過這則內容，請等待管理員審核'], 422);
         }
 
-        ContentReport::create([
+        $report = ContentReport::create([
             'reporter_id' => $user->id,
             'reportable_type' => $target::class,
             'reportable_id' => $target->id,
@@ -51,9 +57,22 @@ class ContentReportController extends Controller
             'status' => ContentReport::STATUS_PENDING,
         ]);
 
+        if ($moderationModeService->isAuto()) {
+            $report->load('reportable');
+
+            $isApproved = $contentAutoReviewService->shouldApprove($report);
+            $report->update([
+                'status' => $isApproved ? ContentReport::STATUS_APPROVED : ContentReport::STATUS_REJECTED,
+                'reviewed_at' => now(),
+                'review_note' => '系統自動審核（關鍵字與內容一致性比對）',
+            ]);
+        }
+
         return response()->json([
             'status' => 'success',
-            'message' => '檢舉已送出，管理員會盡快審核。',
+            'message' => $moderationModeService->isAuto()
+                ? '檢舉已送出，系統已完成自動審核。'
+                : '檢舉已送出，管理員會盡快審核。',
         ]);
     }
 }

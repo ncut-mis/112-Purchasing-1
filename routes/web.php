@@ -158,6 +158,8 @@ Route::middleware('auth')->group(function () {
 Route::patch('/orders/{order}/complete', [OrderController::class, 'complete'])->name('orders.complete');
 Route::patch('/admin/reports/{report}/approve', [AdminAuthController::class, 'approveReport'])->middleware('admin.auth')->name('admin.reports.approve');
 Route::patch('/admin/reports/{report}/reject', [AdminAuthController::class, 'rejectReport'])->middleware('admin.auth')->name('admin.reports.reject');
+Route::patch('/admin/reports/{report}/override', [AdminAuthController::class, 'overrideDecision'])->middleware('admin.auth')->name('admin.reports.override');
+Route::patch('/admin/review-mode', [AdminAuthController::class, 'updateReviewMode'])->middleware('admin.auth')->name('admin.review-mode.update');
 
     //建立搜尋自己清單的路由
 Route::middleware('auth')->group(function () {

@@ -272,7 +272,7 @@ submitQuote() {
                 @if($requestList->detail_address)
                     <div class="mt-4 pt-4 border-t border-gray-50">
                         <p class="text-xs text-gray-500 leading-relaxed line-clamp-2">
-                            <span class="font-bold text-gray-400">送貨地址：</span>{{ $requestList->detail_address }}
+                            <span class="font-bold text-gray-400">店家詳細地址：</span>{{ $requestList->detail_address }}
                         </p>
                     </div>
                 @endif 
