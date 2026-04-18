@@ -124,7 +124,7 @@
                                                 class="img-fluid rounded border mb-3"
                                                 style="max-height: 150px; object-fit: contain;">
                                         </a>
-                                    @else
+                                                                       @else
                                         <p class="text-muted small">未提供身份證正面照片</p>
                                     @endif
 
@@ -149,14 +149,191 @@
 
         <div class="tab-pane fade" id="violation-pane" role="tabpanel">
             <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-body">
-                    <p class="text-muted text-center py-5">違規內容管理功能開發中...</p>
+                <div class="card-body p-4 p-lg-5" style="min-height: 620px;">
+
+                    <ul class="nav nav-pills gap-2 mb-4" id="violationSwitchTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button
+                                class="nav-link active px-4 fw-semibold"
+                                id="violation-request-tab"
+                                data-bs-toggle="pill"
+                                data-bs-target="#violation-request-pane"
+                                type="button"
+                                role="tab"
+                                aria-controls="violation-request-pane"
+                                aria-selected="true"
+                            >
+                                請託單
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button
+                                class="nav-link px-4 fw-semibold"
+                                id="violation-post-tab"
+                                data-bs-toggle="pill"
+                                data-bs-target="#violation-post-pane"
+                                type="button"
+                                role="tab"
+                                aria-controls="violation-post-pane"
+                                aria-selected="false"
+                            >
+                                代購貼文
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="violationSwitchContent">
+                        <div class="tab-pane fade show active" id="violation-request-pane" role="tabpanel" aria-labelledby="violation-request-tab" tabindex="0">
+                            <p class="text-muted mb-3">以下為被檢舉違規的請託單</p>
+                            <div class="table-responsive">
+                                <table class="table align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th style="min-width: 200px;">請託單</th>
+                                            <th>檢舉人</th>
+                                            <th>檢舉違規類型</th>
+                                            <th style="min-width: 260px;">檢舉原因</th>
+                                            <th>檢舉日期</th>
+                                            <th class="text-end">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse($requestListReports as $report)
+                                            <tr>
+                                                <td>{{ optional($report->reportable)->title ?? '內容已不存在' }}</td>
+                                                <td>{{ optional($report->reporter)->name ?? '匿名檢舉者' }}</td>
+                                                <td>{{ \App\Models\ContentReport::typeLabel((string) $report->report_type) }}</td>
+                                                <td>{{ $report->reason }}</td>
+                                                <td>{{ optional($report->created_at)->format('Y-m-d H:i') }}</td>
+                                                <td class="text-end">
+                                                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#reportViewModal-{{ $report->id }}">檢視</button>
+                                                    @if($report->status === \App\Models\ContentReport::STATUS_PENDING)
+                                                        <form method="POST" action="{{ route('admin.reports.approve', $report) }}" class="d-inline">
+                                                            @csrf
+                                                            @method('PATCH')
+                                                            <button type="submit" class="btn btn-sm btn-success">檢舉成立</button>
+                                                        </form>
+                                                        <form method="POST" action="{{ route('admin.reports.reject', $report) }}" class="d-inline">
+                                                            @csrf
+                                                            @method('PATCH')
+                                                            <button type="submit" class="btn btn-sm btn-danger">檢舉不成立</button>
+                                                        </form>
+                                                    @else
+                                                        <span class="badge {{ $report->status === \App\Models\ContentReport::STATUS_APPROVED ? 'text-bg-success' : 'text-bg-secondary' }}">
+                                                            {{ $report->status === \App\Models\ContentReport::STATUS_APPROVED ? '已判定成立' : '已判定不成立' }}
+                                                        </span>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="6" class="text-center text-muted py-4">目前沒有請託單檢舉資料</td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="violation-post-pane" role="tabpanel" aria-labelledby="violation-post-tab" tabindex="0">
+                            <p class="text-muted mb-3">以下為被檢舉違規的代購貼文</p>
+                            <div class="table-responsive">
+                                <table class="table align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th style="min-width: 200px;">代購貼文</th>
+                                            <th>檢舉人</th>
+                                            <th>檢舉違規類型</th>
+                                            <th style="min-width: 260px;">檢舉原因</th>
+                                            <th>檢舉日期</th>
+                                            <th class="text-end">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse($agentPostReports as $report)
+                                            <tr>
+                                                <td>{{ optional($report->reportable)->title ?? '內容已不存在' }}</td>
+                                                <td>{{ optional($report->reporter)->name ?? '匿名檢舉者' }}</td>
+                                                <td>{{ \App\Models\ContentReport::typeLabel((string) $report->report_type) }}</td>
+                                                <td>{{ $report->reason }}</td>
+                                                <td>{{ optional($report->created_at)->format('Y-m-d H:i') }}</td>
+                                                <td class="text-end">
+                                                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#reportViewModal-{{ $report->id }}">檢視</button>
+                                                    @if($report->status === \App\Models\ContentReport::STATUS_PENDING)
+                                                        <form method="POST" action="{{ route('admin.reports.approve', $report) }}" class="d-inline">
+                                                            @csrf
+                                                            @method('PATCH')
+                                                            <button type="submit" class="btn btn-sm btn-success">檢舉成立</button>
+                                                        </form>
+                                                        <form method="POST" action="{{ route('admin.reports.reject', $report) }}" class="d-inline">
+                                                            @csrf
+                                                            @method('PATCH')
+                                                            <button type="submit" class="btn btn-sm btn-danger">檢舉不成立</button>
+                                                        </form>
+                                                    @else
+                                                        <span class="badge {{ $report->status === \App\Models\ContentReport::STATUS_APPROVED ? 'text-bg-success' : 'text-bg-secondary' }}">
+                                                            {{ $report->status === \App\Models\ContentReport::STATUS_APPROVED ? '已判定成立' : '已判定不成立' }}
+                                                        </span>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="6" class="text-center text-muted py-4">目前沒有代購貼文檢舉資料</td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+@foreach($requestListReports->merge($agentPostReports) as $report)
+    <div class="modal fade" id="reportViewModal-{{ $report->id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4">
+                <div class="modal-header">
+                    <h5 class="modal-title">檢舉內容詳情</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2"><strong>被檢舉內容：</strong>{{ optional($report->reportable)->title ?? '內容已不存在' }}</p>
+                    <p class="mb-2"><strong>檢舉人：</strong>{{ optional($report->reporter)->name ?? '匿名檢舉者' }}</p>
+                    <p class="mb-2"><strong>檢舉違規類型：</strong>{{ \App\Models\ContentReport::typeLabel((string) $report->report_type) }}</p>
+                    <p class="mb-2"><strong>檢舉原因：</strong>{{ $report->reason }}</p>
+                    <p class="mb-2"><strong>檢舉日期：</strong>{{ optional($report->created_at)->format('Y-m-d H:i') }}</p>
+                    <p class="mb-0"><strong>狀態：</strong>
+                        @if($report->status === \App\Models\ContentReport::STATUS_PENDING)
+                            待審核
+                        @elseif($report->status === \App\Models\ContentReport::STATUS_APPROVED)
+                            檢舉成立
+                        @else
+                            檢舉不成立
+                        @endif
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+@endforeach
 <script>
-// 管理員後台功能已簡化
+document.addEventListener('DOMContentLoaded', function () {
+    const openViolationTab = @json(request('tab') === 'violation');
+    if (!openViolationTab) {
+        return;
+    }
+
+    const violationTab = document.getElementById('violation-tab');
+    if (!violationTab) {
+        return;
+    }
+
+    const tab = new bootstrap.Tab(violationTab);
+    tab.show();
+});
 </script>
 @endsection

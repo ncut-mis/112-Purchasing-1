@@ -334,7 +334,7 @@ submitQuote() {
                         </div>
                         <button type="button" class="text-slate-400 hover:text-slate-700 text-2xl" onclick="closeRequestReportModal({{ $requestList->id }})">&times;</button>
                     </div>
-                    <form class="report-form p-6" onsubmit="handleRequestReportSubmit(event, {{ $requestList->id }})">
+<form class="report-form p-6" data-target-type="request_list" data-target-id="{{ $requestList->id }}" onsubmit="handleRequestReportSubmit(event, {{ $requestList->id }})">
                         @csrf
                         <input type="hidden" name="request_list_id" value="{{ $requestList->id }}">
 
@@ -578,9 +578,38 @@ submitQuote() {
                 return;
             }
 
-            alert('檢舉內容已建立（示意畫面）');
-            closeRequestReportModal(id);
-            form.reset();
+             const submitBtn = form.querySelector('button[type=\"submit\"]');
+            submitBtn.disabled = true;
+
+            fetch("{{ route('reports.store') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    target_type: form.dataset.targetType,
+                    target_id: form.dataset.targetId,
+                    report_type: reportType,
+                    reason: reason,
+                }),
+            })
+                .then(async (response) => {
+                    const data = await response.json();
+                    if (!response.ok) {
+                        throw new Error(data.message || '檢舉送出失敗');
+                    }
+                    alert(data.message || '檢舉已送出，管理員會盡快審核。');
+                    closeRequestReportModal(id);
+                    form.reset();
+                })
+                .catch((error) => {
+                    alert(error.message || '檢舉送出失敗');
+                })
+                .finally(() => {
+                    submitBtn.disabled = false;
+                });
         }
     </script>
 </x-app-layout>

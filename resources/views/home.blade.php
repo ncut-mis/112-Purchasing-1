@@ -353,10 +353,10 @@
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             
-                            <form class="report-form">
+                           <form class="report-form" data-target-type="agent_post" data-target-id="{{ $agentPost->id }}">
                                 @csrf
                                 <div class="modal-body p-4">
-                                    <input type="hidden" name="agent_post_id" value="{{ $agentPost->id }}">
+
                                     
                                     <!-- 檢舉違規類型 -->
                                     <div class="mb-4">
@@ -476,6 +476,7 @@
     document.addEventListener('DOMContentLoaded', function () {
         const csrfToken = '{{ csrf_token() }}';
         const favoriteToggleUrl = '{{ route('favorite.toggle') }}';
+        const reportStoreUrl = '{{ route('reports.store') }}';
         const loginUrl = '{{ route('login') }}';
         const isAuthenticated = @json(auth()->check());
 
@@ -559,10 +560,13 @@
 
         // 檢舉表單提交
         document.querySelectorAll('.report-form').forEach(function (form) {
-            form.addEventListener('submit', function (e) {
+             form.addEventListener('submit', async function (e) {
                 e.preventDefault();
                 const reportType = form.querySelector('select[name="report_type"]').value;
                 const reason = form.querySelector('textarea[name="reason"]').value;
+                const targetType = form.dataset.targetType;
+                const targetId = form.dataset.targetId;
+                const submitBtn = form.querySelector('.report-submit-btn');
 
                 if (!reportType) {
                     alert('請選擇違規類型');
@@ -573,18 +577,41 @@
                     return;
                 }
 
-                // 暫時顯示成功信息（實際提交邏輯後續再加）
-                alert('感謝您的檢舉！我們會盡快審查您的報告。');
-                
-                // 關閉 Modal
-                const modal = bootstrap.Modal.getInstance(form.closest('.modal'));
-                if (modal) modal.hide();
-                
-                // 重置表單
-                form.reset();
-                form.querySelectorAll('.char-count').forEach(el => {
-                    el.textContent = '0';
-                });
+                submitBtn.disabled = true;
+                try {
+                    const response = await fetch(reportStoreUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                        },
+                        body: JSON.stringify({
+                            target_type: targetType,
+                            target_id: targetId,
+                            report_type: reportType,
+                            reason: reason.trim(),
+                        }),
+                    });
+
+
+                const data = await response.json();
+                    if (!response.ok) {
+                        throw new Error(data.message || '檢舉提交失敗');
+                    }
+
+                    alert(data.message || '感謝您的檢舉！我們會盡快審查您的報告。');
+                    const modal = bootstrap.Modal.getInstance(form.closest('.modal'));
+                    if (modal) modal.hide();
+                    form.reset();
+                    form.querySelectorAll('.char-count').forEach(el => {
+                        el.textContent = '0';
+                    });
+                } catch (error) {
+                    alert(error.message || '檢舉提交失敗');
+                } finally {
+                    submitBtn.disabled = false;
+                }
             });
         });
 

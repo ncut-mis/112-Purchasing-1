@@ -19,7 +19,7 @@ use App\Http\Controllers\NotifyController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\RequestListChatController;
 use App\Http\Controllers\LogisticsController;
-
+use App\Http\Controllers\ContentReportController;
 
 
 Route::get('/agent/dashboard', [AgentDashboardController::class, 'index'])
@@ -153,8 +153,11 @@ Route::middleware('auth')->group(function () {
     Route::delete('/cart/remove/{id}', [CartController::class, 'remove'])->name('cart.remove');
     Route::delete('/cart/empty', [CartController::class, 'empty'])->name('cart.empty');
     Route::post('/agent-posts/{agentPost}/follow-order', [OrderController::class, 'store'])->name('orders.store');
+    Route::post('/reports', [ContentReportController::class, 'store'])->name('reports.store');
 });
 Route::patch('/orders/{order}/complete', [OrderController::class, 'complete'])->name('orders.complete');
+Route::patch('/admin/reports/{report}/approve', [AdminAuthController::class, 'approveReport'])->middleware('admin.auth')->name('admin.reports.approve');
+Route::patch('/admin/reports/{report}/reject', [AdminAuthController::class, 'rejectReport'])->middleware('admin.auth')->name('admin.reports.reject');
 
     //建立搜尋自己清單的路由
 Route::middleware('auth')->group(function () {

@@ -55,4 +55,9 @@ class AgentPost extends Model
     {
         return $this->morphMany(Order::class, 'source');
     }
+    
+    public function reports()
+    {
+        return $this->morphMany(ContentReport::class, 'reportable');
+    }
 }

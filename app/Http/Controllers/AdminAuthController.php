@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AgentApplication;
 use App\Models\AgentPost;
+use App\Models\ContentReport;
 use App\Models\RequestItem;
 use App\Models\RequestList;
 use Illuminate\Http\Request;
@@ -30,8 +31,55 @@ class AdminAuthController extends Controller
         $agentApplications = AgentApplication::with('user')->latest()->take(10)->get();
         $requestLists = RequestList::with(['items', 'user'])->latest()->take(10)->get();
         $posts = AgentPost::with(['user', 'products'])->latest()->take(10)->get();
+        $requestListReports = ContentReport::with(['reporter', 'reportable'])
+            ->where('reportable_type', RequestList::class)
+            ->latest()
+            ->take(50)
+            ->get();
+        $agentPostReports = ContentReport::with(['reporter', 'reportable'])
+            ->where('reportable_type', AgentPost::class)
+            ->latest()
+            ->take(50)
+            ->get();
 
-        return view('admin.dashboard', compact('adminName', 'agentApplications', 'requestLists', 'posts'));
+        return view('admin.dashboard', compact(
+            'adminName',
+            'agentApplications',
+            'requestLists',
+            'posts',
+            'requestListReports',
+            'agentPostReports'
+        ));
+    }
+
+    public function approveReport(ContentReport $report)
+    {
+        if ($report->status !== ContentReport::STATUS_PENDING) {
+            return redirect()->route('admin.dashboard')->with('status', '此檢舉案件已審核過');
+        }
+
+        $report->update([
+            'status' => ContentReport::STATUS_APPROVED,
+            'reviewed_by_admin_id' => Auth::guard('admin')->id(),
+            'reviewed_at' => now(),
+        ]);
+
+        return redirect()->route('admin.dashboard', ['tab' => 'violation'])->with('status', '已標記為檢舉成立');
+    }
+
+    public function rejectReport(ContentReport $report)
+    {
+        if ($report->status !== ContentReport::STATUS_PENDING) {
+            return redirect()->route('admin.dashboard')->with('status', '此檢舉案件已審核過');
+        }
+
+        $report->update([
+            'status' => ContentReport::STATUS_REJECTED,
+            'reviewed_by_admin_id' => Auth::guard('admin')->id(),
+            'reviewed_at' => now(),
+        ]);
+
+        return redirect()->route('admin.dashboard', ['tab' => 'violation'])->with('status', '已標記為檢舉不成立');
     }
 
     public function approveAgentApplication(AgentApplication $agentApplication)
