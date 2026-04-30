@@ -275,7 +275,7 @@
                                                                 <div class="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center">
                                                                     <div class="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl bg-slate-100">
                                                                         @if($item->reference_image)
-                                                                            <img src="{{ url('/request-item-image/' . $item->id) }}" alt="{{ $item->name }}" class="h-full w-full object-cover">
+                                                                              <img src="{{ route('request-item.image', ['requestList' => $requestList->id, 'requestItem' => $item->id]) }}" alt="{{ $item->name }}" class="h-full w-full object-cover">
                                                                         @else
                                                                             <span class="text-xs text-slate-400">無商品圖片</span>
                                                                         @endif
@@ -544,10 +544,10 @@
                                                             <div>
                                                                 <label class="block text-sm font-medium text-gray-700 mb-1">商品圖片</label>
                                                                 @if($item->reference_image)
-                                                                    <img src="{{ url('/request-item-image/' . $item->id) }}" alt="商品圖片" class="w-24 h-24 object-cover rounded border mb-2">
-                                                                    <p class="text-xs text-gray-500 mb-2">未重新上傳會保留原圖片</p>
+                                                                  <img src="{{ route('request-item.image', ['requestList' => $requestList->id, 'requestItem' => $item->id]) }}" alt="商品圖片" class="w-24 h-24 object-cover rounded border mb-2 edit-item-image-preview" data-original-src="{{ route('request-item.image', ['requestList' => $requestList->id, 'requestItem' => $item->id]) }}">
+                                                                    <p class="text-xs text-gray-500 mb-2 edit-item-image-status">未重新上傳會保留原圖片</p>
                                                                 @endif
-                                                                <input type="file" name="items[{{ $index }}][item_image]" class="w-full border-gray-300 rounded-lg" accept="image/*">
+                                                                <input type="file" name="items[{{ $index }}][item_image]" class="w-full border-gray-300 rounded-lg edit-item-image-input" accept="image/*">
                                                             </div>
                                                         </div>
                                                     @endforeach
@@ -572,7 +572,7 @@
 
                                                         <div>
                                                             <label class="block text-sm font-medium text-gray-700 mb-1">商品圖片</label>
-                                                            <input type="file" name="items[__INDEX__][item_image]" class="w-full border-gray-300 rounded-lg" accept="image/*">
+                                                             <input type="file" name="items[__INDEX__][item_image]" class="w-full border-gray-300 rounded-lg edit-item-image-input" accept="image/*">
                                                         </div>
                                                     </div>
                                                 </template>

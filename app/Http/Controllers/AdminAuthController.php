@@ -188,9 +188,17 @@ class AdminAuthController extends Controller
         return redirect()->route('admin.dashboard')->with('status', '代購貼文已刪除');
     }
 
-    public function identityImage(AgentApplication $agentApplication, string $side)
+    public function identityImage(int $user, string $side)
     {
         if (! in_array($side, ['front', 'back'], true)) {
+            abort(404);
+        }
+
+        $agentApplication = AgentApplication::where('user_id', $user)
+            ->latest('id')
+            ->first();
+
+        if (! $agentApplication) {
             abort(404);
         }
 
@@ -202,21 +210,34 @@ class AdminAuthController extends Controller
             abort(404);
         }
 
-        $normalized = ltrim($rawPath, '/');
+        if (is_string($rawPath)) {
+            $normalized = ltrim($rawPath, '/');
 
-        if (Str::startsWith($normalized, 'storage/')) {
-            $normalized = Str::after($normalized, 'storage/');
+            if (Str::startsWith($normalized, 'storage/')) {
+                $normalized = Str::after($normalized, 'storage/');
+            }
+
+            if (Str::startsWith($normalized, 'public/')) {
+                $normalized = Str::after($normalized, 'public/');
+            }
+
+            if (Storage::disk('public')->exists($normalized)) {
+                return response()->file(Storage::disk('public')->path($normalized));
+            }
         }
 
-        if (Str::startsWith($normalized, 'public/')) {
-            $normalized = Str::after($normalized, 'public/');
-        }
+        $binary = is_resource($rawPath) ? stream_get_contents($rawPath) : $rawPath;
 
-        if (! Storage::disk('public')->exists($normalized)) {
+        if (! is_string($binary) || $binary === '') {
             abort(404);
         }
 
-        return response()->file(Storage::disk('public')->path($normalized));
+        $mimeType = (new \finfo(FILEINFO_MIME_TYPE))->buffer($binary) ?: 'application/octet-stream';
+
+        return response($binary, 200, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="identity-' . $agentApplication->id . '-' . $side . '"',
+        ]);
     }
 
     public function requestItemImage(RequestItem $requestItem)
@@ -227,21 +248,34 @@ class AdminAuthController extends Controller
             abort(404);
         }
 
-        $normalized = ltrim($rawPath, '/');
+        if (is_string($rawPath)) {
+            $normalized = ltrim($rawPath, '/');
 
-        if (Str::startsWith($normalized, 'storage/')) {
-            $normalized = Str::after($normalized, 'storage/');
+            if (Str::startsWith($normalized, 'storage/')) {
+                $normalized = Str::after($normalized, 'storage/');
+            }
+
+            if (Str::startsWith($normalized, 'public/')) {
+                $normalized = Str::after($normalized, 'public/');
+            }
+
+            if (Storage::disk('public')->exists($normalized)) {
+                return response()->file(Storage::disk('public')->path($normalized));
+            }
         }
 
-        if (Str::startsWith($normalized, 'public/')) {
-            $normalized = Str::after($normalized, 'public/');
-        }
+        $binary = is_resource($rawPath) ? stream_get_contents($rawPath) : $rawPath;
 
-        if (! Storage::disk('public')->exists($normalized)) {
+        if (! is_string($binary) || $binary === '') {
             abort(404);
         }
 
-        return response()->file(Storage::disk('public')->path($normalized));
+        $mimeType = (new \finfo(FILEINFO_MIME_TYPE))->buffer($binary) ?: 'application/octet-stream';
+
+        return response($binary, 200, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="identity-' . $agentApplication->id . '-' . $side . '"',
+        ]);
     }
 
     public function logout(Request $request)

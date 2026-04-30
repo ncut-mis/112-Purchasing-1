@@ -550,6 +550,45 @@
             return wrapper ? wrapper.querySelectorAll('.edit-item-card:not(.hidden)') : [];
         }
 
+         function bindEditImageInput(input) {
+            if (!input || input.dataset.previewBound === '1') return;
+            input.dataset.previewBound = '1';
+
+            input.addEventListener('change', function () {
+                const card = input.closest('.edit-item-card');
+                if (!card) return;
+
+                const preview = card.querySelector('.edit-item-image-preview');
+                const status = card.querySelector('.edit-item-image-status');
+                const file = input.files && input.files[0] ? input.files[0] : null;
+
+                if (!preview || !status) return;
+
+                if (!file) {
+                    const originalSrc = preview.dataset.originalSrc || '';
+                    preview.src = originalSrc;
+                    status.textContent = '未重新上傳會保留原圖片';
+                    status.classList.remove('text-green-600');
+                    status.classList.add('text-gray-500');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    preview.src = e.target?.result || '';
+                    status.textContent = '已重新上傳圖片';
+                    status.classList.remove('text-gray-500');
+                    status.classList.add('text-green-600');
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function bindEditImageInputs(scope = document) {
+            scope.querySelectorAll('.edit-item-image-input').forEach(bindEditImageInput);
+        }
+
+
         function updateEditItemUi(wrapper) {
             if (!wrapper) return;
 
@@ -598,6 +637,11 @@
             list.insertAdjacentHTML('beforeend', html);
             wrapper.dataset.nextIndex = String(nextIndex + 1);
 
+             const addedCard = list.lastElementChild;
+            if (addedCard) {
+                bindEditImageInputs(addedCard);
+            }
+
             updateEditItemUi(wrapper);
         }
 
@@ -629,6 +673,7 @@
 
         document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.edit-items-wrapper').forEach(updateEditItemUi);
+              bindEditImageInputs();
             // 取得所有開頭為 followOrderModal- 的視窗
     const orderModals = document.querySelectorAll('[id^="followOrderModal-"]');
 

@@ -118,8 +118,8 @@
                                 <div class="mt-3">
                                     <p class="mb-2"><strong>身份證正面：</strong></p>
                                     @if($application->id_image_front)
-                                        <a href="{{ route('admin.agent-applications.identity-image', ['agentApplication' => $application->id, 'side' => 'front']) }}" target="_blank" rel="noopener noreferrer">
-                                            <img src="{{ route('admin.agent-applications.identity-image', ['agentApplication' => $application->id, 'side' => 'front']) }}"
+                                          <a href="{{ route('admin.agent-applications.identity-image', ['user' => $application->user_id, 'side' => 'front']) }}" target="_blank" rel="noopener noreferrer">
+                                            <img src="{{ route('admin.agent-applications.identity-image', ['user' => $application->user_id, 'side' => 'front']) }}"
                                                 alt="身份證正面"
                                                 class="img-fluid rounded border mb-3"
                                                 style="max-height: 150px; object-fit: contain;">
@@ -130,8 +130,8 @@
 
                                     <p class="mb-2"><strong>身份證背面：</strong></p>
                                     @if($application->id_image_back)
-                                        <a href="{{ route('admin.agent-applications.identity-image', ['agentApplication' => $application->id, 'side' => 'back']) }}" target="_blank" rel="noopener noreferrer">
-                                            <img src="{{ route('admin.agent-applications.identity-image', ['agentApplication' => $application->id, 'side' => 'back']) }}"
+                                        <a href="{{ route('admin.agent-applications.identity-image', ['user' => $application->user_id, 'side' => 'back']) }}" target="_blank" rel="noopener noreferrer">
+                                            <img src="{{ route('admin.agent-applications.identity-image', ['user' => $application->user_id, 'side' => 'back']) }}"
                                                 alt="身份證背面"
                                                 class="img-fluid rounded border"
                                                 style="max-height: 150px; object-fit: contain;">

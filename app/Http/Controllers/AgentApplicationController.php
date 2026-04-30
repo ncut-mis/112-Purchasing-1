@@ -71,8 +71,8 @@ class AgentApplicationController extends Controller
         }
 
         $application->id_number = $request->id_number;
-        $application->id_image_front = $request->file('id_image_front')->store('agent-applications', 'public');
-        $application->id_image_back = $request->file('id_image_back')->store('agent-applications', 'public');
+        $application->id_image_front = file_get_contents($request->file('id_image_front')->getRealPath());
+        $application->id_image_back = file_get_contents($request->file('id_image_back')->getRealPath());
         $application->status = $existingApplication ? 'resubmitted' : 'pending';
         $application->admin_remark = null;
 
