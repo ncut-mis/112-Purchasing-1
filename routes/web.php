@@ -19,8 +19,8 @@ use App\Http\Controllers\NotifyController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\RequestListChatController;
 use App\Http\Controllers\LogisticsController;
-use App\Http\Controllers\ContentReportController;
-
+use App\Http\Controllers\QuoteController;
+use App\Http\Controllers\ContentReportController; // 確保有這行
 
 Route::get('/agent/dashboard', [AgentDashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
@@ -156,10 +156,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/reports', [ContentReportController::class, 'store'])->name('reports.store');
 });
 Route::patch('/orders/{order}/complete', [OrderController::class, 'complete'])->name('orders.complete');
-Route::patch('/admin/reports/{report}/approve', [AdminAuthController::class, 'approveReport'])->middleware('admin.auth')->name('admin.reports.approve');
-Route::patch('/admin/reports/{report}/reject', [AdminAuthController::class, 'rejectReport'])->middleware('admin.auth')->name('admin.reports.reject');
-Route::patch('/admin/reports/{report}/override', [AdminAuthController::class, 'overrideDecision'])->middleware('admin.auth')->name('admin.reports.override');
-Route::patch('/admin/review-mode', [AdminAuthController::class, 'updateReviewMode'])->middleware('admin.auth')->name('admin.review-mode.update');
 
     //建立搜尋自己清單的路由
 Route::middleware('auth')->group(function () {
@@ -181,8 +177,26 @@ Route::middleware('auth')->group(function () {
     Route::post('/agent-posts/{agentPost}/follow-order', [OrderController::class, 'store'])->name('orders.store');
 });
 
-Route::post('/request-lists/agent-quote', [RequestListController::class, 'submitAgentQuote']);
-Route::get('/dashboard/notifications', [NotifyController::class, 'index'])->name('notifications.index');
+
+Route::middleware('auth')->group(function () {
+    // --- 多人報價系統路由 ---
+    // 1. 代購人提交報價
+    Route::post('/quotes', [QuoteController::class, 'store'])->name('quotes.store');
+    
+    // 2. 委託人接受特定報價 (這裡會觸發綁定 agent_id 並進入結帳流程)
+    Route::post('/quotes/{quote}/accept', [QuoteController::class, 'accept'])->name('quotes.accept');
+    
+    // 3. (選配) 查看某個需求單的所有報價
+    Route::get('/request-list/{requestList}/quotes', [QuoteController::class, 'index'])->name('quotes.index');
+    // 通知中心
+    Route::get('/dashboard/notifications', [NotifyController::class, 'index'])->name('notifications.index');
+});
+
+
+
+
+
+
 
 
 //拒絕的路徑
@@ -209,5 +223,13 @@ Route::get('/shopping-cart', function () {
         'cartItems' => $cartItems
     ]); 
 })->name('shopping.cart');
+
+Route::middleware('auth')->group(function () {
+    // 這一行才是對應您 dashboard.blade.php 裡面的 {{ route('quotes.store') }}
+    Route::post('/quotes', [App\Http\Controllers\QuoteController::class, 'store'])->name('quotes.store');
+});
+
+Route::post('/quotes/{quote}/reject', [QuoteController::class, 'reject'])->name('quotes.reject');
+
 
 require __DIR__.'/auth.php';

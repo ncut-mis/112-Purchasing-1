@@ -158,6 +158,7 @@ class DashboardController extends Controller
                             'occurred_at' => $requestList->updated_at,
                             'created_at' => $requestList->created_at,
                             'raw' => $requestList,
+
                         ];
                     });
             }
@@ -224,7 +225,14 @@ class DashboardController extends Controller
             'favorite_posts' => count($favoriteAgentPostIds),
             'reviews_score' => '4.9 / 5',
         ];
-
+        // --- 9. 新增：獲取報價列表 (供通知中心使用) ---
+                // 抓出屬於使用者的請購單所收到的所有報價，並預載入相關資料
+                 $offers = \App\Models\Quote::whereHas('requestList', function($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                })
+                ->with(['user', 'requestList.items']) 
+                ->latest()
+                ->get();
         return view('dashboard', compact(
             'requestLists',
             'favoriteAgentPosts',
@@ -235,7 +243,8 @@ class DashboardController extends Controller
             'offeredRequests',
             'myWorkingOrders',
             'historyRecords',
-            'currentHistoryType'
+            'currentHistoryType',
+            'offers' // <--- 務必確保這個變數有傳入 view
         ));
     }
 }

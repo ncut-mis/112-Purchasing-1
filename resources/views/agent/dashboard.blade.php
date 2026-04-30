@@ -99,35 +99,31 @@
         this.availableTime = '';
     },
 submitQuote() {
-    // 1. 計算所有商品的總額 (將每個 item 的 agent_quote 加起來)
+    // 1. 計算總額
     const total = this.selectedRequest.items.reduce((sum, item) => {
         const unitPrice = parseFloat(item.agent_quote) || 0;
         const quantity = parseInt(item.quantity, 10) || 0;
         return sum + (unitPrice * quantity);
     }, 0);
     
-    // 2. 驗證：檢查總額是否大於 0 以及是否有填寫時段
     if (total <= 0 || !this.availableTime.trim()) {
         alert('請針對商品填寫報價與可代購時段');
         return;
     }
     
-    // 3. 準備 Payload
+    // 2. 準備 Payload (確保欄位名稱與 QuoteController 一致)
     const payload = {
-        id: this.selectedRequest.id,
-        agent_quote_total: total,        // 這是算出來的總分
+        request_list_id: this.selectedRequest.id, // 修改這裡：改名為 request_list_id 比較標準
+        agent_quote_total: total,
         time: this.availableTime.trim(),
-        // 把包含個別報價的 items 陣列也送過去
         items: this.selectedRequest.items.map(item => ({
             id: item.id,
             agent_quote: item.agent_quote
         }))
     };
     
-    console.log('準備送出報價:', payload);
-    
-    // 4. 執行 Fetch
-    fetch('/request-lists/agent-quote', { 
+    // 3. 執行 Fetch (修改 URL)
+    fetch('/quotes', { // <--- 確保這路徑對應到 QuoteController@store
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -143,12 +139,12 @@ submitQuote() {
             this.closeAll();
             window.location.reload(); 
         } else {
+            // 這裡會抓到 Controller 傳回來的「重複報價」或「驗證失敗」訊息
             throw new Error(data.message || '送出失敗');
         }
     })
     .catch(error => {
-        console.error('送出失敗:', error);
-        alert('送出失敗：' + error.message);
+        alert(error.message);
     });
 }
 }" @keydown.escape.window="closeAll()" class="py-12 bg-gray-50 min-h-screen">
@@ -290,38 +286,53 @@ submitQuote() {
                     </div>
 
                     {{-- 右側：按鈕邏輯 --}}
-                    <div class="flex items-center">
-                        @if($isOwner)
-                            {{-- 1. 自己的單 --}}
-                            <span class="text-[10px] px-2 py-1 bg-red-50 text-red-400 rounded-lg font-bold">無法接取本人的清單</span>
-                        @elseif($requestList->people)
-                            {{-- 2. 已經有人承接 --}}
-                            @if($requestList->status === 'offered' || $requestList->status === 'matched')
-                                {{-- 只有在有人承接的狀態下，才去分「我」還是「別人」 --}}
-                                @if((int)$requestList->people === (int)auth()->id())
-                                    <a href="{{ route('request-list.chat.show', $requestList) }}"  
-                                    class="px-4 py-2 bg-green-500 text-white rounded-xl text-xs font-bold hover:bg-green-600 transition shadow-sm">
-                                    聊一聊
-                                    </a>
-                                @else
-                                    <span class="text-[10px] px-2 py-1 bg-gray-100 text-gray-400 rounded-lg font-bold">已被承接</span>
-                                @endif
-                            @else   
-                                {{-- 如果狀態是 pending 或其他，顯示原始的按鈕（例如：我要報價） --}}
-                                <button type="button" @click="openDetail(@js($orderData))"
-                                    class="px-5 py-2 bg-indigo-600 text-white rounded-xl font-bold text-xs hover:bg-indigo-700 transition shadow-md shadow-indigo-100 active:scale-95 flex items-center gap-1">
-                                <i class="bi bi-cart-plus"></i> 查看詳情
-                                </button>
-                            @endif
-                        @else
-                            {{-- 3. 開放接單：呼叫 JS 函數處理獨立報價 --}}
-                            <button type="button" @click="openDetail(@js($orderData))"
-                                    class="px-5 py-2 bg-indigo-600 text-white rounded-xl font-bold text-xs hover:bg-indigo-700 transition shadow-md shadow-indigo-100 active:scale-95 flex items-center gap-1">
-                                <i class="bi bi-cart-plus"></i> 查看詳情
+                   
+              <div class="flex items-center">
+                    @php
+                        // 1. 檢查當前登入者是否已經對此單報過價 (對齊 QuoteController 的邏輯)
+                        // 這裡假設你的 RequestList Model 關聯名稱是 offers
+                        $myQuote = $requestList->offers->where('user_id', auth()->id())->first();
+                    @endphp
+
+                    @if($isOwner)
+                        {{-- 狀況 A：如果是案主本人 --}}
+                        @if($requestList->offers->count() > 0)
+                            {{-- 有人報價了，顯示查看報價按鈕 --}}
+                            <button type="button" @click="openQuoteList(@js($requestList->id))"
+                                class="px-5 py-2 bg-orange-500 text-white rounded-xl font-bold text-xs hover:bg-orange-600 transition shadow-md flex items-center gap-1">
+                                <i class="bi bi-people-fill"></i> 查看報價 ({{ $requestList->offers->count() }})
                             </button>
+                        @else
+                            <span class="text-[10px] px-2 py-1 bg-red-50 text-red-400 rounded-lg font-bold">無法接取本人的清單</span>
                         @endif
-                    </div>
+
+                    @elseif($myQuote)
+                        {{-- 狀況 B：如果是代購，且「已經報價過」 --}}
+                        <button type="button" disabled
+                            class="px-5 py-2 bg-green-600 text-white rounded-xl font-bold text-xs opacity-80 cursor-default flex items-center gap-1">
+                            <i class="bi bi-check-circle"></i> 已報價
+                        </button>
+
+                    @elseif($requestList->people)
+                        {{-- 狀況 C：這張單子已經「成交」了 (people 欄位已有 ID) --}}
+                        @if((int)$requestList->people === (int)auth()->id())
+                            <a href="{{ route('request-list.chat.show', $requestList) }}"  
+                            class="px-4 py-2 bg-green-500 text-white rounded-xl text-xs font-bold hover:bg-green-600 transition shadow-sm">
+                            聊一聊
+                            </a>
+                        @else
+                            <span class="text-[10px] px-2 py-1 bg-gray-100 text-gray-400 rounded-lg font-bold">已被承接</span>
+                        @endif
+
+                    @else
+                        {{-- 狀況 D：開放報價狀態 --}}
+                        <button type="button" @click="openDetail(@js($orderData))"
+                            class="px-5 py-2 bg-indigo-600 text-white rounded-xl font-bold text-xs hover:bg-indigo-700 transition shadow-md shadow-indigo-100 active:scale-95 flex items-center gap-1">
+                            <i class="bi bi-cart-plus"></i> 我要報價
+                        </button>
+                    @endif
                 </div>
+                                </div>
             </div>
 
             <div id="request-report-modal-{{ $requestList->id }}" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60">
