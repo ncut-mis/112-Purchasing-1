@@ -55,6 +55,8 @@ Route::get('/admin/request-items/{requestItem}/image', [AdminAuthController::cla
 
 Route::delete('/admin/request-lists/{requestList}', [AdminAuthController::class, 'deleteRequestList'])->middleware('admin.auth')->name('admin.request-lists.delete');
 Route::delete('/admin/agent-posts/{agentPost}', [AdminAuthController::class, 'deleteAgentPost'])->middleware('admin.auth')->name('admin.agent-posts.delete');
+Route::patch('/admin/review-mode', [AdminAuthController::class, 'updateReviewMode'])->middleware('admin.auth')->name('admin.review-mode.update');
+Route::patch('/admin/reports/{report}/override', [AdminAuthController::class, 'overrideDecision'])->middleware('admin.auth')->name('admin.reports.override');
 Route::middleware('auth')->get('/api/latest-orders', [DashboardController::class, 'getLatestOrders'])->name('api.orders.latest');
 
 Route::get('/', function () {
