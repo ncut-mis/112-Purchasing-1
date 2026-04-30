@@ -16,10 +16,16 @@ class AgentDashboardController extends Controller
     public function index(Request $request)
     {
         // 1. 初始化查詢
-        $query = RequestList::with(['items', 'user'])
-            ->where('status', 'pending')
-            ->whereDate('deadline', '>=', now()->toDateString())
-            ->latest();
+        $query = RequestList::with(['items', 'user', 'offers'])
+        // 狀態：顯示等待中 (pending) 與 有人報價但尚未成交 (offered) 的單子
+        ->whereIn('status', ['pending', 'offered']) 
+        // 時間：截止日期必須大於或等於今天 (未過期)
+        ->whereDate('deadline', '>=', now()->toDateString())
+        // 排除已成交的單子 (people 欄位為空表示還沒人接單)
+        ->whereNull('people')
+        // Laravel 預設有 SoftDeletes 就會排除已刪除的，
+        // 若要保險一點或沒用 SoftDeletes 可加上 ->whereNull('deleted_at')
+        ->latest();
 
         // 2. 處理關鍵字搜尋
         $keyword = trim((string) $request->query('q', ''));
