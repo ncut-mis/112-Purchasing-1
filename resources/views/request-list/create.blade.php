@@ -23,9 +23,34 @@
                             </div>
                             <p class="text-muted small mb-3" id="item-limit-hint">可再新增 2 筆商品。</p>
 
+                            <style>
+                                .image-preview-wrapper {
+                                    display: flex;
+                                    gap: 8px;
+                                    align-items: flex-end;
+                                }
+                                .image-preview {
+                                    width: 100px;
+                                    height: 100px;
+                                    background-color: #e9ecef;
+                                    border: 2px solid #dee2e6;
+                                    border-radius: 8px;
+                                    display: block;
+                                    overflow: hidden;
+                                    object-fit: contain;
+                                    padding: 4px;
+                                    box-sizing: border-box;
+                                    flex-shrink: 0;
+                                }
+                                .image-preview.has-image {
+                                    background-color: #fff;
+                                    border: 2px solid #dee2e6;
+                                }
+                            </style>
+
                             <div id="item-list">
                                 <div class="row g-3 align-items-end mb-3 item-row" data-index="0">
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <label class="form-label fw-semibold">商品名稱</label>
                                         <input type="text" class="form-control" name="items[0][item_name]" placeholder="請輸入商品名稱">
                                     </div>
@@ -33,12 +58,15 @@
                                         <label class="form-label fw-semibold">數量</label>
                                         <input type="number" class="form-control" name="items[0][quantity]" min="1" value="1">
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-2">
                                         <label class="form-label fw-semibold">商品圖片</label>
-                                        <input type="file" class="form-control" name="items[0][item_image]" accept="image/*">
+                                        <input type="file" class="form-control item-image-input" name="items[0][item_image]" accept="image/*">
                                     </div>
-                                    <div class="col-md-1">
-                                        <button type="button" class="btn btn-outline-danger w-100 remove-item-btn" disabled>刪除</button>
+                                    <div class="col-md-3">
+                                        <div class="image-preview-wrapper">
+                                            <button type="button" class="btn btn-outline-danger remove-item-btn" disabled>刪除</button>
+                                            <img class="image-preview" src="" alt="預覽">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -112,7 +140,7 @@
             row.className = 'row g-3 align-items-end mb-3 item-row';
             row.setAttribute('data-index', index);
             row.innerHTML = `
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label fw-semibold">商品名稱</label>
                     <input type="text" class="form-control" name="items[${index}][item_name]" placeholder="請輸入商品名稱" required>
                 </div>
@@ -120,15 +148,23 @@
                     <label class="form-label fw-semibold">數量</label>
                     <input type="number" class="form-control" name="items[${index}][quantity]" min="1" value="1" required>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label fw-semibold">商品圖片</label>
-                    <input type="file" class="form-control" name="items[${index}][item_image]" accept="image/*">
+                    <input type="file" class="form-control item-image-input" name="items[${index}][item_image]" accept="image/*">
                 </div>
-                <div class="col-md-1">
-                    <button type="button" class="btn btn-outline-danger w-100 remove-item-btn">刪除</button>
+                <div class="col-md-3">
+                    <div class="image-preview-wrapper">
+                        <button type="button" class="btn btn-outline-danger remove-item-btn">刪除</button>
+                        <img class="image-preview" src="" alt="預覽">
+                    </div>
                 </div>
             `;
             itemList.appendChild(row);
+            
+            // 為新的圖片輸入框添加預覽監聽
+            const newImageInput = row.querySelector('.item-image-input');
+            newImageInput.addEventListener('change', handleImagePreview);
+            
             updateUiState();
         });
 
@@ -138,6 +174,29 @@
                 updateIndexes();
                 updateUiState();
             }
+        });
+
+        // 圖片預覽函數
+        function handleImagePreview(event) {
+            const file = event.target.files[0];
+            const preview = event.target.closest('.item-row').querySelector('.image-preview');
+            
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.classList.add('has-image');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.src = '';
+                preview.classList.remove('has-image');
+            }
+        }
+
+        // 為所有現有的圖片輸入框綁定預覽事件
+        itemList.querySelectorAll('.item-image-input').forEach(input => {
+            input.addEventListener('change', handleImagePreview);
         });
 
         function updateIndexes() {
