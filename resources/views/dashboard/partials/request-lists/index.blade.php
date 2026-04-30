@@ -1,4 +1,4 @@
-                         <div class="flex justify-between items-center mb-6">
+<div class="flex justify-between items-center mb-6">
 
                             <h3 class="text-lg font-bold text-gray-800">目前請託單</h3>
 
@@ -449,7 +449,7 @@
                                             </div>
 
                                             <form method="POST"
-                                                  action="{{ route('request-list.chat.store', $requestList) }}"
+                                                  action="{{ route('request-list.chat.send', $requestList) }}"
                                                   class="request-chat-form flex items-center gap-2 border-t border-slate-200 px-4 py-3"
                                                   data-request-list-id="{{ $requestList->id }}">
                                                 @csrf

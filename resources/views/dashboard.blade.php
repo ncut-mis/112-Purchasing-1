@@ -144,6 +144,7 @@
         </div>
     </div>
 
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
     <script>
         const dashboardFavoriteToggleUrl = @json(route('favorite.toggle'));
         const dashboardCsrfToken = @json(csrf_token());
@@ -396,53 +397,6 @@
             messagesBox.scrollTop = messagesBox.scrollHeight;
         }
 
-        document.addEventListener('submit', async (event) => {
-            const form = event.target.closest('.request-chat-form');
-            if (!form) {
-                return;
-            }
-
-            event.preventDefault();
-
-            const input = form.querySelector('input[name="body"]');
-            const submitButton = form.querySelector('button[type="submit"]');
-            const requestListId = form.dataset.requestListId;
-            const messageText = (input?.value || '').trim();
-
-            if (!messageText || !submitButton) {
-                return;
-            }
-
-            submitButton.disabled = true;
-            const originalText = submitButton.textContent;
-            submitButton.textContent = '送出中...';
-
-            try {
-                const response = await fetch(form.action, {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': dashboardCsrfToken,
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                    body: new FormData(form),
-                });
-
-                const payload = await response.json().catch(() => ({}));
-                if (!response.ok || payload.status !== 'success') {
-                    throw new Error(payload?.message || '訊息送出失敗');
-                }
-
-                appendRequestChatMessage(requestListId, payload.message);
-                input.value = '';
-                input.focus();
-            } catch (error) {
-                alert(error.message || '訊息送出失敗，請稍後再試。');
-            } finally {
-                submitButton.disabled = false;
-                submitButton.textContent = originalText || '送出';
-            }
-        });
 
         const favoriteUnfavoriteModal = document.getElementById('favorite-unfavorite-modal');
         const favoriteUnfavoriteCancelButton = document.getElementById('favorite-unfavorite-cancel');
@@ -801,6 +755,144 @@
 
 
 
+
+
+        // ── 請購單內嵌聊天 JS ─────────────────────────────────
+
+        function openRequestChatModal(id) {
+            const modal = document.getElementById(`request-chat-modal-${id}`);
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.classList.add('overflow-hidden');
+            // 捲到最底
+            const box = document.getElementById(`request-chat-messages-${id}`);
+            if (box) box.scrollTop = box.scrollHeight;
+        }
+
+        function closeRequestChatModal(id) {
+            const modal = document.getElementById(`request-chat-modal-${id}`);
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        function handleRequestChatBackdrop(event, id) {
+            if (event.target.id === `request-chat-modal-${id}`) {
+                closeRequestChatModal(id);
+            }
+        }
+
+        function appendRequestChatMessage(requestListId, message) {
+            const box = document.getElementById(`request-chat-messages-${requestListId}`);
+            if (!box || !message) return;
+
+            const row = document.createElement('div');
+            row.className = 'mb-3 flex justify-end';
+            row.innerHTML = `
+                <div class="max-w-[75%]">
+                    <div class="rounded-xl border px-3 py-2 bg-emerald-100 border-emerald-200">
+                        <p class="text-xs text-slate-500">${message.name ?? ''}</p>
+                        <p class="mt-1 text-sm text-slate-800 break-words"></p>
+                    </div>
+                    <p class="mt-1 text-xs text-slate-500 text-right">${message.time ?? ''}</p>
+                </div>
+            `;
+            const bodyNode = row.querySelector('.break-words');
+            if (bodyNode) bodyNode.textContent = message.text ?? '';
+
+            // 移除「尚無訊息」提示
+            const empty = box.querySelector('p.py-12');
+            if (empty) empty.remove();
+
+            box.appendChild(row);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        // 攔截所有 .request-chat-form 的送出
+        document.addEventListener('submit', async (event) => {
+            const form = event.target.closest('.request-chat-form');
+            if (!form) return;
+
+            event.preventDefault();
+
+            const input = form.querySelector('input[name="body"]');
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const requestListId = form.dataset.requestListId;
+            const text = (input?.value || '').trim();
+
+            if (!text) return;
+
+            submitBtn.disabled = true;
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = '送出中...';
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content'),
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: new FormData(form),
+                });
+
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(payload?.message || '訊息送出失敗');
+                }
+
+                appendRequestChatMessage(requestListId, payload);
+                input.value = '';
+                input.focus();
+
+            } catch (error) {
+                alert(error.message || '訊息送出失敗，請稍後再試。');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText || '送出';
+            }
+        });
+
+        // ── Pusher 即時接收訊息 ───────────────────────────────
+        const pusher = new Pusher('{{ config("broadcasting.connections.pusher.key") }}', {
+            cluster: '{{ config("broadcasting.connections.pusher.options.cluster") }}',
+            forceTLS: true,
+            authEndpoint: '/broadcasting/auth',
+            auth: {
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+                }
+            }
+        });
+
+        const myChannel = pusher.subscribe('private-chat.{{ Auth::id() }}');
+        myChannel.bind('message.sent', function (data) {
+            // 找到對應的聊天視窗並顯示訊息
+            const box = document.getElementById(`request-chat-messages-${data.requestListId}`);
+            if (!box) return; // 這張單的聊天視窗不在畫面上就忽略
+
+            const row = document.createElement('div');
+            row.className = 'mb-3 flex justify-start';
+            row.innerHTML = `
+                <div class="max-w-[75%]">
+                    <div class="rounded-xl border px-3 py-2 bg-white border-slate-200">
+                        <p class="text-xs text-slate-500">${data.userName}</p>
+                        <p class="mt-1 text-sm text-slate-800 break-words"></p>
+                    </div>
+                    <p class="mt-1 text-xs text-slate-500 text-left">${data.time}</p>
+                </div>
+            `;
+            row.querySelector('.break-words').textContent = data.messageContent;
+
+            const empty = box.querySelector('p.py-12');
+            if (empty) empty.remove();
+
+            box.appendChild(row);
+            box.scrollTop = box.scrollHeight;
+        });
 
     </script>
 

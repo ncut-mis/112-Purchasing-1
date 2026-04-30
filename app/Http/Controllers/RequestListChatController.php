@@ -1,105 +1,101 @@
 <?php
-
+ 
 namespace App\Http\Controllers;
-
+ 
+use App\Events\MessageSent;
 use App\Models\Message;
 use App\Models\RequestList;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
-
+use Illuminate\Support\Facades\Auth;
+ 
 class RequestListChatController extends Controller
 {
-    public function show(Request $request, RequestList $requestList): View
+    // 顯示聊天頁面
+    public function show(RequestList $requestList)
     {
-        $userId = (int) $request->user()->id;
-        $this->authorizeChat($requestList, $userId);
-
-        $messages = Message::where('request_list_id', $requestList->id)
-            ->where(function ($query) use ($requestList) {
-                $query->where(function ($inner) use ($requestList) {
-                    $inner->where('sender_id', $requestList->user_id)
-                        ->where('receiver_id', $requestList->people);
-                })->orWhere(function ($inner) use ($requestList) {
-                    $inner->where('sender_id', $requestList->people)
-                        ->where('receiver_id', $requestList->user_id);
-                });
-            })
-            ->with(['sender:id,name'])
+        $user = Auth::user();
+ 
+        // 只有請託人或承接代購人才能進入
+        $isBuyer = (int) $requestList->user_id === $user->id;
+        $isAgent = (int) $requestList->people  === $user->id;
+ 
+        if (!$isBuyer && !$isAgent) {
+            abort(403, '您沒有權限查看此聊天室。');
+        }
+ 
+        // 對方是誰
+        $partner = $isBuyer
+            ? $requestList->agent   // 我是請託人，對方是代購人
+            : $requestList->user;   // 我是代購人，對方是請託人
+ 
+        if (!$partner) {
+            abort(404, '找不到聊天對象。');
+        }
+ 
+        // 載入歷史訊息
+        $messages = Message::with('sender')
+            ->where('request_list_id', $requestList->id)
             ->orderBy('created_at')
-            ->get();
-
-        return view('request-list.chat', [
-            'requestList' => $requestList,
-            'messages' => $messages,
-        ]);
+            ->get()
+            ->map(fn($m) => [
+                'id'     => $m->id,
+                'sender' => $m->sender_id === $user->id ? 'me' : 'other',
+                'name'   => $m->sender->name,
+                'text'   => $m->body,
+                'time'   => $m->created_at->format('H:i'),
+            ]);
+ 
+        // 標記已讀
+        Message::where('request_list_id', $requestList->id)
+            ->where('receiver_id', $user->id)
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+ 
+        return view('messages.chat', compact('requestList', 'partner', 'messages', 'isBuyer'));
     }
-
-    public function store(Request $request, RequestList $requestList): JsonResponse|RedirectResponse
+ 
+    // 傳送訊息
+    public function send(Request $request, RequestList $requestList)
     {
-        $userId = (int) $request->user()->id;
-        $this->authorizeChat($requestList, $userId);
-
-        $validated = $request->validate([
-            'body' => ['required', 'string', 'max:2000'],
-        ]);
-
-        $receiverId = $userId === (int) $requestList->user_id
-            ? (int) $requestList->people
-            : (int) $requestList->user_id;
-
+        $user = Auth::user();
+ 
+        $isBuyer = (int) $requestList->user_id === $user->id;
+        $isAgent = (int) $requestList->people  === $user->id;
+ 
+        if (!$isBuyer && !$isAgent) {
+            abort(403);
+        }
+ 
+        $request->validate(['body' => 'required|string|max:1000']);
+ 
+        $receiverId = $isBuyer
+            ? $requestList->people      // 請託人傳給代購人
+            : $requestList->user_id;    // 代購人傳給請託人
+ 
         $message = Message::create([
             'request_list_id' => $requestList->id,
-            'sender_id' => $userId,
-            'receiver_id' => $receiverId,
-            'body' => trim($validated['body']),
+            'sender_id'       => $user->id,
+            'receiver_id'     => $receiverId,
+            'body'            => $request->body,
         ]);
-
-        if ($request->expectsJson()) {
-            return response()->json([
-                'status' => 'success',
-                'message' => [
-                    'id' => $message->id,
-                    'sender_id' => $message->sender_id,
-                    'sender_name' => $request->user()->name,
-                    'body' => $message->body,
-                    'created_at' => optional($message->created_at)->format('Y-m-d H:i'),
-                ],
-            ]);
-        }
-
-        return redirect()->route('request-list.chat.show', $requestList);
+ 
+        // 廣播給對方
+        broadcast(new MessageSent(
+            $user->name,
+            $request->body,
+            $user->id,
+            $receiverId,
+            $message->id,
+            $message->created_at->format('H:i'),
+            $requestList->id,
+        ))->toOthers();
+ 
+        return response()->json([
+            'id'     => $message->id,
+            'sender' => 'me',
+            'name'   => $user->name,
+            'text'   => $message->body,
+            'time'   => $message->created_at->format('H:i'),
+        ]);
     }
-
-    private function authorizeChat(RequestList $requestList, int $userId): void
-    {
-        $ownerId = (int) $requestList->user_id;
-        $agentId = (int) ($requestList->people ?? 0);
-
-        abort_if($agentId < 1, 403, '此請購清單尚未有接單代購人，無法聊天。');
-
-        $isParticipant = in_array($userId, [$ownerId, $agentId], true);
-        abort_unless($isParticipant, 403);
-    }
-        public function reject($id)
-        {
-            $request = RequestList::findOrFail($id);
-
-            // 1. 修正欄位名稱：將 agent_id 移除，因為你的表中沒有這個欄位
-            $request->status = 'pending';
-            $request->people = null;  // 這是你用來存放承接人 ID 的欄位
-            $request->time = null;    // 清除時間訊息
-            $request->agent_quote_total = 0; // 重置金額
-
-            // 2. 儲存變更
-            $request->save();
-
-            // 3. 同步清除商品明細的單價
-            if ($request->items) {
-                $request->items()->update(['expected_price' => null]);
-            }
-
-            return back()->with('success', '已拒絕報價，單據已恢復徵求狀態。');
-        }
 }

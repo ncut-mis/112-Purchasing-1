@@ -562,7 +562,7 @@
                                             </div>
 
                                             <form method="POST"
-                                                  action="{{ route('request-list.chat.store', $requestList) }}"
+                                                  action="{{ route('request-list.chat.send', $requestList) }}"
                                                   class="agent-request-chat-form flex items-center gap-2 border-t border-gray-200 px-4 py-3"
                                                   data-request-list-id="{{ $requestList->id }}">
                                                 @csrf
@@ -876,6 +876,7 @@
         });
     </script>
 
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
     <script>
         function openAgentRequestChatModal(id) {
             const modal = document.getElementById(`agent-request-chat-modal-${id}`);
@@ -921,16 +922,16 @@
             row.innerHTML = `
                 <div class="max-w-[75%]">
                     <div class="rounded-xl border px-3 py-2 bg-indigo-100 border-indigo-200">
-                        <p class="text-xs text-gray-500">${message.sender_name ?? ''}</p>
+                        <p class="text-xs text-gray-500">${message.name ?? message.sender_name ?? ''}</p>
                         <p class="mt-1 text-sm text-gray-800 break-words"></p>
                     </div>
-                    <p class="mt-1 text-xs text-gray-500 text-right">${message.created_at ?? ''}</p>
+                    <p class="mt-1 text-xs text-gray-500 text-right">${message.time ?? message.created_at ?? ''}</p>
                 </div>
             `;
 
             const bodyNode = row.querySelector('.break-words');
             if (bodyNode) {
-                bodyNode.textContent = message.body ?? '';
+                bodyNode.textContent = message.text ?? message.body ?? '';
             }
 
             const emptyState = messagesBox.querySelector('.agent-request-chat-empty');
@@ -975,11 +976,11 @@
                 });
 
                 const payload = await response.json().catch(() => ({}));
-                if (!response.ok || payload.status !== 'success') {
+                if (!response.ok) {
                     throw new Error(payload?.message || '訊息送出失敗');
                 }
 
-                appendAgentRequestChatMessage(requestListId, payload.message);
+                appendAgentRequestChatMessage(requestListId, payload);
                 input.value = '';
                 input.focus();
             } catch (error) {
@@ -1003,5 +1004,43 @@
                 }
             });
         });
+
+        // ── Pusher 即時接收訊息 ───────────────────────────────
+        const pusher = new Pusher('{{ config("broadcasting.connections.pusher.key") }}', {
+            cluster: '{{ config("broadcasting.connections.pusher.options.cluster") }}',
+            forceTLS: true,
+            authEndpoint: '/broadcasting/auth',
+            auth: {
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+                }
+            }
+        });
+
+        const myChannel = pusher.subscribe('private-chat.{{ Auth::id() }}');
+        myChannel.bind('message.sent', function (data) {
+            const box = document.getElementById(`agent-request-chat-messages-${data.requestListId}`);
+            if (!box) return;
+
+            const row = document.createElement('div');
+            row.className = 'mb-3 flex justify-start';
+            row.innerHTML = `
+                <div class="max-w-[75%]">
+                    <div class="rounded-xl border px-3 py-2 bg-white border-gray-200">
+                        <p class="text-xs text-gray-500">${data.userName}</p>
+                        <p class="mt-1 text-sm text-gray-800 break-words"></p>
+                    </div>
+                    <p class="mt-1 text-xs text-gray-500 text-left">${data.time}</p>
+                </div>
+            `;
+            row.querySelector('.break-words').textContent = data.messageContent;
+
+            const empty = box.querySelector('.agent-request-chat-empty');
+            if (empty) empty.remove();
+
+            box.appendChild(row);
+            box.scrollTop = box.scrollHeight;
+        });
+
     </script>
 </x-app-layout>

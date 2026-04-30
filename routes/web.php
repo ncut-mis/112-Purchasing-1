@@ -20,7 +20,7 @@ use App\Http\Controllers\MessageController;
 use App\Http\Controllers\RequestListChatController;
 use App\Http\Controllers\LogisticsController;
 use App\Http\Controllers\ContentReportController;
-
+use App\Events\MessageSent;
 
 Route::get('/agent/dashboard', [AgentDashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
@@ -31,6 +31,14 @@ Route::get('/store', [ShopController::class, 'store'])->name('store');
 
 Route::get('/post-product-image/{postProduct}', [AgentPostController::class, 'image'])->name('post-product.image');
 
+ 
+Route::middleware(['auth'])->group(function () {
+ 
+    // 請購單聊天室（請託人 & 代購人共用同一個頁面）
+    Route::get('/request-list/{requestList}/chat',  [App\Http\Controllers\RequestListChatController::class, 'show'])->name('request-list.chat.show');
+    Route::post('/request-list/{requestList}/chat', [App\Http\Controllers\RequestListChatController::class, 'send'])->name('request-list.chat.send');
+ 
+});
 
 Route::get('/admin/dashboard', [AdminAuthController::class, 'dashboard'])->middleware('admin.auth')->name('admin.dashboard');
 Route::post('/admin/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
@@ -140,8 +148,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/request-list/{requestList}', [RequestListController::class, 'destroy'])->name('request-list.destroy');
     Route::get('/request-item-image/{requestItem}', [RequestListController::class, 'image'])->name('request-item.image');
 
-    Route::get('/request-list/{requestList}/chat', [RequestListChatController::class, 'show'])->name('request-list.chat.show');
-    Route::post('/request-list/{requestList}/chat', [RequestListChatController::class, 'store'])->name('request-list.chat.store');
+    // 聊天路由已統一在上方 auth 群組
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -185,10 +192,7 @@ Route::post('/request-lists/agent-quote', [RequestListController::class, 'submit
 Route::get('/dashboard/notifications', [NotifyController::class, 'index'])->name('notifications.index');
 
 
-//拒絕的路徑
-// 確保是 POST 方法，並且 ID 對應到你的需求單
-Route::post('/request-chat/{id}/reject', [RequestListChatController::class, 'reject'])
-    ->name('request.chat.reject');
+
 
 //物流設定路徑
 Route::middleware(['auth'])->prefix('dashboard/settings')->group(function () {
@@ -211,3 +215,16 @@ Route::get('/shopping-cart', function () {
 })->name('shopping.cart');
 
 require __DIR__.'/auth.php';
+
+
+
+// 1. 這是發送端：負責把訊息踢給 Pusher
+Route::get('/test-broadcast', function () {
+    // 這裡會觸發你寫好的 Event，它會自動找 .env 裡的 Pusher 設定
+    broadcast(new MessageSent('測試人員', '哈囉！這是從我的電腦發出的即時訊息'));
+    
+    return "訊息已送出！請回測試網頁查看。";
+});
+
+// 2. 這是接收端：顯示畫面的網頁
+Route::view('/chat-view', 'chat_test');
