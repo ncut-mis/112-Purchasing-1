@@ -37,4 +37,12 @@ class Quote extends Model
     {
         return $this->belongsTo(RequestList::class, 'request_list_id');
     }
+
+    /**
+     * 取得此報價的商品項目單價
+     */
+    public function quoteItems()
+    {
+        return $this->hasMany(QuoteItem::class);
+    }
 }

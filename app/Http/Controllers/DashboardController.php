@@ -28,7 +28,7 @@ class DashboardController extends Controller
 
 
         // --- 2. 需求列表 (RequestList) 邏輯 ---
-        $requestQuery = RequestList::with(['items', 'offers.agent'])->where('user_id', $user->id);
+        $requestQuery = RequestList::with(['items', 'offers.agent', 'quotes.user'])->where('user_id', $user->id);
 
         // 過濾狀態與日期（保留既有邏輯，僅排除已結案）
         $requestQuery->where('status', '!=', 'completed');

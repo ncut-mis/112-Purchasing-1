@@ -33,6 +33,12 @@ use App\Models\User;
             return $this->hasMany(RequestOffer::class);
         }
 
+        // 關聯：這張單收到的代購報價（Quote）
+        public function quotes()
+        {
+            return $this->hasMany(Quote::class);
+        }
+
         // 關聯：發起人
         public function user()
         {

@@ -46,7 +46,7 @@ Route::post('/admin/logout', [AdminAuthController::class, 'logout'])->name('admi
 Route::patch('/admin/agent-applications/{agentApplication}/approve', [AdminAuthController::class, 'approveAgentApplication'])->middleware('admin.auth')->name('admin.agent-applications.approve');
 Route::patch('/admin/agent-applications/{agentApplication}/reject', [AdminAuthController::class, 'rejectAgentApplication'])->middleware('admin.auth')->name('admin.agent-applications.reject');
 
-Route::get('/admin/agent-applications/{agentApplication}/identity-image/{side}', [AdminAuthController::class, 'identityImage'])
+Route::get('/admin/agent-applications/user/{user}/identity-image/{side}', [AdminAuthController::class, 'identityImage'])
     ->middleware('admin.auth')
     ->name('admin.agent-applications.identity-image');
 Route::get('/admin/request-items/{requestItem}/image', [AdminAuthController::class, 'requestItemImage'])

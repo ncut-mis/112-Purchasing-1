@@ -133,7 +133,13 @@
                                             </td>
 
                                             <td class="py-4 text-gray-500">{{ $countryLabel }}</td>
-                                            <td class="py-4 text-gray-800">{{ optional($requestList->deadline)->format('Y-m-d') ?? '-' }}</td>
+                                            <td class="py-4 text-gray-800">
+                                                @if(in_array($requestList->status, ['pending', 'offered'], true))
+                                                    <button type="button" class="text-blue-600 hover:underline cursor-pointer font-medium" onclick="openRequestCountdownModal({{ $requestList->id }})" title="點擊查看截止倒數">{{ optional($requestList->deadline)->format('Y-m-d') ?? '-' }}</button>
+                                                @else
+                                                    {{ optional($requestList->deadline)->format('Y-m-d') ?? '-' }}
+                                                @endif
+                                            </td>
                                             <td class="py-4">
                                                <span class="px-2 py-1 rounded-full text-[10px] {{ $statusClass }}">{{ $statusLabel }}</span>
                                             </td>
@@ -186,14 +192,7 @@
                                                             <button type="button" class="inline-flex items-center rounded-lg bg-green-400 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-green-500" onclick="openRequestChatModal({{ $requestList->id }})">聊天</button>
                                                         @else
                                                             <button type="button" class="inline-flex items-center rounded-lg bg-gray-300 px-4 py-2 text-xs font-semibold text-white cursor-not-allowed" disabled>聊天</button>
-                                                        @endif       
-                                                        <button
-                                                            type="button"
-                                                            class="inline-flex items-center rounded-lg bg-orange-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-600"onclick="openRequestCountdownModal({{ $requestList->id }})">
-                                                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                                           </svg>
-                                                        </button>
+                                                        @endif
                                                         <form method="POST" action="{{ route('request-list.complete', $requestList) }}" onsubmit="return confirm('是否已完成？');">
                                                             @csrf
                                                             @method('PATCH')
@@ -290,16 +289,7 @@
                                                                                 <a href="{{ $item->reference_url }}" target="_blank" rel="noopener noreferrer" class="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline">參考連結</a>
                                                                             @endif
                                                                         </div>
-                                                                        @if($requestList->status === 'offered')
-                                                                            <p class="mt-2 rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                                                                                代購人填寫單價：
-                                                                                @if(!is_null($item->expected_price))
-                                                                                    NT$ {{ number_format((float) $item->expected_price, 0) }}
-                                                                                @else
-                                                                                    未提供
-                                                                                @endif
-                                                                            </p>
-                                                                        @endif
+
                                                                     </div>
                                                                 </div>
                                                             @empty
@@ -345,7 +335,59 @@
 
                                                 <aside class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                                                     <h5 class="text-base font-bold text-slate-800">目前接單狀況</h5>
-                                                    @if($displayAgent)
+                                                    @php
+                                                        $pricedOffers = $requestList->offers->filter(function ($offer) {
+                                                            return !is_null($offer->offered_price);
+                                                        });
+                                                        $pricedQuotes = $requestList->quotes->filter(function ($quote) {
+                                                            return !is_null($quote->price);
+                                                        });
+                                                        $hasQuotedItems = $pricedOffers->isNotEmpty() || $pricedQuotes->isNotEmpty();
+                                                    @endphp
+
+                                                    @if($pricedQuotes->isNotEmpty())
+                                                        <div class="mt-4 space-y-4 rounded-2xl bg-white p-4 shadow-sm">
+                                                            @foreach($pricedQuotes as $quote)
+                                                                @php
+                                                                    // 獲取該報價的商品單價（如果表存在）
+                                                                    $quoteItemPrices = method_exists($quote, 'quoteItems') ? $quote->quoteItems->keyBy('request_item_id') : collect();
+                                                                @endphp
+                                                                <div class="rounded-2xl border border-slate-200 p-4">
+                                                                    <p class="text-base font-semibold text-slate-800">代購人：{{ $quote->user->name ?? '未知代購人' }}</p>
+                                                                    <div class="mt-3 text-xs text-slate-500 space-y-2">
+                                                                        @foreach($requestList->items as $item)
+                                                                            @php
+                                                                                $quotedPrice = $quoteItemPrices->get($item->id)?->unit_price ?? $item->expected_price ?? 0;
+                                                                            @endphp
+                                                                            <p>{{ $item->name }} 單價：NT$ {{ number_format($quotedPrice, 0) }}</p>
+                                                                        @endforeach
+                                                                        <p>可代購時段：{{ $quote->comment ?? '未提供' }}</p>
+  
+                                                                        <span class="inline-block mt-4 px-3 py-1 rounded-full text-[10px] bg-red-100 text-red-700">待確認</span>
+                                                                    </div>
+                                                                </div>
+                                                            @endforeach
+                                                        </div>
+                                                    @elseif($pricedOffers->isNotEmpty())
+                                                        <div class="mt-4 space-y-4 rounded-2xl bg-white p-4 shadow-sm">
+                                                            @foreach($pricedOffers as $offer)
+                                                                @php
+                                                                    $totalQty = max(1, $requestList->items->sum('quantity'));
+                                                                    $unitPrice = round((float) $offer->offered_price / $totalQty, 0);
+                                                                @endphp
+                                                                <div class="rounded-2xl border border-slate-200 p-4">
+                                                                    <p class="text-base font-semibold text-slate-800">代購人：{{ $offer->agent->name ?? '未知代購人' }}</p>
+                                                                    <div class="mt-2 text-sm text-slate-500 space-y-2">
+                                                                        @foreach($requestList->items as $item)
+                                                                            <p>{{ $item->name }} 單價：NT$ {{ number_format($item->expected_price ?? $unitPrice, 0) }}</p>
+                                                                        @endforeach
+                                                                        <p>可代購時段：{{ $quote->comment ?? '未提供' }}</p>
+                                                                        <p class="font-medium text-slate-700">待確認</p>
+                                                                    </div>
+                                                                </div>
+                                                            @endforeach
+                                                        </div>
+                                                    @elseif($displayAgent)
                                                         <div class="mt-4 rounded-2xl bg-white p-4 text-center shadow-sm">
                                                             <div class="mx-auto flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-4 border-blue-100 bg-slate-100">
                                                                 <img src="{{ $agentAvatar }}" alt="{{ $displayAgent->name }}" class="h-full w-full object-cover">
@@ -362,9 +404,6 @@
                                                                 </p>
                                                             @endif
                                                         </div>
-
-                                                       
-
                                                     @else
                                                         <div class="mt-4 rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center">
                                                             <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-2xl">🕒</div>

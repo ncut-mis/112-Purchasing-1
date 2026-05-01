@@ -114,7 +114,7 @@
                         {{-- 訊息內容... --}}
                     </div>
                     {{-- 發送區 --}}
-                    <form action="{{ route('request-list.chat.store', $noti->id) }}" method="POST" class="p-4 border-t flex gap-2">
+                    <form action="{{ route('request-list.chat.send', $noti->id) }}" method="POST" class="p-4 border-t flex gap-2">
                         @csrf
                         <input type="hidden" name="receiver_id" value="{{ $agent->id }}">
                         <input type="text" name="body" class="flex-1 border-gray-200 rounded-xl" placeholder="輸入訊息...">

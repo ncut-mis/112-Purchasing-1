@@ -2,9 +2,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Quote;
+use App\Models\QuoteItem;
 use App\Models\RequestList;
 use Illuminate\Http\Request; // 必須補上這行
 use Illuminate\Support\Facades\DB; // 必須補上這行
+use Illuminate\Support\Facades\Schema;
 
 class QuoteController extends Controller
 {
@@ -30,13 +32,24 @@ class QuoteController extends Controller
         }
 
         // 建立報價單 (不要更新 RequestList 的 people)
-        Quote::create([
+        $quote = Quote::create([
             'request_list_id' => $requestList->id,
             'user_id'         => auth()->id(),
             'price'           => $validated['agent_quote_total'],
             'comment'         => $validated['time'],
             'status'          => 'pending',
         ]);
+
+        // 儲存每個商品的單價（如果表存在）
+        if (\Illuminate\Support\Facades\Schema::hasTable('quote_items')) {
+            foreach ($validated['items'] as $item) {
+                QuoteItem::create([
+                    'quote_id' => $quote->id,
+                    'request_item_id' => $item['id'],
+                    'unit_price' => $item['agent_quote'],
+                ]);
+            }
+        }
 
         // 更新需求單狀態為「已有報價」
         $requestList->update(['status' => 'offered']);
