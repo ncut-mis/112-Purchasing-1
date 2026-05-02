@@ -46,6 +46,7 @@ return new class extends Migration
             // 記錄建立與更新時間
             $table->timestamps();
             
+            $table->string('category')->nullable();
             // 軟刪除 (Soft Delete)：刪除時不直接從資料庫消失，保留救援機會
             $table->softDeletes();
         });

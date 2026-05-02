@@ -23,6 +23,8 @@ return new class extends Migration
             $table->string('status')->default('pending'); // 狀態：pending, approved, rejected
             $table->text('admin_remark')->nullable();     // 管理員備註
             $table->timestamps();
+            $table->string('main_region')->nullable(); 
+            $table->text('experience')->nullable();
         });
     }
 
