@@ -37,7 +37,7 @@
 
                 <a href="{{ route('agent.member') }}" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 border border-transparent rounded-full text-sm font-bold text-white hover:bg-indigo-700 transition shadow-md">
                     <i class="bi bi-person-badge"></i>
-                    <span>會員專區</span>
+                    <span>代購人專區</span>
                 </a>
             </div>
         </div>
@@ -471,14 +471,25 @@ submitQuote() {
                                 </div>
                             </div>
                         </template>
-
-                        <div class="pt-2 pb-6">
+                        <!-- 修改：代購時段改為日曆選擇 -->
+                        <div class="pt-2">
                             <label class="block text-xs font-black text-gray-500 uppercase mb-3 tracking-widest flex items-center gap-2">
-                                <i class="bi bi-calendar-event text-indigo-500"></i> 請輸入可代購時段
+                                <i class="bi bi-calendar-check text-indigo-500"></i> 預計代購日期
                             </label>
-                            <textarea x-model="availableTime" rows="3" 
-                                class="w-full p-6 bg-white border-2 border-indigo-100 rounded-3xl text-sm font-bold text-gray-700 placeholder-gray-300 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-sm transition-all" 
-                                placeholder="例如：本週末於實體門市採買，預計下週一完成空運寄出"></textarea>
+                            <div class="relative">
+                                <input type="date" x-model="availableTime" 
+                                    class="w-full p-4 bg-white border-2 border-indigo-100 rounded-2xl text-sm font-bold text-gray-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-sm transition-all cursor-pointer">
+                        </div>
+                    </div>
+
+                    <!-- 報價備註 -->
+                    <div class="pt-4 pb-8">
+                        <label class="block text-xs font-black text-gray-500 uppercase mb-3 tracking-widest flex items-center gap-2">
+                            <i class="bi bi-chat-left-text text-indigo-500"></i> 報價備註 (選填)
+                        </label>
+                        <textarea x-model="quoteRemarks" rows="3" 
+                            class="w-full p-6 bg-white border-2 border-indigo-100 rounded-3xl text-sm font-bold text-gray-700 placeholder-gray-300 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-sm transition-all" 
+                            placeholder="例如：此報價不含運費。"></textarea>
                         </div>
                     </div>
 
