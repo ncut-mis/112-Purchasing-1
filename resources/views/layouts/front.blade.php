@@ -70,7 +70,49 @@
              filter: brightness(0) saturate(100%) invert(25%) sepia(100%) saturate(1000%) hue-rotate(120deg);
         }
 
+        /* 角色選擇按鈕 - 增強版樣式 */
+        .btn-role-option {
+            border-radius: 16px;
+            padding: 20px !important;
+            font-weight: 700 !important;
+            font-size: 1.1rem !important;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border-width: 2px !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
 
+        .btn-role-primary {
+            background-color: #56ab91;
+            border-color: #56ab91;
+            color: white;
+            box-shadow: 0 8px 20px rgba(86, 171, 145, 0.2);
+        }
+
+        .btn-role-primary:hover {
+            background-color: #458e78;
+            border-color: #458e78;
+            color: white;
+            transform: scale(1.03);
+            box-shadow: 0 12px 25px rgba(86, 171, 145, 0.3);
+        }
+
+        .btn-role-secondary {
+            background-color: #ffffff;
+            border-color: #e0e0e0;
+            color: #666;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .btn-role-secondary:hover {
+            background-color: #f8f9fa;
+            border-color: #56ab91;
+            color: #56ab91;
+            transform: scale(1.03);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+        }
 
         footer {
             background-color: #2C3E50;
@@ -81,7 +123,7 @@
 </head>
 <body>
 
-    <!-- Navigation (從第 78 行開始替換) -->
+    <!-- Navigation -->
     <nav class="navbar navbar-expand-lg fixed-top bg-white shadow-sm">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="{{ route('home') }}">
@@ -158,23 +200,24 @@
     @if(session('show_role_selector'))
     <div class="modal fade" id="roleSelectorModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-content border-0 shadow-2xl rounded-5 overflow-hidden">
                 <div class="modal-body text-center p-5">
                     <div class="role-modal-icon">
                         <i class="bi bi-person-check-fill"></i>
                     </div>
-                    <h4 class="fw-bold mb-3">歡迎回來！</h4>
-                    <p class="text-muted mb-4">系統偵測到您具備代購人身分。<br>今天想要先處理哪部分的工作呢？</p>
+                    <h3 class="fw-black mb-3">歡迎回來！</h3>
+                    <p class="text-muted mb-4 px-3">系統偵測到您具備代購人身分。<br>今天想要先處理哪部分的工作呢？</p>
                     
                     <div class="d-grid gap-3">
                         <!-- 選項 1：進入代購大廳 -->
-                        <a href="{{ route('agent.dashboard') }}" class="btn btn-success-custom py-3 rounded-3 fw-bold shadow-sm">
-                            <i class="bi bi-shop me-2"></i>進入代購接單大廳
+                        <a href="{{ route('agent.dashboard') }}" class="btn btn-role-option btn-role-primary">
+                            <i class="bi bi-shop"></i>
+                            進入代購接單大廳
                         </a>
                         
-                        <!-- 選項 2：留在目前頁面 (買家模式) -->
-                        <button type="button" class="btn btn-outline-secondary py-3 rounded-3 fw-bold" data-bs-dismiss="modal">
-                            留在首頁 (買家模式)
+                        <!-- 選項 2：留在目前頁面  -->
+                        <button type="button" class="btn btn-role-option btn-role-secondary" data-bs-dismiss="modal">
+                            留在首頁
                         </button>
                     </div>
                 </div>
