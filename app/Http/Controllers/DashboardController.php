@@ -19,10 +19,13 @@ class DashboardController extends Controller
         if (!$user) return redirect()->route('login');
 
         // --- 追蹤名單資料抓取 (Follow Part) ---
-        $followings = $user->followings()
-            ->with(['agentApplication', 'agentPosts'])
-            ->latest('follows.created_at')
-            ->get();
+       $followings = collect();
+        if (Schema::hasTable('follows')) {
+            $followings = $user->followings()
+                ->with(['agentApplication', 'agentPosts'])
+                ->latest('follows.created_at')
+                ->get();
+        }
 
         //以下不用動
         $user = Auth::user();

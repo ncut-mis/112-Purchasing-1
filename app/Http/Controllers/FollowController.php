@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Exception;
 
 class FollowController extends Controller
@@ -19,6 +21,13 @@ class FollowController extends Controller
         try {
             $followedId = $request->input('followed_id');
             $user = auth()->user();
+
+            if (!Schema::hasTable('follows')) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => '追蹤功能尚未初始化，請先執行資料庫遷移'
+                ], 503);
+            }
 
             // 防止自己追蹤自己
             if ($user->id == $followedId) {
@@ -61,10 +70,16 @@ class FollowController extends Controller
 
         // 抓取我追蹤的人，並預載入他們的代購申請與貼文資訊
         // 注意：這裡的關聯名稱需與 User Model 定義一致 (例如 agentApplication)
-        $followings = $user->followings()
-            ->with(['agentApplication', 'agentPosts'])
-            ->latest('follows.created_at')
-            ->paginate(12);
+        $followings = new LengthAwarePaginator([], 0, 12, request()->query('page', 1), [
+            'path' => request()->url(),
+            'query' => request()->query(),
+        ]);
+        if (Schema::hasTable('follows')) {
+            $followings = $user->followings()
+                ->with(['agentApplication', 'agentPosts'])
+                ->latest('follows.created_at')
+                ->paginate(12);
+        }
 
         // 修正視圖路徑以對應您之前的檔案結構
         // 如果您的檔案是在 resources/views/dashboard/partials/follows/index.blade.php
