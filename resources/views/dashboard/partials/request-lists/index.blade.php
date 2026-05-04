@@ -199,7 +199,10 @@
                                                             @csrf
                                                             @method('PATCH')
                                                             <button type="submit" class="inline-flex items-center rounded-lg bg-emerald-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-600">完成</button>
-                                                        </form>                
+                                                        </form>  
+                                                         <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-amber-200 bg-amber-100 text-amber-600 shadow-sm transition hover:bg-amber-200" title="提醒功能開發中" aria-label="提醒功能開發中">
+                                                            🔔
+                                                        </button>              
                                                     @endif
                                                 </div>
                                             </td>
