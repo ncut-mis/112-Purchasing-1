@@ -19,7 +19,7 @@
                     <form action="{{ route('agent.profile.update') }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         
-                        <!-- 頭像設定：移除小圓點，改為點擊頭像區域 -->
+                        <!-- 頭像設定：點擊頭像區域 -->
                         <div class="flex flex-col items-center mb-10">
                             <div class="relative group">
                                 <!-- Label 包裹整個預覽區塊，點擊任何地方都會觸發 input -->
@@ -69,8 +69,24 @@
                                 <label class="block text-sm font-bold text-gray-700 mb-3">可代購國家 (複選)</label>
                                 <div class="flex flex-wrap gap-3">
                                     @php
-                                        // 從資料庫解析 JSON
-                                        $selectedCountries = json_decode(Auth::user()->purchasable_countries ?? '[]', true) ?: [];
+                                        // 取得原始資料
+                                        $countriesData = Auth::user()->purchasable_countries;
+                                        
+                                        // 核心修正：使用與 Canvas (store.blade.php) 相同的高強度防呆邏輯
+                                        if (is_array($countriesData)) {
+                                            $selectedCountries = $countriesData;
+                                        } else {
+                                            // 嘗試第一次解析
+                                            $selectedCountries = json_decode($countriesData ?? '[]', true) ?? [];
+                                            // 處理二次編碼 (Double Encoding) 情況
+                                            if (is_string($selectedCountries)) {
+                                                $selectedCountries = json_decode($selectedCountries, true) ?? [];
+                                            }
+                                        }
+                                        // 最終確保一定是陣列，防止下方 in_array 報錯
+                                        if (!is_array($selectedCountries)) {
+                                            $selectedCountries = [];
+                                        }
                                     @endphp
                                     
                                     <!-- 日本選項 -->

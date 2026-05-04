@@ -16,6 +16,16 @@ class DashboardController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
+        if (!$user) return redirect()->route('login');
+
+        // --- 追蹤名單資料抓取 (Follow Part) ---
+        $followings = $user->followings()
+            ->with(['agentApplication', 'agentPosts'])
+            ->latest('follows.created_at')
+            ->get();
+
+        //以下不用動
+        $user = Auth::user();
         $currentSection = $request->query('section', 'request-lists');
         $today = now()->toDateString();
 
@@ -233,6 +243,7 @@ class DashboardController extends Controller
                 ->with(['user', 'requestList.items']) 
                 ->latest()
                 ->get();
+                
         return view('dashboard', compact(
             'requestLists',
             'favoriteAgentPosts',
@@ -244,7 +255,8 @@ class DashboardController extends Controller
             'myWorkingOrders',
             'historyRecords',
             'currentHistoryType',
-            'offers' // <--- 務必確保這個變數有傳入 view
+            'offers', 
+            'followings'
         ));
     }
 }

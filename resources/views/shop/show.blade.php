@@ -4,7 +4,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center gap-2 text-emerald-100 mb-8">
                 <a href="{{ route('store') }}" class="hover:underline flex items-center gap-1">
-                    <i class="bi bi-arrow-left"></i> 返回找代購
+                    <i class="bi bi-arrow-left"></i> 返回
                 </a>
             </div>
             

@@ -1,8 +1,11 @@
 <x-app-layout>
-    <!-- 使用 Alpine.js 管理彈窗狀態 -->
+    <!-- 使用 Alpine.js 管理彈窗狀態與追蹤狀態 -->
     <div x-data="{ 
         showModal: false, 
         activeAgent: null,
+        // 初始化：確保 ID 都是數字型態以利比對
+        followedAgents: {{ Js::from(Auth::user() ? Auth::user()->followings->pluck('id')->map(fn($id) => (int)$id) : []) }}, 
+        
         openProfile(agent) {
             this.activeAgent = agent;
             this.showModal = true;
@@ -10,8 +13,53 @@
         },
         closeProfile() {
             this.showModal = false;
-            this.activeAgent = null;
+            // 延遲清空 activeAgent 避免動畫期間路徑變為 null 產生 403 錯誤
+            setTimeout(() => { if(!this.showModal) this.activeAgent = null; }, 300);
             document.body.style.overflow = 'auto'; 
+        },
+        // 檢查是否已追蹤
+        checkIsFollowed(id) {
+            if (!id) return false;
+            return this.followedAgents.includes(Number(id));
+        },
+        // 【核心邏輯：串接資料庫】
+        async toggleFollow(id) {
+            @guest
+                window.location.href = {{ Js::from(route('login')) }};
+                return;
+            @endguest
+
+            if (!id) return;
+
+            try {
+                const token = document.querySelector('meta[name=csrf-token]')?.content;
+                if (!token) return;
+
+                const response = await fetch({{ Js::from(route('follow.toggle')) }}, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': token,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ followed_id: id })
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    const agentId = Number(id);
+                    if (result.is_following) {
+                        if (!this.checkIsFollowed(agentId)) {
+                            this.followedAgents = [...this.followedAgents, agentId];
+                        }
+                    } else {
+                        this.followedAgents = this.followedAgents.filter(aid => aid !== agentId);
+                    }
+                }
+            } catch (error) {
+                console.error('追蹤操作失敗:', error);
+            }
         }
     }" @keydown.escape.window="closeProfile()">
 
@@ -33,7 +81,6 @@
             <!-- 搜尋與篩選列 -->
             <div class="bg-white p-6 rounded-3xl shadow-xl border border-gray-100 mb-12">
                 <form action="{{ route('store') }}" method="GET" class="flex flex-col lg:flex-row gap-4 items-center">
-                    <!-- 隱藏國家參數，確保搜尋時保留篩選狀態 -->
                     <input type="hidden" name="country" value="{{ request('country') }}">
 
                     <div class="relative flex-1 w-full">
@@ -48,9 +95,7 @@
 
                     <div class="h-8 w-px bg-gray-100 hidden lg:block mx-2"></div>
 
-                    <!-- 國家篩選按鈕區 (替代原本的建立清單) -->
                     <div class="flex gap-3 items-end w-full lg:w-auto">
-                    {{-- 國家下拉選單 --}}
                         <div class="flex-1 lg:w-48">
                             <select name="country" 
                                 onchange="this.form.submit()" 
@@ -66,7 +111,6 @@
                             </select>
                         </div>
     
-                        {{-- 清除按鈕 --}}
                         @if(request('country'))
                         <a href="{{ route('store', request()->except('country')) }}" 
                         class="p-4 rounded-2xl bg-red-50 border-2 border-red-100 text-red-500 hover:bg-red-100 shadow-sm transition flex items-center justify-center h-14" 
@@ -75,7 +119,6 @@
                         </a>
                         @endif
                     </div>
-
                 </form>
             </div>
 
@@ -84,8 +127,8 @@
                 @forelse($agents as $agent)
                     <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
                         <div class="flex flex-col items-center text-center">
-                            <!-- 代購人頭像 -->
-                            <div class="relative mb-4 cursor-pointer" @click="openProfile({{ $agent->toJson() }})">
+                            <div class="relative mb-4 cursor-pointer" @click="openProfile({{ Js::from($agent) }})">
+                                <!-- 初始渲染圖片防呆 -->
                                 <img src="{{ $agent->avatar ? asset('storage/' . $agent->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode($agent->name) . '&background=10b981&color=fff' }}" 
                                      class="w-24 h-24 rounded-full border-4 border-white shadow-md object-cover transition group-hover:scale-105">
                                 <div class="absolute bottom-0 right-0 w-6 h-6 bg-green-500 border-2 border-white rounded-full"></div>
@@ -94,25 +137,43 @@
                             <h4 class="text-xl font-black text-gray-800 group-hover:text-emerald-600 transition">{{ $agent->nickname ?? $agent->name }}</h4>
                             <span class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mt-1">PRO AGENT</span>
 
-                            <!-- 可代購國家 -->
                             <div class="flex flex-wrap justify-center gap-2 mt-4 mb-6 min-h-[32px]">
-                                @php
-                                    $countries = json_decode($agent->purchasable_countries ?? '[]', true) ?: [];
-                                @endphp
-                                @forelse(array_slice($countries, 0, 3) as $country)
-                                    <span class="px-3 py-1 bg-gray-50 text-gray-500 text-[10px] font-bold rounded-full border border-gray-100">
-                                        {{ $country }}
-                                    </span>
-                                @empty
-                                    <span class="text-[10px] text-gray-400 italic">全球代購中</span>
-                                @endforelse
-                                @if(count($countries) > 3)
-                                    <span class="text-[10px] text-gray-400 font-bold">+{{ count($countries) - 3 }}</span>
-                                @endif
-                            </div>
+                            @php
+                                // 取得原始資料
+                                $countriesData = $agent->purchasable_countries;
+                                
+                                // 核心修正：確保最終結果一定是陣列，防止 array_slice 報錯
+                                if (is_array($countriesData)) {
+                                    $countries = $countriesData;
+                                } else {
+                                    // 如果是字串則解析 JSON；若解析失敗或為空，則給予空陣列
+                                    $countries = json_decode($countriesData ?? '[]', true) ?? [];
+                                    
+                                    // 處理 Double Encoding (二次編碼) 的情況
+                                    if (is_string($countries)) {
+                                        $countries = json_decode($countries, true) ?? [];
+                                    }
+                                }
 
+                                // 再次防呆：確保 $countries 即使在解析極端錯誤下也是陣列
+                                if (!is_array($countries)) {
+                                    $countries = [];
+                                }
+                            @endphp
+
+                            {{-- 使用處理後的 $countries 陣列進行渲染 --}}
+                            @forelse(array_slice($countries, 0, 3) as $country)
+                                <span class="px-3 py-1 bg-gray-50 text-gray-500 text-[10px] font-bold rounded-full border border-gray-100">{{ $country }}</span>
+                            @empty
+                                <span class="text-[10px] text-gray-400 italic">全球代購中</span>
+                            @endforelse
+
+                            @if(count($countries) > 3)
+                                <span class="text-[10px] text-gray-400 font-bold">+{{ count($countries) - 3 }}</span>
+                            @endif
+                            </div>
                             <div class="grid grid-cols-2 gap-3 w-full">
-                                <button type="button" @click="openProfile({{ $agent->toJson() }})" 
+                                <button type="button" @click="openProfile({{ Js::from($agent) }})" 
                                     class="bg-gray-100 text-gray-600 py-3 rounded-2xl text-sm font-bold hover:bg-gray-200 transition">
                                     查看檔案
                                 </button>
@@ -134,16 +195,22 @@
             </div>
         </div>
 
-        <!-- 代購人個人檔案彈跳視窗 (Modal 保持原樣) -->
+        <!-- 代購人個人檔案彈跳視窗 -->
         <div x-show="showModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" x-cloak>
             <div x-show="showModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" @click="closeProfile()" class="absolute inset-0 bg-emerald-950/60 backdrop-blur-sm"></div>
+            
             <div x-show="showModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95 translate-y-8" x-transition:enter-end="opacity-100 scale-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 scale-100 translate-y-0" x-transition:leave-end="opacity-0 scale-95 translate-y-8" class="relative bg-white w-full max-w-4xl max-h-[90vh] rounded-[40px] shadow-2xl overflow-hidden flex flex-col">
                 <button @click="closeProfile()" class="absolute top-6 right-6 z-10 w-10 h-10 bg-black/10 hover:bg-black/20 rounded-full flex items-center justify-center text-white transition backdrop-blur-md">
                     <i class="bi bi-x-lg"></i>
                 </button>
+
                 <div class="overflow-y-auto flex-1 custom-scrollbar">
                     <div class="bg-emerald-800 p-8 pt-12 pb-16 relative text-white flex flex-col md:flex-row items-center md:items-end gap-6">
-                        <img :src="activeAgent?.avatar ? '/storage/' + activeAgent.avatar : 'https://ui-avatars.com/api/?name=' + encodeURIComponent(activeAgent?.name) + '&background=10b981&color=fff&size=128'" class="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-white shadow-xl object-cover bg-white">
+                        <template x-if="activeAgent">
+                            <img :src="activeAgent.avatar ? '/storage/' + activeAgent.avatar : 'https://ui-avatars.com/api/?name=' + encodeURIComponent(activeAgent.name) + '&background=10b981&color=fff&size=128'" 
+                                 class="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-white shadow-xl object-cover bg-white">
+                        </template>
+                        
                         <div class="text-center md:text-left flex-1 pb-2">
                             <h2 class="text-3xl md:text-4xl font-black mb-2" x-text="activeAgent?.nickname || activeAgent?.name"></h2>
                             <div class="flex flex-wrap justify-center md:justify-start gap-2">
@@ -151,10 +218,24 @@
                                 <span class="px-3 py-1 bg-emerald-600 rounded-full text-[10px] font-bold border border-emerald-500" x-text="(activeAgent?.agent_application?.country || '台灣') + ' 駐點'"></span>
                             </div>
                         </div>
-                        <button class="bg-white text-emerald-800 px-8 py-3 rounded-2xl font-black shadow-lg hover:bg-emerald-50 transition flex items-center gap-2 mb-2">
-                            <i class="bi bi-chat-heart-fill"></i> 立即聊一聊
-                        </button>
+                        
+                        <div class="flex items-center gap-3 mb-2">
+                            <!-- 追蹤按鈕 -->
+                            <button 
+                                @click="toggleFollow(activeAgent?.id)"
+                                :class="checkIsFollowed(activeAgent?.id) ? 'bg-white/20 border-white/40 text-white' : 'bg-white text-emerald-800 border-white'"
+                                class="px-8 py-3 rounded-2xl font-black shadow-lg transition flex items-center gap-2 border-2 hover:scale-105"
+                            >
+                                <i class="bi" :class="checkIsFollowed(activeAgent?.id) ? 'bi-person-check-fill' : 'bi-person-plus-fill'"></i>
+                                <span x-text="checkIsFollowed(activeAgent?.id) ? '已追蹤' : '追蹤'"></span>
+                            </button>
+
+                            <button class="bg-white text-emerald-800 px-8 py-3 rounded-2xl font-black shadow-lg hover:bg-emerald-50 transition flex items-center gap-2">
+                                <i class="bi bi-chat-heart-fill"></i> 立即聊一聊
+                            </button>
+                        </div>
                     </div>
+                    
                     <div class="p-8 grid grid-cols-1 lg:grid-cols-3 gap-10">
                         <div class="space-y-8">
                             <div>
@@ -166,7 +247,7 @@
                             <div>
                                 <h5 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">可代購地區</h5>
                                 <div class="flex flex-wrap gap-2">
-                                    <template x-for="country in JSON.parse(activeAgent?.purchasable_countries || '[]')">
+                                    <template x-for="country in (activeAgent?.purchasable_countries || [])">
                                         <span class="px-4 py-2 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-xl border border-emerald-100" x-text="country"></span>
                                     </template>
                                 </div>
@@ -180,8 +261,13 @@
                                 <template x-for="post in activeAgent?.agent_posts" :key="post.id">
                                     <div class="group flex gap-4 p-4 rounded-3xl border border-gray-100 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all duration-300">
                                         <div class="w-20 h-20 bg-gray-100 rounded-2xl flex-shrink-0 overflow-hidden relative">
-                                            <img x-show="post.cover_image" :src="'/storage/' + post.cover_image" class="w-full h-full object-cover">
-                                            <div x-show="!post.cover_image" class="w-full h-full flex items-center justify-center text-gray-300"><i class="bi bi-image"></i></div>
+                                            <!-- 修正點：使用三元運算子確保 src 不會出現 /storage/null，並使用 x-if 真正阻止請求 -->
+                                            <template x-if="post.cover_image">
+                                                <img :src="'/storage/' + post.cover_image" class="w-full h-full object-cover">
+                                            </template>
+                                            <div x-show="!post.cover_image" class="w-full h-full flex items-center justify-center text-gray-300 bg-gray-100">
+                                                <i class="bi bi-image"></i>
+                                            </div>
                                         </div>
                                         <div class="flex-1 min-w-0">
                                             <div class="flex justify-between items-start">
@@ -191,7 +277,7 @@
                                             <p class="text-xs text-gray-500 mt-1 line-clamp-2" x-text="post.description"></p>
                                             <div class="flex items-center gap-4 mt-3">
                                                 <span class="text-[10px] text-gray-400 font-bold"><i class="bi bi-geo-alt me-1"></i><span x-text="post.country"></span></span>
-                                                <span class="text-[10px] text-gray-400 font-bold"><i class="bi bi-calendar-check me-1"></i><span x-text="post.end_date.split('T')[0]"></span> 截止</span>
+                                                <span class="text-[10px] text-gray-400 font-bold"><i class="bi bi-calendar-check me-1"></i><span x-text="post.end_date?.split('T')[0]"></span> 截止</span>
                                             </div>
                                         </div>
                                     </div>

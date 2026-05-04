@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <h2 class="font-semibold text-xl text-indigo-800 leading-tight">
-                {{ __('會員專區') }}
+                {{ __('代購人專區') }}
             </h2>
             
             <div class="flex items-center gap-3">
@@ -136,8 +136,23 @@
                         
                         <!-- 新增：顯示可代購國家標籤 -->
                         @php
-                            $countries = json_decode(Auth::user()->purchasable_countries ?? '[]', true);
+                            // 取得原始資料
+                            $countriesData = Auth::user()->purchasable_countries;
+                            
+                            // 核心修正邏輯：判斷是陣列還是 JSON 字串
+                            if (is_array($countriesData)) {
+                                $countries = $countriesData;
+                            } else {
+                                // 如果是字串，嘗試解析；若解析失敗則給予空陣列
+                                $countries = json_decode($countriesData ?? '[]', true) ?? [];
+                                
+                                // 二次防呆：如果解析出來依然是字串 (Double Encoding 情況)，再解析一次
+                                if (is_string($countries)) {
+                                    $countries = json_decode($countries, true) ?? [];
+                                }
+                            }
                         @endphp
+                        
                         @if(!empty($countries))
                             <div class="flex flex-wrap justify-center gap-1 mt-3">
                                 @foreach($countries as $country)

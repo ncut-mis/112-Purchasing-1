@@ -15,8 +15,8 @@
         <!-- 1. 補上 Tailwind CSS CDN -->
         <script src="https://cdn.tailwindcss.com"></script>
 
-        <!-- 2. 補上 Alpine.js CDN -->
-        <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+        <!-- 2. 補上 Alpine.js CDN (已加上 defer 修正初始化問題) -->
+        <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
         <!-- 3. 補上 Bootstrap Icons CDN (這是讓圖案顯示的關鍵) -->
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">

@@ -22,6 +22,7 @@ use App\Http\Controllers\LogisticsController;
 use App\Http\Controllers\ContentReportController;
 use App\Http\Controllers\QuoteController;
 use App\Events\MessageSent;
+use App\Http\Controllers\FollowController; 
 
 Route::get('/agent/dashboard', [AgentDashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
@@ -30,9 +31,19 @@ Route::get('/agent/dashboard', [AgentDashboardController::class, 'index'])
 
 Route::get('/store', [ShopController::class, 'store'])->name('store');
 
+// 2. 新增 'shop.show'，解決追蹤名單與通知的錯誤
+// 通常查看特定代購人需要帶 ID，所以加上 {id}
+Route::get('/store/{id}', [ShopController::class, 'show'])->name('shop.show');
+
+// 3. 確保語法是 [FollowController::class, '方法名'] 追蹤名單
+Route::middleware(['auth'])->group(function () {
+    Route::post('/follow/toggle', [FollowController::class, 'toggle'])->name('follow.toggle');
+    Route::get('/follows', [FollowController::class, 'index'])->name('follows.index');
+});
+
 Route::get('/post-product-image/{postProduct}', [AgentPostController::class, 'image'])->name('post-product.image');
 
- 
+
 Route::middleware(['auth'])->group(function () {
  
     // 請購單聊天室（請託人 & 代購人共用同一個頁面）
