@@ -167,6 +167,8 @@
                                                 @php
                                                     $acceptedOffer = $requestList->offers->firstWhere('status', 'accepted');
                                                     $activeOffer = $acceptedOffer ?? $requestList->offers->first();
+                                                    $latestQuoteUserId = $requestList->quotes->sortByDesc('created_at')->first()?->user_id;
+                                                    $chatPartnerId = $requestList->people ?: $latestQuoteUserId;
                                                 @endphp
 
                                                 <div class="inline-flex items-center gap-3">
@@ -188,7 +190,7 @@
                                                         </form>
                                                     @elseif(in_array($requestList->status, ['pending', 'offered'], true))
                                                         <button type="button" class="inline-flex items-center rounded-lg bg-blue-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-600" onclick="openRequestDetailModal({{ $requestList->id }})">檢視</button>
-                                                        @if(!empty($requestList->people))
+                                                        @if(!empty($chatPartnerId))
                                                             <button type="button" class="inline-flex items-center rounded-lg bg-green-400 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-green-500" onclick="openRequestChatModal({{ $requestList->id }})">聊天</button>
                                                         @else
                                                             <button type="button" class="inline-flex items-center rounded-lg bg-gray-300 px-4 py-2 text-xs font-semibold text-white cursor-not-allowed" disabled>聊天</button>
@@ -352,18 +354,24 @@
                                                                     // 獲取該報價的商品單價（如果表存在）
                                                                     $quoteItemPrices = method_exists($quote, 'quoteItems') ? $quote->quoteItems->keyBy('request_item_id') : collect();
                                                                 @endphp
-                                                                <div class="rounded-2xl border border-slate-200 p-4">
-                                                                    <p class="text-base font-semibold text-slate-800">代購人：{{ $quote->user->name ?? '未知代購人' }}</p>
-                                                                    <div class="mt-3 text-xs text-slate-500 space-y-2">
+                                                                <div class="rounded-2xl border border-slate-200 p-4 space-y-3">
+                                                                    <p class="text-xs font-semibold text-slate-800">代購人：{{ $quote->user->name ?? '未知代購人' }}</p>
+
+                                                                    <div class="space-y-2 text-xs text-slate-500">
                                                                         @foreach($requestList->items as $item)
                                                                             @php
                                                                                 $quotedPrice = $quoteItemPrices->get($item->id)?->unit_price ?? $item->expected_price ?? 0;
                                                                             @endphp
-                                                                            <p>{{ $item->name }} 單價：NT$ {{ number_format($quotedPrice, 0) }}</p>
+                                                                            <div class="flex items-center justify-between gap-3">
+                                                                                <span class="truncate">{{ $item->name }}</span>
+                                                                                <span class="shrink-0 font-medium text-slate-700">NT$ {{ number_format($quotedPrice, 0) }}</span>
+                                                                            </div>
                                                                         @endforeach
-                                                                        <p>可代購時段：{{ $quote->comment ?? '未提供' }}</p>
-  
-                                                                        <span class="inline-block mt-4 px-3 py-1 rounded-full text-[10px] bg-red-100 text-red-700">待確認</span>
+                                                                    </div>
+
+                                                                    <p class="text-xs text-slate-500">可代購時段：{{ $quote->comment ?? '未提供' }}</p>
+                                                                    <div>
+                                                                        <span class="inline-flex rounded-full bg-red-100 px-3 py-1 text-[10px] text-red-700">待確認</span>
                                                                     </div>
                                                                 </div>
                                                             @endforeach
@@ -379,7 +387,7 @@
                                                                     <p class="text-base font-semibold text-slate-800">代購人：{{ $offer->agent->name ?? '未知代購人' }}</p>
                                                                     <div class="mt-2 text-sm text-slate-500 space-y-2">
                                                                         @foreach($requestList->items as $item)
-                                                                            <p>{{ $item->name }} 單價：NT$ {{ number_format($item->expected_price ?? $unitPrice, 0) }}</p>
+                                                                            <p>{{ $item->name }}單價：NT$ {{ number_format($item->expected_price ?? $unitPrice, 0) }}</p>
                                                                         @endforeach
                                                                         <p>可代購時段：{{ $quote->comment ?? '未提供' }}</p>
                                                                         <p class="font-medium text-slate-700">待確認</p>
@@ -441,60 +449,120 @@
                                         </div>
                                     </div>
                                 </div>
-                                @if(!empty($requestList->people))
-                                    @php
-                                        $chatMessages = \App\Models\Message::query()
-                                            ->where('request_list_id', $requestList->id)
-                                            ->where(function ($query) use ($requestList) {
-                                                $query->where(function ($inner) use ($requestList) {
-                                                    $inner->where('sender_id', $requestList->user_id)
-                                                        ->where('receiver_id', $requestList->people);
-                                                })->orWhere(function ($inner) use ($requestList) {
-                                                    $inner->where('sender_id', $requestList->people)
-                                                        ->where('receiver_id', $requestList->user_id);
-                                                });
-                                            })
-                                            ->with(['sender:id,name'])
-                                            ->orderBy('created_at')
-                                            ->get();
-                                    @endphp
+                                @php
+                                    $quotedAgents = $requestList->quotes
+                                        ->map(fn ($quote) => $quote->user)
+                                        ->filter()
+                                        ->unique('id')
+                                        ->values();
+                                    $chatAgents = $quotedAgents;
+
+                                    if (!empty($requestList->people)) {
+                                        $assignedAgent = \App\Models\User::find($requestList->people);
+                                        if ($assignedAgent) {
+                                            $chatAgents = $chatAgents->prepend($assignedAgent)->unique('id')->values();
+                                        }
+                                    }
+                                @endphp
+                                @if($chatAgents->isNotEmpty())
                                     <div id="request-chat-modal-{{ $requestList->id }}" class="request-chat-modal hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4 py-4" onclick="handleRequestChatBackdrop(event, {{ $requestList->id }})">
                                         <div class="w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl">
                                             <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
                                                 <div>
                                                     <p class="text-xs text-slate-500">請購單 #{{ $requestList->id }}</p>
-                                                    <h4 class="text-lg font-bold text-slate-800">{{ $requestList->title }}</h4>
+                                                    <h4 class="text-lg font-bold text-slate-800">請託單{{ $requestList->id }} 商品：{{ $requestList->items->map(fn($item) => ($item->name ?? '未命名商品') . '×' . ((int)($item->quantity ?? 1)))->implode('、') }}</h4>
                                                 </div>
                                                 <button type="button" class="text-slate-500 text-2xl leading-none hover:text-slate-700" onclick="closeRequestChatModal({{ $requestList->id }})" aria-label="關閉聊天室">✕</button>
                                             </div>
 
-                                            <div id="request-chat-messages-{{ $requestList->id }}" class="max-h-[55vh] overflow-y-auto bg-slate-50 px-5 py-4">
-                                                @forelse($chatMessages as $message)
-                                                    @php($isMine = (int) $message->sender_id === (int) auth()->id())
-                                                    <div class="mb-3 flex {{ $isMine ? 'justify-end' : 'justify-start' }}">
-                                                        <div class="max-w-[75%]">
-                                                            <div class="rounded-xl border px-3 py-2 {{ $isMine ? 'bg-emerald-100 border-emerald-200' : 'bg-white border-slate-200' }}">
-                                                                <p class="text-xs text-slate-500">{{ $message->sender->name ?? '使用者' }}</p>
-                                                                <p class="mt-1 text-sm text-slate-800 break-words">{{ $message->body }}</p>
-                                                            </div>
-                                                            <p class="mt-1 text-xs text-slate-500 {{ $isMine ? 'text-right' : 'text-left' }}">
-                                                                {{ optional($message->created_at)->format('Y-m-d H:i') }}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                @empty
-                                                    <p class="py-12 text-center text-sm text-slate-400">目前尚無訊息，開始第一句對話吧。</p>
-                                                @endforelse
+                                            <div class="border-b border-slate-200 px-5 py-3">
+                                                <p class="text-xs font-semibold text-slate-500 mb-2">切換代購人</p>
+                                                <div class="flex items-center gap-3">
+                                                    @foreach($chatAgents as $idx => $chatAgent)
+                                                        @php
+                                                            $chatAvatar = $chatAgent->avatar
+                                                                ? asset('storage/' . $chatAgent->avatar)
+                                                                : 'https://ui-avatars.com/api/?name=' . urlencode($chatAgent->name) . '&background=2563eb&color=fff&size=128';
+                                                        @endphp
+                                                        <button
+                                                            type="button"
+                                                            class="request-chat-agent-btn relative h-11 w-11 overflow-hidden rounded-full ring-2 {{ $idx === 0 ? 'ring-blue-500' : 'ring-transparent' }}"
+                                                            data-request-list-id="{{ $requestList->id }}"
+                                                            data-agent-id="{{ $chatAgent->id }}"
+                                                        >
+                                                            <img src="{{ $chatAvatar }}" alt="{{ $chatAgent->name }}" class="h-full w-full object-cover">
+                                                        </button>
+                                                    @endforeach
+                                                </div>
                                             </div>
 
-                                            <form method="POST"
-                                                  action="{{ route('request-list.chat.send', $requestList) }}"
-                                                  class="request-chat-form flex items-center gap-2 border-t border-slate-200 px-4 py-3"
-                                                  data-request-list-id="{{ $requestList->id }}">
-                                                @csrf
-                                                <input type="text" name="body" class="w-full rounded-full border-slate-300 px-4 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" placeholder="輸入訊息..." maxlength="2000" required>
-                                                <button type="submit" class="rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600">送出</button>
-                                            </form>
+                                            @foreach($chatAgents as $idx => $chatAgent)
+                                                @php
+                                                    $agentQuote = $requestList->quotes->firstWhere('user_id', $chatAgent->id);
+                                                    $quoteItemPrices = method_exists($agentQuote, 'quoteItems')
+                                                        ? $agentQuote->quoteItems->keyBy('request_item_id')
+                                                        : collect();
+                                                    $agentUnitPrices = $requestList->items->map(function ($item) use ($quoteItemPrices) {
+                                                        $unitPrice = $quoteItemPrices->get($item->id)?->unit_price;
+                                                        if (is_null($unitPrice)) {
+                                                            return null;
+                                                        }
+
+                                                        return number_format((float) $unitPrice, 0);
+                                                    })->filter()->values();
+                                                    $chatMessages = \App\Models\Message::query()
+                                                        ->where('request_list_id', $requestList->id)
+                                                        ->where(function ($query) use ($requestList, $chatAgent) {
+                                                            $query->where(function ($inner) use ($requestList, $chatAgent) {
+                                                                $inner->where('sender_id', $requestList->user_id)
+                                                                    ->where('receiver_id', $chatAgent->id);
+                                                            })->orWhere(function ($inner) use ($requestList, $chatAgent) {
+                                                                $inner->where('sender_id', $chatAgent->id)
+                                                                    ->where('receiver_id', $requestList->user_id);
+                                                            });
+                                                        })
+                                                        ->with(['sender:id,name'])
+                                                        ->orderBy('created_at')
+                                                        ->get();
+                                                @endphp
+                                                <div class="request-chat-agent-panel {{ $idx === 0 ? '' : 'hidden' }}" data-request-list-id="{{ $requestList->id }}" data-agent-id="{{ $chatAgent->id }}">
+                                                    <div class="border-b border-slate-200 bg-slate-50 px-5 py-3 text-sm text-slate-700">
+                                                        該代購人填寫之單價：
+                                                        <span class="font-bold text-emerald-600">
+                                                            NT${{ $agentUnitPrices->isNotEmpty() ? $agentUnitPrices->implode('/NT$') : '-' }}
+                                                        </span>
+                                                    </div>
+
+                                                    <div id="request-chat-messages-{{ $requestList->id }}-{{ $chatAgent->id }}" class="max-h-[55vh] overflow-y-auto bg-slate-50 px-5 py-4">
+                                                        @forelse($chatMessages as $message)
+                                                            @php($isMine = (int) $message->sender_id === (int) auth()->id())
+                                                            <div class="mb-3 flex {{ $isMine ? 'justify-end' : 'justify-start' }}">
+                                                                <div class="max-w-[75%]">
+                                                                    <div class="rounded-xl border px-3 py-2 {{ $isMine ? 'bg-emerald-100 border-emerald-200' : 'bg-white border-slate-200' }}">
+                                                                        <p class="text-xs text-slate-500">{{ $message->sender->name ?? '使用者' }}</p>
+                                                                        <p class="mt-1 text-sm text-slate-800 break-words">{{ $message->body }}</p>
+                                                                    </div>
+                                                                    <p class="mt-1 text-xs text-slate-500 {{ $isMine ? 'text-right' : 'text-left' }}">
+                                                                        {{ optional($message->created_at)->format('Y-m-d H:i') }}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        @empty
+                                                            <p class="py-12 text-center text-sm text-slate-400">目前尚無訊息，開始第一句對話吧。</p>
+                                                        @endforelse
+                                                    </div>
+
+                                                    <form method="POST"
+                                                        action="{{ route('request-list.chat.send', $requestList) }}"
+                                                        class="request-chat-form flex items-center gap-2 border-t border-slate-200 px-4 py-3"
+                                                        data-request-list-id="{{ $requestList->id }}">
+                                                        @csrf
+                                                        <input type="hidden" name="receiver_id" value="{{ $chatAgent->id }}">
+                                                        <input type="text" name="body" class="w-full rounded-full border-slate-300 px-4 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" placeholder="輸入訊息..." maxlength="2000" required>
+                                                        <button type="submit" class="rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600">送出</button>
+                                                    </form>
+                                                </div>
+                                            @endforeach
                                         </div>
                                     </div>
                                 @endif

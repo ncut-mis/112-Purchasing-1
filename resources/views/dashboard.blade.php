@@ -77,7 +77,7 @@
 
                             <!-- 歷史紀錄 -->
                             <a href="{{ route('dashboard', ['section' => 'history-records']) }}" 
-                            class="flex items-center space-x-3 p-3 rounded-lg {{ $currentSection === 'history-records' ? 'bg-orange-50 text-orange-600 font-bold' : 'text-gray-600 hover:bg-gray-50 transition' }}">
+                            class="flex items-center space-x-3 p-3 rounded-lg {{ $currentSection === 'history-records' ? 'bg-gray-200 text-gray-600 font-bold' : 'text-gray-600 hover:bg-gray-50 transition' }}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                 <span>歷史紀錄</span>
                             </a>
@@ -830,8 +830,8 @@
             }
         }
 
-        function appendRequestChatMessage(requestListId, message) {
-            const box = document.getElementById(`request-chat-messages-${requestListId}`);
+         function appendRequestChatMessage(requestListId, message, agentId = null) {
+            const box = document.getElementById(`request-chat-messages-${requestListId}-${agentId}`) || document.getElementById(`request-chat-messages-${requestListId}`);
             if (!box || !message) return;
 
             const row = document.createElement('div');
@@ -856,6 +856,28 @@
             box.scrollTop = box.scrollHeight;
         }
 
+        document.addEventListener('click', (event) => {
+            const btn = event.target.closest('.request-chat-agent-btn');
+            if (!btn) return;
+
+            const requestListId = btn.dataset.requestListId;
+            const agentId = btn.dataset.agentId;
+
+            document.querySelectorAll(`.request-chat-agent-btn[data-request-list-id="${requestListId}"]`).forEach((node) => {
+                node.classList.remove('ring-blue-500');
+                node.classList.add('ring-transparent');
+            });
+            btn.classList.remove('ring-transparent');
+            btn.classList.add('ring-blue-500');
+
+            document.querySelectorAll(`.request-chat-agent-panel[data-request-list-id="${requestListId}"]`).forEach((panel) => {
+                panel.classList.add('hidden');
+            });
+
+            const panel = document.querySelector(`.request-chat-agent-panel[data-request-list-id="${requestListId}"][data-agent-id="${agentId}"]`);
+            if (panel) panel.classList.remove('hidden');
+        });
+
         // 攔截所有 .request-chat-form 的送出
         document.addEventListener('submit', async (event) => {
             const form = event.target.closest('.request-chat-form');
@@ -864,8 +886,10 @@
             event.preventDefault();
 
             const input = form.querySelector('input[name="body"]');
+            const receiver = form.querySelector('input[name="receiver_id"]');
             const submitBtn = form.querySelector('button[type="submit"]');
             const requestListId = form.dataset.requestListId;
+            const receiverId = receiver?.value || null;
             const text = (input?.value || '').trim();
 
             if (!text) return;
@@ -890,7 +914,7 @@
                     throw new Error(payload?.message || '訊息送出失敗');
                 }
 
-                appendRequestChatMessage(requestListId, payload);
+                appendRequestChatMessage(requestListId, payload, receiverId);
                 input.value = '';
                 input.focus();
 
@@ -917,7 +941,7 @@
         const myChannel = pusher.subscribe('private-chat.{{ Auth::id() }}');
         myChannel.bind('message.sent', function (data) {
             // 找到對應的聊天視窗並顯示訊息
-            const box = document.getElementById(`request-chat-messages-${data.requestListId}`);
+             const box = document.getElementById(`request-chat-messages-${data.requestListId}-${data.senderId}`) || document.getElementById(`request-chat-messages-${data.requestListId}`);
             if (!box) return; // 這張單的聊天視窗不在畫面上就忽略
 
             const row = document.createElement('div');

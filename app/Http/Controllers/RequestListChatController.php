@@ -10,14 +10,37 @@ use Illuminate\Support\Facades\Auth;
  
 class RequestListChatController extends Controller
 {
+    private function resolveEligibleAgentIds(RequestList $requestList): array
+    {
+        $agentIds = [];
+
+        if (!empty($requestList->people)) {
+            $agentIds[] = (int) $requestList->people;
+        }
+
+        $quoteAgentIds = $requestList->quotes()
+            ->orderByDesc('created_at')
+            ->pluck('user_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        return array_values(array_unique(array_merge($agentIds, $quoteAgentIds)));
+    }
+
+    private function resolveAgentId(RequestList $requestList): ?int
+    {
+        return $this->resolveEligibleAgentIds($requestList)[0] ?? null;
+    }
+
     // 顯示聊天頁面
     public function show(RequestList $requestList)
     {
         $user = Auth::user();
+        $agentId = $this->resolveAgentId($requestList);
  
         // 只有請託人或承接代購人才能進入
         $isBuyer = (int) $requestList->user_id === $user->id;
-        $isAgent = (int) $requestList->people  === $user->id;
+        $isAgent = !is_null($agentId) && $agentId === (int) $user->id;
  
         if (!$isBuyer && !$isAgent) {
             abort(403, '您沒有權限查看此聊天室。');
@@ -58,9 +81,10 @@ class RequestListChatController extends Controller
     public function send(Request $request, RequestList $requestList)
     {
         $user = Auth::user();
+        $agentId = $this->resolveAgentId($requestList);
  
         $isBuyer = (int) $requestList->user_id === $user->id;
-        $isAgent = (int) $requestList->people  === $user->id;
+        $isAgent = !is_null($agentId) && $agentId === (int) $user->id;
  
         if (!$isBuyer && !$isAgent) {
             abort(403);
@@ -68,9 +92,20 @@ class RequestListChatController extends Controller
  
         $request->validate(['body' => 'required|string|max:1000']);
  
-        $receiverId = $isBuyer
-            ? $requestList->people      // 請託人傳給代購人
-            : $requestList->user_id;    // 代購人傳給請託人
+        $receiverId = null;
+        if ($isBuyer) {
+            $requestedReceiverId = (int) $request->input('receiver_id', 0);
+            $eligibleAgentIds = $this->resolveEligibleAgentIds($requestList);
+            $receiverId = in_array($requestedReceiverId, $eligibleAgentIds, true)
+                ? $requestedReceiverId
+                : $agentId;
+        } else {
+            $receiverId = $requestList->user_id;
+        }
+
+        if (!$receiverId) {
+            return response()->json(['message' => '目前尚未有可聊天的代購人。'], 422);
+        }
  
         $message = Message::create([
             'request_list_id' => $requestList->id,
