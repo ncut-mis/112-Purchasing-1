@@ -467,30 +467,36 @@
                         <section id="order-management" class="bg-white rounded-2xl shadow-sm border border-indigo-100 p-6">
                             <h3 class="text-lg font-bold text-indigo-600 mb-6">【請託單】訂單管理</h3>
                             @php
-                                $managedRequestLists = \App\Models\RequestList::query()
-                                    ->with(['user:id,name', 'items:id,request_list_id,name,quantity'])
-                                    ->where('people', Auth::id())
-                                    ->whereIn('status', ['offered', 'matched', 'completed'])
+                                // 透過 quotes 找出代購人有報價的請購單
+                                $myQuotes = \App\Models\Quote::with(['requestList.user:id,name', 'requestList.items:id,request_list_id,name,quantity'])
+                                    ->where('user_id', Auth::id())
+                                    ->whereIn('status', ['pending', 'accepted'])
                                     ->latest('updated_at')
                                     ->get();
 
                                 $statusLabelMap = [
-                                    'offered' => '已接單（待請購人確認）',
-                                    'matched' => '已配對成功',
+                                    'pending'   => '請託人確認中',
+                                    'offered'   => '已接單（待請購人確認）',
+                                    'matched'   => '已配對成功',
                                     'completed' => '已完成',
                                 ];
 
                                 $statusClassMap = [
-                                    'offered' => 'bg-amber-50 text-amber-700 border-amber-200',
-                                    'matched' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                    'pending'   => 'bg-blue-50 text-blue-700 border-blue-200',
+                                    'offered'   => 'bg-amber-50 text-amber-700 border-amber-200',
+                                    'matched'   => 'bg-emerald-50 text-emerald-700 border-emerald-200',
                                     'completed' => 'bg-slate-100 text-slate-700 border-slate-200',
                                 ];
                             @endphp
                             <div class="space-y-4">
-                                @forelse($managedRequestLists as $requestList)
+                                @forelse($myQuotes as $quote)
                                     @php
-                                        $statusLabel = $statusLabelMap[$requestList->status] ?? $requestList->status;
-                                        $statusClass = $statusClassMap[$requestList->status] ?? 'bg-slate-100 text-slate-700 border-slate-200';
+                                        $requestList = $quote->requestList;
+                                        if (!$requestList) continue;
+                                        // 顯示報價狀態（pending=請託人確認中）或請購單狀態
+                                        $displayStatus = $quote->status === 'pending' ? 'pending' : ($requestList->status ?? 'matched');
+                                        $statusLabel = $statusLabelMap[$displayStatus] ?? $displayStatus;
+                                        $statusClass = $statusClassMap[$displayStatus] ?? 'bg-slate-100 text-slate-700 border-slate-200';
                                         $firstItem = $requestList->items->first();
                                     @endphp
                                     <div class="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4">
@@ -515,7 +521,7 @@
                                                     </p>
                                                 @endif
                                                 <p class="mt-1 text-sm text-indigo-700 font-semibold">
-                                                    報價：NT$ {{ number_format((float) ($requestList->agent_quote_total ?? 0), 0) }}
+                                                    我的報價：NT$ {{ number_format((float) ($quote->price ?? 0), 0) }}
                                                 </p>
                                             </div>
 
