@@ -15,6 +15,11 @@
                         <form action="{{ route('request-list.store') }}" method="POST" enctype="multipart/form-data">
                             @csrf
 
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">請託單標題</label>
+                                <input type="text" class="form-control" name="title" placeholder="請輸入請託單標題" value="{{ old('title') }}" required>
+                            </div>
+
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <h5 class="fw-semibold mb-0">商品清單（最多 3 筆）</h5>
                                 <button type="button" class="btn btn-outline-success" id="add-item-btn">

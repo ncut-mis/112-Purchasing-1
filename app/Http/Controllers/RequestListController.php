@@ -23,6 +23,7 @@ class RequestListController extends Controller
        $maxDeadline = Carbon::today()->addMonth()->toDateString();
 
         $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
             'country' => ['required', 'string', 'max:255'],
             'deadline' => ['required', 'date', "after_or_equal:{$today}", "before_or_equal:{$maxDeadline}"],
             'store_name' => ['nullable', 'string', 'max:255'],
@@ -35,12 +36,11 @@ class RequestListController extends Controller
         ]);
 
         $user = Auth::user();
-        $nextSerial = RequestList::where('user_id', $user->id)->count() + 1;
-        $autoTitle = "{$user->name}的請託單{$nextSerial}";
+       
 
         $requestList = RequestList::create([
             'user_id' => $user->id,
-            'title' => $autoTitle,
+            'title' => $validated['title'],
             'store_name' => $validated['store_name'] ?? null,
             'items' => json_encode($validated['items'] ?? []),
             'country' => $validated['country'],
@@ -88,6 +88,7 @@ class RequestListController extends Controller
         $maxDeadline = Carbon::parse($createdDate)->addMonth()->toDateString();
 
         $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
             'country' => ['required', 'string', 'max:255'],
             'deadline' => ['required', 'date', "after_or_equal:{$createdDate}", "before_or_equal:{$maxDeadline}"],
             'store_name' => ['nullable', 'string', 'max:255'],
@@ -115,6 +116,7 @@ class RequestListController extends Controller
      
 
         $requestList->update([
+            'title' => $validated['title'],
             'store_name' => $validated['store_name'] ?? null,
             'country' => $validated['country'],
             'deadline' => $validated['deadline'],

@@ -586,6 +586,11 @@
                                             @csrf
                                             @method('PUT')
 
+                                             <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-1">請託單標題</label>
+                                                <input type="text" name="title" value="{{ $requestList->title }}" class="w-full border-gray-300 rounded-lg" required>
+                                            </div>
+
                                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
                                                     <label class="block text-sm font-medium text-gray-700 mb-1">國家</label>
