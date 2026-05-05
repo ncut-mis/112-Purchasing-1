@@ -9,19 +9,21 @@
 
                                 <!-- 搜尋框 -->
 
-                                <form method="GET" action="{{ route('dashboard') }}" style="display: flex; gap: 8px; min-width: 280px;">
-                                    <input type="hidden" name="section" value="favorite-posts">
-                                    <input
-                                        type="search"
-                                        name="favorite_search"
-                                        placeholder="搜尋貼文標題、代購人..."
-                                        value="{{ request('favorite_search') }}"
-                                        style="padding: 8px 12px; border: 2px solid #0e0e0f; border-radius: 8px; font-size: 14px; min-width: 220px; flex: 1;"
-                                    >
-                                    <button type="submit" style="padding: 8px 16px; background: #ec4899; color: white; border: none; border-radius: 8px; cursor: pointer;">
-                                        🔍
-                                    </button>
-                                </form>
+                                <form method="GET" action="{{ route('dashboard') }}" class="relative w-full md:w-80">
+    <input type="hidden" name="section" value="favorite-posts">
+
+    <button type="submit" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#ec4899] transition">
+        <i class="bi bi-search"></i>
+        </button>
+
+    <input 
+        type="search" 
+        name="favorite_search" 
+        placeholder="搜尋貼文標題、代購人..." 
+        value="{{ request('favorite_search') }}"
+        class="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#ec4899] focus:border-[#ec4899] shadow-sm transition outline-none"
+    >
+</form>
                             </div>
                             </div>
 

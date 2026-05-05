@@ -13,8 +13,8 @@ use App\Models\User;
         use SoftDeletes;
 
         protected $fillable = [
-            'user_id', 'title', 'country', 'city', 'deadline',
-            'budget_total', 'currency', 'status', 'detail_address', 'note','people','time','agent_quote_total'
+            'user_id', 'title', 'store_name', 'country', 'deadline',
+            'budget_total', 'currency', 'status', 'detail_address', 'note', 'people', 'time', 'agent_quote_total'
         ];
 
         protected $casts = [

@@ -24,14 +24,16 @@ class RequestListSeeder extends Seeder
             [
                 'title' => '想買日本藥妝：合利他命與感冒藥',
                 'country' => '日本',
-                'city' => '大阪',
+                'store_name' => '心齋橋藥妝店',
+                'detail_address' => '大阪市心齋橋1丁目',
                 'note' => '希望能找在心齋橋附近的代購。',
                 'items' => ['合利他命 EX Plus', '大正感冒藥'] // 預計建立的商品
             ],
             [
                 'title' => '韓國限定 K-POP 周邊代購',
                 'country' => '韓國',
-                'city' => '首爾',
+                'store_name' => '韓國限定店',
+                'detail_address' => '首爾市江南區',
                 'note' => '需要附上實體店面的購買收據影本。',
                 'items' => ['NewJeans 專輯', '應援燈棒']
             ]
@@ -46,7 +48,8 @@ class RequestListSeeder extends Seeder
                 'user_id'      => $user->id,
                 'title'        => $data['title'],
                 'country'      => $data['country'],
-                'city'         => $data['city'],
+                'store_name'   => $data['store_name'],
+                'detail_address' => $data['detail_address'],
                 'deadline'     => Carbon::now()->addDays(rand(7, 21)),
                 'note'         => $data['note'],
                 'status'       => 'pending',

@@ -207,6 +207,7 @@ submitQuote() {
             $orderData = [
                 'id' => $requestList->id,
                 'title' => $title,
+                'store_name' => $requestList->store_name ?: '未提供',
                 'address' => $requestList->detail_address ?: '未填寫',
                 'deadline' => optional($requestList->deadline)->format('Y-m-d') ?: '不限時',
                 'note' => $requestList->note ?: '-',
@@ -394,6 +395,7 @@ submitQuote() {
                     <div class="mb-6">
                         <h3 class="text-xl font-bold text-indigo-700 mb-4" x-text="selectedRequest?.title"></h3>
                         <div class="space-y-1">
+                            <div class="text-sm text-gray-500"><span class="font-bold">店家：</span><span x-text="selectedRequest?.store_name"></span></div>
                             <div class="text-sm text-gray-500"><span class="font-bold">地址：</span><span x-text="selectedRequest?.address"></span></div>
                             <div class="text-sm text-gray-500"><span class="font-bold">截止日期：</span><span x-text="selectedRequest?.deadline"></span></div>
                         </div>

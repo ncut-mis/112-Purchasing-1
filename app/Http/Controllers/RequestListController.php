@@ -34,11 +34,14 @@ class RequestListController extends Controller
             'items.*.item_image' => ['nullable', 'image', 'max:2048'],
         ]);
 
-        $firstItemName = $validated['items'][0]['item_name'] ?? '未命名商品';
+        $user = Auth::user();
+        $nextSerial = RequestList::where('user_id', $user->id)->count() + 1;
+        $autoTitle = "{$user->name}的請託單{$nextSerial}";
 
         $requestList = RequestList::create([
-            'user_id' => Auth::id(),
-            'title' => $validated['store_name'] ?: $firstItemName,
+            'user_id' => $user->id,
+            'title' => $autoTitle,
+            'store_name' => $validated['store_name'] ?? null,
             'items' => json_encode($validated['items'] ?? []),
             'country' => $validated['country'],
             'city' => null,
@@ -109,10 +112,10 @@ class RequestListController extends Controller
             return back()->withErrors(['items' => '商品最多只能保留 3 項'])->withInput();
         }
 
-        $firstItemName = $remainingItems->first()['item_name'] ?? '未命名商品';
+     
 
         $requestList->update([
-            'title' => $validated['store_name'] ?: $firstItemName,
+            'store_name' => $validated['store_name'] ?? null,
             'country' => $validated['country'],
             'deadline' => $validated['deadline'],
             'detail_address' => $validated['detail_address'] ?? null,

@@ -6,19 +6,21 @@
 
                                 <!-- 搜尋框 -->
 
-                                <form method="GET" action="{{ route('dashboard') }}" style="display: flex; gap: 8px; min-width: 280px;">
-                                    <input type="hidden" name="section" value="request-lists">
-                                    <input
-                                        type="search"
-                                        name="request_search"
-                                        placeholder="搜尋標題、描述、狀態..."
-                                        value="{{ request('request_search') }}"
-                                        style="padding: 8px 12px; border: 2px solid #0e0e0f; border-radius: 8px; font-size: 14px; min-width: 220px; flex: 1;"
-                                    >
-                                    <button type="submit" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 8px; cursor: pointer;">
-                                        🔍
-                                    </button>
-                                </form>
+                                <form method="GET" action="{{ route('dashboard') }}" class="relative w-full md:w-80">
+    <input type="hidden" name="section" value="request-lists">
+
+    <button type="submit" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-green-600 transition">
+        <i class="bi bi-search"></i>
+    </button>
+
+    <input 
+        type="search" 
+        name="request_search" 
+        placeholder="搜尋標題、描述、狀態..." 
+        value="{{ request('request_search') }}"
+        class="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 shadow-sm transition outline-none"
+    >
+</form>
 
                                    <a href="{{ route('request-list.create') }}" class="text-sm text-green-600 hover:underline">+ 建立請購清單</a>
 
@@ -30,9 +32,9 @@
 
                         <!-- 搜尋結果提示 -->
                         @if(request('request_search'))
-                            <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+                            <div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm">
                                 🔍 搜尋「{{ request('request_search') }}」找到 {{ $requestLists->total() ?? 0 }} 筆清單
-                                <a href="{{ route('dashboard') }}" class="text-blue-600 hover:underline ml-2">清除搜尋</a>
+                                <a href="{{ route('dashboard') }}" class="text-green-600 hover:underline ml-2">清除搜尋</a>
                             </div>
                         @endif
 
@@ -148,7 +150,7 @@
                                                 @php
                                                     $noticeMap = [
                                                         'editing' => ['text' => '清單送出後將不能修改與刪除,請先確認內容后再按「送出」', 'class' => 'bg-slate-100 text-slate-700'],
-                                                        'pending' => ['text' => '等待代購人接單中,請留意通知中心或這裡的變動', 'class' => 'bg-yellow-50 text-yellow-700'],
+                                                        'pending' => ['text' => '等待代購人接單中,請留意通知中心', 'class' => 'bg-yellow-50 text-yellow-700'],
                                                         'offered' => ['text' => '請至通知中心確認代購人', 'class' => 'bg-blue-50 text-blue-700'],
                                                     ];
                                                     $notice = $noticeMap[$requestList->status] ?? null;
@@ -313,7 +315,7 @@
                                                                 </div>
                                                                 <div class="flex items-start justify-between gap-4">
                                                                     <dt class="text-slate-500">店家</dt>
-                                                                    <dd class="text-right font-medium text-slate-800">{{ $requestList->title ?: '未提供' }}</dd>
+                                                                    <dd class="text-right font-medium text-slate-800">{{ $requestList->store_name ?: '未提供' }}</dd>
                                                                 </div>
                                                                 <div>
                                                                     <dt class="text-slate-500">店家詳細地址</dt>
@@ -419,7 +421,7 @@
                                                         <div class="mt-4 rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center">
                                                             <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-2xl">🕒</div>
                                                             <p class="mt-4 text-sm font-medium text-slate-700">目前尚未有代購人接單</p>
-                                                            <p class="mt-2 text-xs leading-5 text-slate-400">當有代購人接單或提出報價時，這裡會顯示對方的頭像與名稱。</p>
+                                                            <p class="mt-2 text-xs leading-5 text-slate-400">當有代購人接單或提出報價時，這裡會顯示對方的名字與各商品之單價。</p>
                                                         </div>
                                                     @endif
                                                 </aside>
@@ -472,8 +474,8 @@
                                         <div class="w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl">
                                             <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
                                                 <div>
-                                                    <p class="text-xs text-slate-500">請購單 #{{ $requestList->id }}</p>
-                                                    <h4 class="text-lg font-bold text-slate-800">請託單{{ $requestList->id }} 商品：{{ $requestList->items->map(fn($item) => ($item->name ?? '未命名商品') . '×' . ((int)($item->quantity ?? 1)))->implode('、') }}</h4>
+                                                    <p class="text-xs text-slate-500">{{ $requestList->title }}</p>
+                                                    <h4 class="text-lg font-bold text-slate-800">請託單商品：{{ $requestList->items->map(fn($item) => ($item->name ?? '未命名商品') . '×' . ((int)($item->quantity ?? 1)))->implode('、') }}</h4>
                                                 </div>
                                                 <button type="button" class="text-slate-500 text-2xl leading-none hover:text-slate-700" onclick="closeRequestChatModal({{ $requestList->id }})" aria-label="關閉聊天室">✕</button>
                                             </div>
@@ -610,7 +612,7 @@
 
                                                 <div>
                                                     <label class="block text-sm font-medium text-gray-700 mb-1">店家</label>
-                                                    <input type="text" name="store_name" value="{{ $requestList->title }}" class="w-full border-gray-300 rounded-lg" placeholder="請輸入店家名稱">
+                                                    <input type="text" name="store_name" value="{{ $requestList->store_name }}" class="w-full border-gray-300 rounded-lg" placeholder="請輸入店家名稱">
                                                 </div>
 
                                                 <div>

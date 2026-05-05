@@ -12,20 +12,22 @@
         </div>
 
         <div class="flex items-center gap-4">
-            <form method="GET" action="{{ route('dashboard') }}" style="display: flex; gap: 8px; min-width: 280px;">
-                <input type="hidden" name="section" value="history-records">
-                <input type="hidden" name="history_type" value="{{ $currentHistoryType }}">
-                <input
-                    type="search"
-                    name="history_search"
-                    placeholder="{{ $currentHistoryType === 'request-lists' ? '搜尋請購標題、狀態、代購人...' : '搜尋訂單標題、狀態、代購人...' }}"
-                    value="{{ request('history_search') }}"
-                    style="padding: 8px 12px; border: 2px solid #0e0e0f; border-radius: 8px; font-size: 14px; min-width: 220px; flex: 1;"
-                >
-                <button type="submit" style="padding: 8px 16px; background: #64748b; color: white; border: none; border-radius: 8px; cursor: pointer;">
-                    🔍
-                </button>
-            </form>
+           <form method="GET" action="{{ route('dashboard') }}" class="relative w-full md:w-96">
+    <input type="hidden" name="section" value="history-records">
+    <input type="hidden" name="history_type" value="{{ $currentHistoryType }}">
+
+    <button type="submit" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#64748b] transition">
+        <i class="bi bi-search"></i>
+        </button>
+
+    <input 
+        type="search" 
+        name="history_search" 
+        placeholder="{{ $currentHistoryType === 'request-lists' ? '搜尋請購標題、狀態、代購人...' : '搜尋訂單標題、狀態、代購人...' }}" 
+        value="{{ request('history_search') }}"
+        class="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#64748b] focus:border-[#64748b] shadow-sm transition outline-none"
+    >
+</form>
         </div>
     </div>
 
