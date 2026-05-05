@@ -202,7 +202,7 @@
                                                             @method('PATCH')
                                                             <button type="submit" class="inline-flex items-center rounded-lg bg-emerald-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-600">完成</button>
                                                         </form>  
-                                                         <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-amber-200 bg-amber-100 text-amber-600 shadow-sm transition hover:bg-amber-200" title="提醒功能開發中" aria-label="提醒功能開發中">
+                                                         <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-amber-200 bg-amber-100 text-amber-600 shadow-sm transition hover:bg-amber-200" title="通知中心" aria-label="通知中心" onclick="openRequestNoticeModal({{ $requestList->id }})">
                                                             🔔
                                                         </button>              
                                                     @endif
@@ -571,6 +571,29 @@
                                         </div>
                                     </div>
                                 @endif
+
+                                 <div id="request-notice-modal-{{ $requestList->id }}" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 px-4 py-6" onclick="handleRequestNoticeBackdrop(event, {{ $requestList->id }})">
+                                    <div class="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
+                                        <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+                                            <h4 class="text-lg font-bold text-slate-800">通知中心</h4>
+                                            <button type="button" class="rounded-full bg-slate-100 px-2 py-1 text-slate-500 hover:bg-slate-200" onclick="closeRequestNoticeModal({{ $requestList->id }})">✕</button>
+                                        </div>
+                                        <div class="space-y-4 px-5 py-5 text-sm leading-7 text-slate-700">
+                                            @if($requestList->status === 'pending')
+                                                <p>這裡會顯示此請託單有哪些代購人報價，您可以<span class="font-semibold text-green-600">接受</span>、<span class="font-semibold text-red-600">拒絕</span>、<span class="font-semibold text-amber-600">查看詳細內容</span>。</p>
+                                                <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                                     <p class="text-slate-500">此請託單尚未有代購人報價請耐心等候...</p>
+                                                </div>
+                                            @elseif($requestList->status === 'offered')
+                                                <p>這裡會顯示此請託單有哪些代購人報價，您可以<span class="font-semibold text-green-600">接受</span>、<span class="font-semibold text-red-600">拒絕</span>、<span class="font-semibold text-amber-600">查看詳細內容</span>。</p>
+                                                <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                                     <p class="text-slate-500">功能開發中...</p>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+
 
                             @endif
 

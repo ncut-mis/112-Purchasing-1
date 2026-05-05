@@ -475,14 +475,14 @@
                                     ->get();
 
                                 $statusLabelMap = [
-                                    'pending'   => '請託人確認中',
-                                    'offered'   => '已接單（待請購人確認）',
+                                    'pending'   => '請託人確認中...',
+                                    'offered'   => '已接單(待請購人已接受)',
                                     'matched'   => '已配對成功',
                                     'completed' => '已完成',
                                 ];
 
                                 $statusClassMap = [
-                                    'pending'   => 'bg-blue-50 text-blue-700 border-blue-200',
+                                    'pending'   => 'bg-red-50 text-red-700 border-red-200',
                                     'offered'   => 'bg-amber-50 text-amber-700 border-amber-200',
                                     'matched'   => 'bg-emerald-50 text-emerald-700 border-emerald-200',
                                     'completed' => 'bg-slate-100 text-slate-700 border-slate-200',
@@ -509,7 +509,7 @@
                                                     </span>
                                                 </div>
                                                 <p class="mt-1 text-xs text-gray-500">
-                                                    請購人：{{ $requestList->user->name ?? '未知會員' }} ・
+                                                    請託人：{{ $requestList->user->name ?? '未知會員' }} ・
                                                     截止日：{{ optional($requestList->deadline)->format('Y-m-d') ?? '-' }}
                                                 </p>
                                                 @if($firstItem)
@@ -555,8 +555,8 @@
                                         <div class="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
                                             <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4">
                                                 <div>
-                                                    <p class="text-xs text-gray-500">請託單 #{{ $requestList->id }}</p>
-                                                    <h4 class="text-lg font-bold text-gray-800">{{ $requestList->title }}</h4>
+                                                    <p class="text-xs text-gray-500">請託單【{{ $requestList->title}}】</p>
+                                                    <h4 class="text-lg font-bold text-gray-800">請託人{{ $requestList->user->name ?? '使用者' }}</h4>
                                                 </div>
                                                 <button type="button" class="text-2xl text-gray-500 hover:text-gray-700" onclick="closeAgentRequestChatModal({{ $requestList->id }})" aria-label="關閉聊天室">✕</button>
                                             </div>

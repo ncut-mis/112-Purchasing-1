@@ -725,7 +725,27 @@
             }
         }
 
+        function openRequestNoticeModal(id) {
+            const modal = document.getElementById(`request-notice-modal-${id}`);
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.classList.add('overflow-hidden');
+        }
 
+        function closeRequestNoticeModal(id) {
+            const modal = document.getElementById(`request-notice-modal-${id}`);
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        function handleRequestNoticeBackdrop(event, id) {
+            if (event.target.id === `request-notice-modal-${id}`) {
+                closeRequestNoticeModal(id);
+            }
+        }
 
 // 1. 控制選擇視窗
     function openFollowChoiceModal(id, title, searchUrl) {
