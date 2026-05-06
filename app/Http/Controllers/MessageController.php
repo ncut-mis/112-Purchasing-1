@@ -10,23 +10,30 @@ use Illuminate\Support\Facades\Auth;
 
 class MessageController extends Controller
 {
-    // 顯示聊天頁面，帶入歷史對話對象
+    // 請購人聊天頁：只顯示「我主動找的 approved agent」的對話
     public function index(Request $request)
     {
         $userId = Auth::id();
 
-        // 找出所有曾經和我聊過天的人
-        $sentTo = \DB::table('messages')->where('sender_id', $userId)->pluck('receiver_id');
-        $receivedFrom = \DB::table('messages')->where('receiver_id', $userId)->pluck('sender_id');
-        $partnerIds = $sentTo->merge($receivedFrom)->unique()->values();
-        $chatPartners = User::whereIn('id', $partnerIds)->get();
+        // 找出「我寄給對方」且「對方是 approved agent」的對話對象
+        $agentIds = \DB::table('agent_applications')
+            ->where('status', 'approved')
+            ->pluck('user_id');
+
+        $sentToAgentIds = \DB::table('messages')
+            ->where('sender_id', $userId)
+            ->whereIn('receiver_id', $agentIds)
+            ->pluck('receiver_id')
+            ->unique()
+            ->values();
+
+        $chatPartners = User::whereIn('id', $sentToAgentIds)->get();
 
         // 如果從找代購頁面帶來 ?partner=ID，自動加入對話列表
         $autoOpenPartnerId = null;
         if ($request->filled('partner')) {
             $partner = User::find($request->partner);
             if ($partner && $partner->id !== $userId) {
-                // 如果不在歷史對話列表裡，加進去
                 if (!$chatPartners->contains('id', $partner->id)) {
                     $chatPartners->push($partner);
                 }
@@ -35,6 +42,28 @@ class MessageController extends Controller
         }
 
         return view('messages.index', compact('chatPartners', 'autoOpenPartnerId'));
+    }
+
+    // 代購人聊天頁：只顯示「一般會員寄給我」的對話
+    public function agentIndex(Request $request)
+    {
+        $userId = Auth::id();
+
+        // 找出「寄給我」且「對方不是 approved agent」的對話對象
+        $agentIds = \DB::table('agent_applications')
+            ->where('status', 'approved')
+            ->pluck('user_id');
+
+        $buyerIds = \DB::table('messages')
+            ->where('receiver_id', $userId)
+            ->whereNotIn('sender_id', $agentIds)
+            ->pluck('sender_id')
+            ->unique()
+            ->values();
+
+        $chatPartners = User::whereIn('id', $buyerIds)->get();
+
+        return view('agent.chat', compact('chatPartners'));
     }
 
     // 取得與某人的歷史訊息

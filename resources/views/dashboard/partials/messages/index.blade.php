@@ -96,7 +96,15 @@
         // ── 基本設定 ──────────────────────────────────────────
         const MY_ID   = {{ Auth::id() }};
         const MY_NAME = @json(Auth::user()->name);
-        const CSRF    = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const CSRF_META  = document.querySelector('meta[name="csrf-token"]');
+        const CSRF_INPUT = document.querySelector('#chat-form input[name="_token"]');
+        const CSRF       = (CSRF_META && CSRF_META.getAttribute('content'))
+            || (CSRF_INPUT && CSRF_INPUT.value)
+            || '';
+
+        if (!CSRF) {
+            console.warn('CSRF token not found; send/history requests may fail.');
+        }
 
         const userList      = document.getElementById('user-list');
         const chatHeader    = document.getElementById('chat-header');
@@ -179,6 +187,7 @@
             partner.unread = 0;
             renderUserList();
             renderHeader(partner);
+            enableInput(true);
 
             // 如果已有載入的訊息就直接顯示，否則從 API 拿
             if (partner.messages.length > 0) {
@@ -191,11 +200,18 @@
             fetch(`/messages/${partnerId}/history`, {
                 headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
             })
-            .then(r => r.json())
+            .then(r => {
+                if (!r.ok) throw new Error(`history http ${r.status}`);
+                return r.json();
+            })
             .then(messages => {
-                partner.messages = messages;
+                partner.messages = Array.isArray(messages) ? messages : [];
                 renderMessages();
-                enableInput(true);
+            })
+            .catch(err => {
+                console.error('load history failed:', err);
+                partner.messages = [];
+                renderMessages();
             });
         }
 
@@ -217,7 +233,10 @@
                 },
                 body: JSON.stringify({ receiver_id: currentPartnerId, body: text }),
             })
-            .then(r => r.json())
+            .then(r => {
+                if (!r.ok) throw new Error(`send http ${r.status}`);
+                return r.json();
+            })
             .then(msg => {
                 const partner = partners.find(p => p.id === currentPartnerId);
                 if (partner) {
@@ -225,10 +244,15 @@
                     renderMessages();
                     renderUserList();
                 }
+            })
+            .catch(err => {
+                console.error('send message failed:', err);
+                chatInput.value = text;
+            })
+            .finally(() => {
                 sendBtn.disabled = false;
                 chatInput.focus();
-            })
-            .catch(() => { sendBtn.disabled = false; });
+            });
         });
 
         // ── 新增聊天：搜尋用戶 ────────────────────────────────

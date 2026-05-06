@@ -56,7 +56,7 @@
                             <a href="{{ route('shop.show', $agent->id) }}" class="flex-1 bg-gray-50 text-gray-600 py-2.5 rounded-xl text-xs font-bold hover:bg-gray-100 transition">
                                 查看檔案
                             </a>
-                            <a href="{{ route('agent.chat', ['user_id' => $agent->id]) }}" class="flex-1 bg-amber-500 text-white py-2.5 rounded-xl text-xs font-bold hover:bg-amber-600 shadow-sm transition flex items-center justify-center gap-1">
+                            <a href="{{ route('messages.index') }}?partner={{ $agent->id }}" class="flex-1 bg-amber-500 text-white py-2.5 rounded-xl text-xs font-bold hover:bg-amber-600 shadow-sm transition flex items-center justify-center gap-1">
                                 <i class="bi bi-chat-dots-fill"></i> 聊一聊
                             </a>
                         </div>

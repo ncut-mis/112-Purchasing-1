@@ -31,9 +31,10 @@
 
                 <!-- 互動按鈕 -->
                 <div class="md:pb-6 flex gap-3">
-                    <button class="bg-white text-emerald-800 px-8 py-3 rounded-2xl font-black shadow-lg hover:bg-emerald-50 transition flex items-center gap-2">
+                    <a href="@auth{{ route('messages.index') }}?partner={{ $agent->id }}@else{{ route('login') }}@endauth"
+                       class="bg-white text-emerald-800 px-8 py-3 rounded-2xl font-black shadow-lg hover:bg-emerald-50 transition flex items-center gap-2">
                         <i class="bi bi-chat-fill"></i> 聊一聊
-                    </button>
+                    </a>
                     <button class="bg-white/10 hover:bg-white/20 text-white p-3 rounded-2xl border border-white/20 transition">
                         <i class="bi bi-share"></i>
                     </button>

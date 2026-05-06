@@ -133,14 +133,8 @@ Route::get('/', function () {
     Route::post('/agent/profile', [AgentApplicationController::class, 'updateProfile'])->name('agent.profile.update');
     // --- 請購人/一般會員的聊天路由 ---
     Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
-    Route::get('/messages/{user}/history', [MessageController::class, 'history'])->name('messages.history');
-    Route::post('/messages/send', [MessageController::class, 'send'])->name('messages.send');
-    Route::get('/messages/search-users', [MessageController::class, 'searchUsers'])->name('messages.search-users');
-    Route::get('/messages/unread-count', [MessageController::class, 'unreadCount'])->name('messages.unread-count');
     // --- 代購人專屬的聊天路由 ---
-    Route::get('/agent/chat', function () {
-    return view('agent.chat'); // 指向 resources/views/agent/chat.blade.php
-    })->name('agent.chat');
+    Route::get('/agent/chat', [MessageController::class, 'agentIndex'])->name('agent.chat');
     
     // 查看代購人詳細資料
     Route::get('/agent/{id}/profile', [ShopController::class, 'show'])->name('agent.show');
