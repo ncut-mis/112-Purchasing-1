@@ -464,32 +464,75 @@
 
                     <!-- 分頁二：訂單管理 -->
                     <div x-show="activeTab === 'order-management'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4">
-                        <section id="order-management" class="bg-white rounded-2xl shadow-sm border border-indigo-100 p-6">
-                            <h3 class="text-lg font-bold text-indigo-600 mb-6">【請託單】訂單管理</h3>
+                        <section id="order-management" class="bg-white rounded-2xl shadow-sm border border-indigo-100 p-6" x-data="{ orderTab: 'pending' }">
+                            <h3 class="text-lg font-bold text-indigo-600 mb-4">【請託單】訂單管理</h3>
+
+                            {{-- 切換按鈕 --}}
+                            <div class="flex gap-2 mb-6 border-b border-gray-100 pb-4">
+                                <button type="button"
+                                    @click="orderTab = 'pending'"
+                                    :class="orderTab === 'pending' ? 'bg-red-50 text-red-700 border-red-300 font-bold' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'"
+                                    class="px-4 py-1.5 rounded-full border text-xs transition">
+                                    確認中
+                                </button>
+                                <button type="button"
+                                    @click="orderTab = 'accepted'"
+                                    :class="orderTab === 'accepted' ? 'bg-emerald-50 text-emerald-700 border-emerald-300 font-bold' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'"
+                                    class="px-4 py-1.5 rounded-full border text-xs transition">
+                                    已接單
+                                </button>
+                                <button type="button"
+                                    @click="orderTab = 'rejected'"
+                                    :class="orderTab === 'rejected' ? 'bg-gray-100 text-gray-700 border-gray-300 font-bold' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'"
+                                    class="px-4 py-1.5 rounded-full border text-xs transition">
+                                    已拒絕
+                                </button>
+                            </div>
+
                             @php
-                                // 透過 quotes 找出代購人有報價的請購單
-                                $myQuotes = \App\Models\Quote::with(['requestList.user:id,name', 'requestList.items:id,request_list_id,name,quantity'])
+                                // 確認中：quote status = pending
+                                $pendingQuotes = \App\Models\Quote::with(['requestList.user:id,name', 'requestList.items:id,request_list_id,name,quantity'])
                                     ->where('user_id', Auth::id())
-                                    ->whereIn('status', ['pending', 'accepted'])
+                                    ->where('status', 'pending')
                                     ->latest('updated_at')
                                     ->get();
 
+                                // 已接單：quote status = accepted
+                                $acceptedQuotes = \App\Models\Quote::with(['requestList.user:id,name', 'requestList.items:id,request_list_id,name,quantity'])
+                                    ->where('user_id', Auth::id())
+                                    ->where('status', 'accepted')
+                                    ->latest('updated_at')
+                                    ->get();
+
+                                // 已拒絕：quote status = rejected
+                                $rejectedQuotes = \App\Models\Quote::with(['requestList.user:id,name', 'requestList.items:id,request_list_id,name,quantity'])
+                                    ->where('user_id', Auth::id())
+                                    ->where('status', 'rejected')
+                                    ->latest('updated_at')
+                                    ->get();
+
+                                $myQuotes = $pendingQuotes; // 保留相容性
+
                                 $statusLabelMap = [
                                     'pending'   => '請託人確認中...',
-                                    'offered'   => '已接單(待請購人已接受)',
+                                    'accepted'  => '已接單',
+                                    'rejected'  => '已拒絕',
                                     'matched'   => '已配對成功',
                                     'completed' => '已完成',
                                 ];
 
                                 $statusClassMap = [
                                     'pending'   => 'bg-red-50 text-red-700 border-red-200',
-                                    'offered'   => 'bg-amber-50 text-amber-700 border-amber-200',
+                                    'accepted'  => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                    'rejected'  => 'bg-gray-100 text-gray-600 border-gray-200',
                                     'matched'   => 'bg-emerald-50 text-emerald-700 border-emerald-200',
                                     'completed' => 'bg-slate-100 text-slate-700 border-slate-200',
                                 ];
                             @endphp
-                            <div class="space-y-4">
-                                @forelse($myQuotes as $quote)
+
+                            {{-- 確認中 --}}
+                            <div x-show="orderTab === 'pending'" class="space-y-4">
+                                @forelse($pendingQuotes as $quote)
                                     @php
                                         $requestList = $quote->requestList;
                                         if (!$requestList) continue;
@@ -594,10 +637,106 @@
                                     </div>
                                 @empty
                                     <div class="text-gray-400 text-sm text-center py-8 border border-dashed border-indigo-200 rounded-xl">
-                                         尚未接取任何請託單，請先到「接單大廳」接取會員的請託單。
+                                        目前沒有確認中的報價。
                                     </div>
                                 @endforelse
                             </div>
+
+                            {{-- 已接單 --}}
+                            <div x-show="orderTab === 'accepted'" class="space-y-4">
+                                @forelse($acceptedQuotes as $quote)
+                                    @php
+                                        $requestList = $quote->requestList;
+                                        if (!$requestList) continue;
+                                        $firstItem = $requestList->items->first();
+                                    @endphp
+                                    <div class="rounded-xl border border-emerald-100 bg-emerald-50/40 p-4">
+                                        <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                                            <div class="min-w-0">
+                                                <div class="flex items-center gap-2 flex-wrap">
+                                                    <h4 class="text-base font-bold text-gray-800 truncate">{{ $requestList->title }}</h4>
+                                                    <span class="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold bg-emerald-50 text-emerald-700 border-emerald-200">已接單</span>
+                                                </div>
+                                                <p class="mt-1 text-xs text-gray-500">
+                                                    請託人：{{ $requestList->user->name ?? '未知會員' }} ・
+                                                    截止日：{{ optional($requestList->deadline)->format('Y-m-d') ?? '-' }}
+                                                </p>
+                                                @if($firstItem)
+                                                    <p class="mt-2 text-sm text-gray-700">
+                                                        商品：{{ $firstItem->name }} × {{ (int) $firstItem->quantity }}
+                                                        @if($requestList->items->count() > 1)
+                                                            <span class="text-xs text-gray-500">（另有 {{ $requestList->items->count() - 1 }} 項）</span>
+                                                        @endif
+                                                    </p>
+                                                @endif
+                                                <p class="mt-1 text-sm text-indigo-700 font-semibold">
+                                                    我的報價：NT$ {{ number_format((float) ($quote->price ?? 0), 0) }}
+                                                </p>
+                                            </div>
+                                            <div class="flex items-center gap-2 shrink-0">
+                                                <button type="button"
+                                                   onclick="openAgentRequestChatModal({{ $requestList->id }})"
+                                                   class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700 transition">
+                                                    聊天
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="text-gray-400 text-sm text-center py-8 border border-dashed border-emerald-200 rounded-xl">
+                                        目前沒有已接單的訂單。
+                                    </div>
+                                @endforelse
+                            </div>
+
+                            {{-- 已拒絕 --}}
+                            <div x-show="orderTab === 'rejected'" class="space-y-4">
+                                @forelse($rejectedQuotes as $quote)
+                                    @php
+                                        $requestList = $quote->requestList;
+                                        if (!$requestList) continue;
+                                        $firstItem = $requestList->items->first();
+                                    @endphp
+                                    <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                                        <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                                            <div class="min-w-0">
+                                                <div class="flex items-center gap-2 flex-wrap">
+                                                    <h4 class="text-base font-bold text-gray-800 truncate">{{ $requestList->title }}</h4>
+                                                    <span class="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold bg-gray-100 text-gray-600 border-gray-200">已拒絕</span>
+                                                </div>
+                                                <p class="mt-1 text-xs text-gray-500">
+                                                    請託人：{{ $requestList->user->name ?? '未知會員' }} ・
+                                                    截止日：{{ optional($requestList->deadline)->format('Y-m-d') ?? '-' }}
+                                                </p>
+                                                @if($firstItem)
+                                                    <p class="mt-2 text-sm text-gray-700">
+                                                        商品：{{ $firstItem->name }} × {{ (int) $firstItem->quantity }}
+                                                        @if($requestList->items->count() > 1)
+                                                            <span class="text-xs text-gray-500">（另有 {{ $requestList->items->count() - 1 }} 項）</span>
+                                                        @endif
+                                                    </p>
+                                                @endif
+                                                <p class="mt-1 text-sm text-indigo-700 font-semibold">
+                                                    我的報價：NT$ {{ number_format((float) ($quote->price ?? 0), 0) }}
+                                                </p>
+                                                <p class="mt-1 text-xs text-gray-400">被拒絕後仍可重新報價，前提是請託單尚未被其他代購人接走。</p>
+                                            </div>
+                                            <div class="flex items-center gap-2 shrink-0">
+                                                <button type="button"
+                                                   onclick="openAgentRequestChatModal({{ $requestList->id }})"
+                                                   class="inline-flex items-center rounded-lg bg-gray-500 px-3 py-2 text-xs font-bold text-white hover:bg-gray-600 transition">
+                                                    聊天
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="text-gray-400 text-sm text-center py-8 border border-dashed border-gray-200 rounded-xl">
+                                        目前沒有已拒絕的報價。
+                                    </div>
+                                @endforelse
+                            </div>
+
                         </section>
                     </div>
 
