@@ -85,7 +85,7 @@
         
         {{-- 右側搜尋區：使用 flex-grow 撐開空間 --}}
         <div class="flex-grow-1 ms-lg-5" style="max-width: 850px; width: 100%;">
-            <form action="{{ route('store') }}" method="GET">
+            <form action="{{ route('store.index') }}" method="GET">
                 <div class="search-wrapper d-flex align-items-center">
                     <i class="bi bi-search text-muted ms-3"></i>
                     <input type="text" name="search" class="form-control search-input" 
@@ -118,7 +118,7 @@
                 @if(request('country'))
                     <span class="filter-badge"><i class="bi bi-geo-alt me-1"></i>{{ request('country') }}</span>
                 @endif
-                <a href="{{ route('store') }}" class="btn btn-link btn-sm text-decoration-none text-danger ms-2">清除全部</a>
+                <a href="{{ route('store.index') }}" class="btn btn-link btn-sm text-decoration-none text-danger ms-2">清除全部</a>
             </div>
         @endif
 
