@@ -92,9 +92,13 @@
                 <div>
                     <h6 class="text-success fw-bold text-uppercase mb-1">Agent Posts</h6>
                     <h2 class="fw-bold">最新代購貼文</h2>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="fw-bold mb-0">推薦代購人</h4>
+                    {{-- 連結名稱改為「查看全部代購人」會更精準 --}}
+                    <a href="{{ route('store.index') }}" class="text-decoration-none text-muted">
+                        查看全部代購人 <i class="bi bi-arrow-right"></i>
+                    </a>
                 </div>
-                <a href="{{ route('store') }}" class="text-decoration-none text-muted">查看全部 <i class="bi bi-arrow-right"></i></a>
-            </div>
         @endif
 
 
@@ -448,7 +452,7 @@
         </div>
         
         <div class="text-center mt-5">
-            <a href="{{ route('store') }}" class="btn btn-outline-dark rounded-pill px-5 py-2">瀏覽所有貼文</a>
+            <a href="{{ route('store.index') }}" class="btn btn-outline-dark rounded-pill px-5 py-2">瀏覽所有貼文</a>
         </div>
     </div>
 </section>

@@ -29,7 +29,7 @@ Route::get('/agent/dashboard', [AgentDashboardController::class, 'index'])
     ->name('agent.dashboard');
 // **權限控制**：您應該在路由或控制中加入檢查，確保只有 `status == 'approved'` 的使用者才能進入此頁面。
 
-Route::get('/store', [ShopController::class, 'store'])->name('store');
+Route::get('/shop/store', [ShopController::class, 'store'])->name('store');
 
 // 2. 新增 'shop.show'，解決追蹤名單與通知的錯誤
 // 通常查看特定代購人需要帶 ID，所以加上 {id}
@@ -260,4 +260,4 @@ Route::middleware('auth')->group(function () {
 
 Route::post('/quotes/{quote}/reject', [QuoteController::class, 'reject'])->name('quotes.reject');
 //展開貼文
-Route::get('/store', [App\Http\Controllers\AgentPostController::class, 'index'])->name('store');
+Route::get('/store', [AgentPostController::class, 'index'])->name('store.index');
