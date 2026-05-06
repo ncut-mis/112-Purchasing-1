@@ -199,7 +199,7 @@
                     'X-CSRF-TOKEN': CSRF,
                     'Accept': 'application/json',
                 },
-                body: JSON.stringify({ receiver_id: currentPartnerId, body: text }),
+                body: JSON.stringify({ receiver_id: currentPartnerId, body: text, context: 'agent' }),
             })
             .then(r => r.json())
             .then(msg => {

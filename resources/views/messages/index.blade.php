@@ -231,7 +231,7 @@
                     'X-CSRF-TOKEN': CSRF,
                     'Accept': 'application/json',
                 },
-                body: JSON.stringify({ receiver_id: currentPartnerId, body: text }),
+                body: JSON.stringify({ receiver_id: currentPartnerId, body: text, context: 'buyer' }),
             })
             .then(r => {
                 if (!r.ok) throw new Error(`send http ${r.status}`);

@@ -10,24 +10,19 @@ use Illuminate\Support\Facades\Auth;
 
 class MessageController extends Controller
 {
-    // 請購人聊天頁：只顯示「我主動找的 approved agent」的對話
+    // 請購人聊天頁：只顯示「我以 buyer 身份發送」的對話對象
     public function index(Request $request)
     {
         $userId = Auth::id();
 
-        // 找出「我寄給對方」且「對方是 approved agent」的對話對象
-        $agentIds = \DB::table('agent_applications')
-            ->where('status', 'approved')
-            ->pluck('user_id');
-
-        $sentToAgentIds = \DB::table('messages')
+        $sentToIds = \DB::table('messages')
             ->where('sender_id', $userId)
-            ->whereIn('receiver_id', $agentIds)
+            ->where('context', 'buyer')
             ->pluck('receiver_id')
             ->unique()
             ->values();
 
-        $chatPartners = User::whereIn('id', $sentToAgentIds)->get();
+        $chatPartners = User::whereIn('id', $sentToIds)->get();
 
         // 如果從找代購頁面帶來 ?partner=ID，自動加入對話列表
         $autoOpenPartnerId = null;
@@ -44,24 +39,29 @@ class MessageController extends Controller
         return view('messages.index', compact('chatPartners', 'autoOpenPartnerId'));
     }
 
-    // 代購人聊天頁：只顯示「一般會員寄給我」的對話
+    // 代購人聊天頁：顯示「以 buyer 身份傳給我」或「我以 agent 身份回覆過」的對話對象
     public function agentIndex(Request $request)
     {
         $userId = Auth::id();
 
-        // 找出「寄給我」且「對方不是 approved agent」的對話對象
-        $agentIds = \DB::table('agent_applications')
-            ->where('status', 'approved')
-            ->pluck('user_id');
-
-        $buyerIds = \DB::table('messages')
+        // 別人以 buyer 身份傳給我
+        $receivedFrom = \DB::table('messages')
             ->where('receiver_id', $userId)
-            ->whereNotIn('sender_id', $agentIds)
-            ->pluck('sender_id')
+            ->where('context', 'buyer')
+            ->pluck('sender_id');
+
+        // 我以 agent 身份回覆的對象
+        $sentTo = \DB::table('messages')
+            ->where('sender_id', $userId)
+            ->where('context', 'agent')
+            ->pluck('receiver_id');
+
+        $partnerIds = $receivedFrom->merge($sentTo)
             ->unique()
+            ->filter(fn($id) => $id != $userId)
             ->values();
 
-        $chatPartners = User::whereIn('id', $buyerIds)->get();
+        $chatPartners = User::whereIn('id', $partnerIds)->get();
 
         return view('agent.chat', compact('chatPartners'));
     }
@@ -98,23 +98,24 @@ class MessageController extends Controller
         return response()->json($messages);
     }
 
-    // 傳送訊息並廣播
+    // 傳送訊息並廣播（接收 context 參數）
     public function send(Request $request)
     {
         $request->validate([
             'receiver_id' => 'required|exists:users,id',
             'body'        => 'required|string|max:1000',
+            'context'     => 'in:buyer,agent',
         ]);
 
         $message = Message::create([
             'sender_id'   => Auth::id(),
             'receiver_id' => $request->receiver_id,
             'body'        => $request->body,
+            'context'     => $request->input('context', 'buyer'),
         ]);
 
         $message->load('sender');
 
-        // 廣播給接收者的私人頻道
         broadcast(new MessageSent(
             Auth::user()->name,
             $request->body,
@@ -133,7 +134,7 @@ class MessageController extends Controller
         ]);
     }
 
-    // 取得可以開啟新對話的用戶（排除已有對話的）
+    // 取得可以開啟新對話的用戶
     public function searchUsers(Request $request)
     {
         $keyword = $request->get('q', '');

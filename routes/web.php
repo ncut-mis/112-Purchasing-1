@@ -133,6 +133,10 @@ Route::get('/', function () {
     Route::post('/agent/profile', [AgentApplicationController::class, 'updateProfile'])->name('agent.profile.update');
     // --- 請購人/一般會員的聊天路由 ---
     Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
+    // --- 聊天 API 路由 ---
+    Route::get('/messages/search-users', [MessageController::class, 'searchUsers'])->name('messages.search-users');
+    Route::get('/messages/{user}/history', [MessageController::class, 'history'])->name('messages.history');
+    Route::post('/messages/send', [MessageController::class, 'send'])->name('messages.send');
     // --- 代購人專屬的聊天路由 ---
     Route::get('/agent/chat', [MessageController::class, 'agentIndex'])->name('agent.chat');
     
@@ -261,5 +265,3 @@ Route::middleware('auth')->group(function () {
 Route::post('/quotes/{quote}/reject', [QuoteController::class, 'reject'])->name('quotes.reject');
 //展開貼文
 Route::get('/store', [AgentPostController::class, 'index'])->name('store.index');
-
-
