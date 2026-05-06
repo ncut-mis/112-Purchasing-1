@@ -2,78 +2,129 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\MessageSent;
 use App\Models\Message;
-use App\Models\RequestList;
-use Illuminate\Http\RedirectResponse;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
+use Illuminate\Support\Facades\Auth;
 
 class MessageController extends Controller
 {
-    public function index(Request $request): View|RedirectResponse
+    // 顯示聊天頁面，帶入歷史對話對象
+    public function index(Request $request)
     {
-        $requestListId = (int) $request->query('id');
+        $userId = Auth::id();
 
-        if ($requestListId < 1) {
-            return redirect()
-                ->route('dashboard')
-                ->with('status', '請先從請購清單進入指定聊天。');
+        // 找出所有曾經和我聊過天的人
+        $sentTo = \DB::table('messages')->where('sender_id', $userId)->pluck('receiver_id');
+        $receivedFrom = \DB::table('messages')->where('receiver_id', $userId)->pluck('sender_id');
+        $partnerIds = $sentTo->merge($receivedFrom)->unique()->values();
+        $chatPartners = User::whereIn('id', $partnerIds)->get();
+
+        // 如果從找代購頁面帶來 ?partner=ID，自動加入對話列表
+        $autoOpenPartnerId = null;
+        if ($request->filled('partner')) {
+            $partner = User::find($request->partner);
+            if ($partner && $partner->id !== $userId) {
+                // 如果不在歷史對話列表裡，加進去
+                if (!$chatPartners->contains('id', $partner->id)) {
+                    $chatPartners->push($partner);
+                }
+                $autoOpenPartnerId = $partner->id;
+            }
         }
 
-        $requestList = RequestList::with(['user'])->findOrFail($requestListId);
-        $this->authorizeChat($requestList, (int) $request->user()->id);
+        return view('messages.index', compact('chatPartners', 'autoOpenPartnerId'));
+    }
 
-        $messages = Message::where('request_list_id', $requestList->id)
-            ->where(function ($query) use ($requestList) {
-                $query->where(function ($inner) use ($requestList) {
-                    $inner->where('sender_id', $requestList->user_id)
-                        ->where('receiver_id', $requestList->people);
-                })->orWhere(function ($inner) use ($requestList) {
-                    $inner->where('sender_id', $requestList->people)
-                        ->where('receiver_id', $requestList->user_id);
-                });
+    // 取得與某人的歷史訊息
+    public function history(User $user)
+    {
+        $myId = Auth::id();
+
+        $messages = Message::with('sender')
+            ->where(function ($q) use ($myId, $user) {
+                $q->where('sender_id', $myId)->where('receiver_id', $user->id);
             })
-            ->with(['sender:id,name'])
+            ->orWhere(function ($q) use ($myId, $user) {
+                $q->where('sender_id', $user->id)->where('receiver_id', $myId);
+            })
             ->orderBy('created_at')
-            ->get();
+            ->get()
+            ->map(fn($m) => [
+                'id'        => $m->id,
+                'sender'    => $m->sender_id === $myId ? 'me' : 'other',
+                'name'      => $m->sender->name,
+                'text'      => $m->body,
+                'time'      => $m->created_at->format('H:i'),
+                'read_at'   => $m->read_at,
+            ]);
 
-        return view('messages.index', [
-            'requestList' => $requestList,
-            'messages' => $messages,
+        // 標記已讀
+        Message::where('sender_id', $user->id)
+            ->where('receiver_id', $myId)
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+
+        return response()->json($messages);
+    }
+
+    // 傳送訊息並廣播
+    public function send(Request $request)
+    {
+        $request->validate([
+            'receiver_id' => 'required|exists:users,id',
+            'body'        => 'required|string|max:1000',
+        ]);
+
+        $message = Message::create([
+            'sender_id'   => Auth::id(),
+            'receiver_id' => $request->receiver_id,
+            'body'        => $request->body,
+        ]);
+
+        $message->load('sender');
+
+        // 廣播給接收者的私人頻道
+        broadcast(new MessageSent(
+            Auth::user()->name,
+            $request->body,
+            Auth::id(),
+            $request->receiver_id,
+            $message->id,
+            $message->created_at->format('H:i'),
+        ))->toOthers();
+
+        return response()->json([
+            'id'      => $message->id,
+            'sender'  => 'me',
+            'name'    => Auth::user()->name,
+            'text'    => $message->body,
+            'time'    => $message->created_at->format('H:i'),
         ]);
     }
 
-    public function store(Request $request, RequestList $requestList): RedirectResponse
+    // 取得可以開啟新對話的用戶（排除已有對話的）
+    public function searchUsers(Request $request)
     {
-        $userId = (int) $request->user()->id;
-        $this->authorizeChat($requestList, $userId);
+        $keyword = $request->get('q', '');
+        $myId = Auth::id();
 
-        $validated = $request->validate([
-            'body' => ['required', 'string', 'max:2000'],
-        ]);
+        $users = User::where('id', '!=', $myId)
+            ->where('name', 'like', "%{$keyword}%")
+            ->limit(10)
+            ->get(['id', 'name']);
 
-        $receiverId = $userId === (int) $requestList->user_id
-            ? (int) $requestList->people
-            : (int) $requestList->user_id;
-
-        Message::create([
-            'request_list_id' => $requestList->id,
-            'sender_id' => $userId,
-            'receiver_id' => $receiverId,
-            'body' => trim($validated['body']),
-        ]);
-
-        return redirect()->route('messages.index', ['id' => $requestList->id]);
+        return response()->json($users);
     }
 
-    private function authorizeChat(RequestList $requestList, int $userId): void
+    // 取得未讀訊息數
+    public function unreadCount()
     {
-        $ownerId = (int) $requestList->user_id;
-        $agentId = (int) ($requestList->people ?? 0);
+        $count = Message::where('receiver_id', Auth::id())
+            ->whereNull('read_at')
+            ->count();
 
-        abort_if($agentId < 1, 403, '此請購清單尚未有接單代購人，無法聊天。');
-
-        $isParticipant = in_array($userId, [$ownerId, $agentId], true);
-        abort_unless($isParticipant, 403);
+        return response()->json(['count' => $count]);
     }
 }

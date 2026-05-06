@@ -177,7 +177,15 @@
                                     class="bg-gray-100 text-gray-600 py-3 rounded-2xl text-sm font-bold hover:bg-gray-200 transition">
                                     查看檔案
                                 </button>
-                                <button class="bg-emerald-500 text-white py-3 rounded-2xl text-sm font-bold hover:bg-emerald-600 shadow-lg shadow-emerald-100 transition flex items-center justify-center gap-2">
+                                <button
+                                    class="bg-emerald-500 text-white py-3 rounded-2xl text-sm font-bold hover:bg-emerald-600 shadow-lg shadow-emerald-100 transition flex items-center justify-center gap-2"
+                                    @click="
+                                        @auth
+                                            window.location.href = '{{ route('messages.index') }}?partner=' + {{ Js::from($agent->id) }};
+                                        @else
+                                            window.location.href = {{ Js::from(route('login')) }};
+                                        @endauth
+                                    ">
                                     <i class="bi bi-chat-fill"></i> 聊一聊
                                 </button>
                             </div>
@@ -230,7 +238,15 @@
                                 <span x-text="checkIsFollowed(activeAgent?.id) ? '已追蹤' : '追蹤'"></span>
                             </button>
 
-                            <button class="bg-white text-emerald-800 px-8 py-3 rounded-2xl font-black shadow-lg hover:bg-emerald-50 transition flex items-center gap-2">
+                            <button
+                                class="bg-white text-emerald-800 px-8 py-3 rounded-2xl font-black shadow-lg hover:bg-emerald-50 transition flex items-center gap-2"
+                                @click="
+                                    @auth
+                                        window.location.href = '{{ route('messages.index') }}?partner=' + activeAgent?.id;
+                                    @else
+                                        window.location.href = {{ Js::from(route('login')) }};
+                                    @endauth
+                                ">
                                 <i class="bi bi-chat-heart-fill"></i> 立即聊一聊
                             </button>
                         </div>
