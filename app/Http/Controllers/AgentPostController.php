@@ -209,4 +209,38 @@ class AgentPostController extends Controller
             $product?->delete();
         }
     }
+        public function index(Request $request)
+{
+    // 1. 初始化查詢，預載入 user 與 products 關聯
+    $query = AgentPost::where('status', 'open')
+                ->with(['user', 'products']);
+
+    // 2. 寬鬆搜尋邏輯
+    if ($request->filled('search')) {
+        $searchTerm = '%' . $request->search . '%';
+
+        $query->where(function($q) use ($searchTerm) {
+            // 搜尋貼文標題
+            $q->where('title', 'like', $searchTerm)
+              // 搜尋貼文描述
+              ->orWhere('description', 'like', $searchTerm)
+              // 搜尋該貼文下方的所有商品名稱 (關聯查詢)
+              ->orWhereHas('products', function($pq) use ($searchTerm) {
+                  $pq->where('name', 'like', $searchTerm);
+              });
+        });
+    }
+
+    // 3. 地區篩選
+    if ($request->filled('country')) {
+        $query->where('country', $request->country);
+    }
+
+    // 4. 執行分頁，變數名稱維持 $posts
+    $posts = $query->latest()
+                   ->paginate(12)
+                   ->withQueryString();
+
+    return view('store.index', compact('posts'));
+}
 }

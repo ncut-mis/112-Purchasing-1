@@ -265,3 +265,5 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::post('/quotes/{quote}/reject', [QuoteController::class, 'reject'])->name('quotes.reject');
+//展開貼文
+Route::get('/store', [App\Http\Controllers\AgentPostController::class, 'index'])->name('store');
