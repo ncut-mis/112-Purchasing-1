@@ -620,9 +620,14 @@
         });
 
         // 3. Modal 數量與金額即時計算 (優化邏輯)
-        document.querySelectorAll('.modal').forEach(modal => {
+        document.querySelectorAll('[id^="followOrderModal-"]').forEach(modal => {
             const form = modal.querySelector('.follow-order-form');
             const submitBtn = modal.querySelector('.follow-order-submit-btn');
+            const totalAmountNode = modal.querySelector('.total-amount');
+
+            if (!form || !submitBtn || !totalAmountNode) {
+                return;
+            }
 
             const updateTotals = () => {
                 let grandTotal = 0;
@@ -636,7 +641,7 @@
                     grandTotal += subtotal;
                     totalQuantity += qty;
                 });
-                modal.querySelector('.total-amount').textContent = grandTotal.toLocaleString();
+                totalAmountNode.textContent = grandTotal.toLocaleString();
                 if (submitBtn) {
                     submitBtn.disabled = totalQuantity < 1;
                 }
