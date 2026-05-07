@@ -479,9 +479,19 @@ submitQuote() {
                                 <i class="bi bi-calendar-check text-indigo-500"></i> 預計代購日期
                             </label>
                             <div class="relative">
+                                <!-- 【核心修正】：加入 :min 與 :max 屬性 -->
+                                <!-- min: 設定為今天，防止代購人選到過去的日期 -->
+                                <!-- max: 設定為 selectedRequest?.deadline，防止代購人選到請購截止日之後的日期 -->
                                 <input type="date" x-model="availableTime" 
+                                    :min="new Date().toISOString().split('T')[0]"
+                                    :max="selectedRequest?.deadline"
                                     class="w-full p-4 bg-white border-2 border-indigo-100 rounded-2xl text-sm font-bold text-gray-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-sm transition-all cursor-pointer">
-                        </div>
+                            </div>
+                            <!-- 加入提示小字增加 UX 體驗 -->
+                            <p class="text-[10px] text-amber-500 mt-2 font-bold" x-show="selectedRequest?.deadline">
+                                <i class="bi bi-info-circle"></i> 
+                                請購人要求之最後截止日為：<span x-text="selectedRequest.deadline"></span>
+                            </p>
                     </div>
 
                     <!-- 報價備註 -->
