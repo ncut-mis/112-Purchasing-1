@@ -545,12 +545,7 @@
                                     <div class="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4">
                                         <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                                             <div class="min-w-0">
-                                                <div class="flex items-center gap-2 flex-wrap">
-                                                    <h4 class="text-base font-bold text-gray-800 truncate">{{ $requestList->title }}</h4>
-                                                    <span class="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold {{ $statusClass }}">
-                                                        {{ $statusLabel }}
-                                                    </span>
-                                                </div>
+                                                <h4 class="text-base font-bold text-gray-800 truncate">{{ $requestList->title }}</h4>
                                                 <p class="mt-1 text-xs text-gray-500">
                                                     請託人：{{ $requestList->user->name ?? '未知會員' }} ・
                                                     截止日：{{ optional($requestList->deadline)->format('Y-m-d') ?? '-' }}
@@ -563,17 +558,80 @@
                                                         @endif
                                                     </p>
                                                 @endif
-                                                <p class="mt-1 text-sm text-indigo-700 font-semibold">
-                                                    我的報價：NT$ {{ number_format((float) ($quote->price ?? 0), 0) }}
-                                                </p>
+                                                
                                             </div>
-
                                             <div class="flex items-center gap-2 shrink-0">
+                                                <button type="button"
+                                                   onclick="document.getElementById('view-rl-{{ $quote->id }}').classList.remove('hidden');document.getElementById('view-rl-{{ $quote->id }}').classList.add('flex');"
+                                                   class="inline-flex items-center rounded-lg bg-gray-100 px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-200 transition">
+                                                    檢視
+                                                </button>
                                                 <button type="button"
                                                    onclick="openAgentRequestChatModal({{ $requestList->id }})"
                                                    class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700 transition">
                                                     聊天
                                                 </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {{-- 檢視完整請託單 Modal --}}
+                                    <div id="view-rl-{{ $quote->id }}" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4"
+                                         onclick="if(event.target===this){this.classList.add('hidden');this.classList.remove('flex');}">
+                                        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl max-h-[88vh] overflow-y-auto">
+                                            <div class="flex items-center justify-between border-b px-6 py-4">
+                                                <h4 class="text-lg font-bold text-gray-800">{{ $requestList->title }}</h4>
+                                                <button type="button" onclick="document.getElementById('view-rl-{{ $quote->id }}').classList.add('hidden');document.getElementById('view-rl-{{ $quote->id }}').classList.remove('flex');" class="text-2xl text-gray-400 hover:text-gray-600">&times;</button>
+                                            </div>
+                                            <div class="px-6 py-5 space-y-4">
+                                                <div class="grid grid-cols-2 gap-3 text-sm">
+                                                    <div><span class="text-gray-400 text-xs">請託人</span><p class="font-semibold text-gray-800 mt-0.5">{{ $requestList->user->name ?? '-' }}</p></div>
+                                                    <div><span class="text-gray-400 text-xs">代購國家</span><p class="font-semibold text-gray-800 mt-0.5">{{ $requestList->country ?? '-' }}</p></div>
+                                                    <div><span class="text-gray-400 text-xs">截止日期</span><p class="font-semibold text-gray-800 mt-0.5">{{ optional($requestList->deadline)->format('Y-m-d') ?? '-' }}</p></div>
+                                                    <div><span class="text-gray-400 text-xs">報價金額</span><p class="font-semibold text-indigo-700 mt-0.5">NT$ {{ number_format((float)($quote->price ?? 0), 0) }}</p></div>
+                                                    @if($requestList->store_name)
+                                                    <div><span class="text-gray-400 text-xs">指定店家</span><p class="font-semibold text-gray-800 mt-0.5">{{ $requestList->store_name }}</p></div>
+                                                    @endif
+                                                    @if($requestList->detail_address)
+                                                    <div class="col-span-2"><span class="text-gray-400 text-xs">詳細地址</span><p class="font-semibold text-gray-800 mt-0.5">{{ $requestList->detail_address }}</p></div>
+                                                    @endif
+                                                </div>
+                                                @if($requestList->note)
+                                                <div class="bg-amber-50 border border-amber-100 rounded-xl p-3">
+                                                    <p class="text-xs text-amber-600 font-bold mb-1">備註</p>
+                                                    <p class="text-sm text-gray-700 whitespace-pre-line">{{ $requestList->note }}</p>
+                                                </div>
+                                                @endif
+                                                <div>
+                                                    <p class="text-sm font-bold text-gray-700 mb-3">商品清單（{{ $requestList->items->count() }} 項）</p>
+                                                    <div class="space-y-3">
+                                                        @foreach($requestList->items as $item)
+                                                        <div class="rounded-xl border border-gray-100 p-3 flex gap-3">
+                                                            <div class="w-20 h-20 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
+                                                                @if($item->reference_image)
+                                                                    <img src="{{ route('request-item.image', $item) }}" alt="{{ $item->name }}" class="w-full h-full object-cover">
+                                                                @else
+                                                                    <i class="bi bi-image text-2xl text-gray-300"></i>
+                                                                @endif
+                                                            </div>
+                                                            <div class="flex-1 min-w-0">
+                                                                <p class="font-semibold text-gray-800 text-sm">{{ $item->name }}</p>
+                                                                <p class="text-xs text-gray-500 mt-0.5">數量：{{ (int) $item->quantity }} 件</p>
+                                                                @if($item->expected_price)
+                                                                    <p class="text-xs text-gray-500">期望單價：{{ $requestList->currency ?? 'NT$' }} {{ number_format((float)$item->expected_price, 0) }}</p>
+                                                                @endif
+                                                                @if($item->specification)
+                                                                    <p class="text-xs text-gray-500 mt-1">規格：{{ $item->specification }}</p>
+                                                                @endif
+                                                                @if($item->reference_url)
+                                                                    <a href="{{ $item->reference_url }}" target="_blank" class="text-xs text-indigo-500 hover:underline mt-1 inline-block">參考連結 →</a>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+                                                
                                             </div>
                                         </div>
                                     </div>
@@ -655,7 +713,6 @@
                                             <div class="min-w-0">
                                                 <div class="flex items-center gap-2 flex-wrap">
                                                     <h4 class="text-base font-bold text-gray-800 truncate">{{ $requestList->title }}</h4>
-                                                    <span class="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold bg-emerald-50 text-emerald-700 border-emerald-200">已接單</span>
                                                 </div>
                                                 <p class="mt-1 text-xs text-gray-500">
                                                     請託人：{{ $requestList->user->name ?? '未知會員' }} ・
@@ -669,16 +726,67 @@
                                                         @endif
                                                     </p>
                                                 @endif
-                                                <p class="mt-1 text-sm text-indigo-700 font-semibold">
-                                                    我的報價：NT$ {{ number_format((float) ($quote->price ?? 0), 0) }}
-                                                </p>
+                                                
                                             </div>
                                             <div class="flex items-center gap-2 shrink-0">
+                                                <button type="button"
+                                                    onclick="document.getElementById('view-modal-accepted-{{ $quote->id }}').classList.remove('hidden'); document.getElementById('view-modal-accepted-{{ $quote->id }}').classList.add('flex');"
+                                                    class="inline-flex items-center rounded-lg bg-gray-100 px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-200 transition">
+                                                    檢視
+                                                </button>
                                                 <button type="button"
                                                    onclick="openAgentRequestChatModal({{ $requestList->id }})"
                                                    class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700 transition">
                                                     聊天
                                                 </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="view-modal-accepted-{{ $quote->id }}" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 px-4"
+                                         onclick="if(event.target===this){this.classList.add('hidden');this.classList.remove('flex');}">
+                                        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl max-h-[88vh] overflow-y-auto relative">
+                                            <div class="flex items-center justify-between border-b px-6 py-4">
+                                                <h4 class="text-lg font-bold text-gray-800">{{ $requestList->title }}</h4>
+                                                <button type="button" class="text-2xl text-gray-400 hover:text-gray-600"
+                                                    onclick="document.getElementById('view-modal-accepted-{{ $quote->id }}').classList.add('hidden');document.getElementById('view-modal-accepted-{{ $quote->id }}').classList.remove('flex');">&times;</button>
+                                            </div>
+                                            <div class="px-6 py-4 space-y-4">
+                                                <div class="grid grid-cols-2 gap-3 text-sm">
+                                                    <div><span class="text-gray-400">請託人</span><p class="font-semibold text-gray-800">{{ $requestList->user->name ?? '-' }}</p></div>
+                                                    <div><span class="text-gray-400">國家／地區</span><p class="font-semibold text-gray-800">{{ $requestList->country ?? '-' }}</p></div>
+                                                    <div><span class="text-gray-400">店家名稱</span><p class="font-semibold text-gray-800">{{ $requestList->store_name ?? '-' }}</p></div>
+                                                    <div><span class="text-gray-400">截止日</span><p class="font-semibold text-gray-800">{{ optional($requestList->deadline)->format('Y-m-d') ?? '-' }}</p></div>
+                                                    <div><span class="text-gray-400">報價金額</span><p class="font-semibold text-indigo-700">NT$ {{ number_format((float)($quote->price ?? 0), 0) }}</p></div>
+                                                    <div><span class="text-gray-400">收件地址</span><p class="font-semibold text-gray-800">{{ $requestList->detail_address ?? '-' }}</p></div>
+                                                </div>
+                                                @if($requestList->note)
+                                                    <div class="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+                                                        <p class="text-xs text-amber-600 font-bold mb-1">備註</p>
+                                                        <p class="text-sm text-gray-700 whitespace-pre-line">{{ $requestList->note }}</p>
+                                                    </div>
+                                                @endif
+                                                <div>
+                                                    <h5 class="font-bold text-gray-800 mb-3 text-sm">商品清單</h5>
+                                                    <div class="space-y-3">
+                                                        @foreach($requestList->items as $item)
+                                                            <div class="rounded-xl border border-gray-100 p-3 flex gap-4 items-start">
+                                                                @if($item->reference_image)
+                                                                    <img src="{{ route('request-item.image', $item) }}" alt="{{ $item->name }}" class="w-20 h-20 rounded-lg object-cover border border-gray-100 flex-shrink-0">
+                                                                @else
+                                                                    <div class="w-20 h-20 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300 flex-shrink-0"><i class="bi bi-image text-2xl"></i></div>
+                                                                @endif
+                                                                <div class="flex-1 min-w-0">
+                                                                    <p class="font-semibold text-gray-800">{{ $item->name }}</p>
+                                                                    <p class="text-xs text-gray-500 mt-0.5">數量：{{ (int)$item->quantity }}</p>
+                                                                    @if($item->expected_price)<p class="text-xs text-gray-500">期望單價：NT$ {{ number_format((float)$item->expected_price, 0) }}</p>@endif
+                                                                    @if($item->specification)<p class="text-xs text-gray-500">規格：{{ $item->specification }}</p>@endif
+                                                                    @if($item->reference_url)<a href="{{ $item->reference_url }}" target="_blank" class="text-xs text-indigo-500 hover:underline mt-1 inline-block">參考連結 →</a>@endif
+                                                                </div>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+
                                             </div>
                                         </div>
                                     </div>
@@ -716,17 +824,68 @@
                                                         @endif
                                                     </p>
                                                 @endif
-                                                <p class="mt-1 text-sm text-indigo-700 font-semibold">
-                                                    我的報價：NT$ {{ number_format((float) ($quote->price ?? 0), 0) }}
-                                                </p>
+                                                
                                                 <p class="mt-1 text-xs text-gray-400">被拒絕後仍可重新報價，前提是請託單尚未被其他代購人接走。</p>
                                             </div>
                                             <div class="flex items-center gap-2 shrink-0">
+                                                <button type="button"
+                                                    onclick="document.getElementById('view-modal-rejected-{{ $quote->id }}').classList.remove('hidden'); document.getElementById('view-modal-rejected-{{ $quote->id }}').classList.add('flex');"
+                                                    class="inline-flex items-center rounded-lg bg-gray-100 px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-200 transition">
+                                                    檢視
+                                                </button>
                                                 <button type="button"
                                                    onclick="openAgentRequestChatModal({{ $requestList->id }})"
                                                    class="inline-flex items-center rounded-lg bg-gray-500 px-3 py-2 text-xs font-bold text-white hover:bg-gray-600 transition">
                                                     聊天
                                                 </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="view-modal-rejected-{{ $quote->id }}" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 px-4"
+                                         onclick="if(event.target===this){this.classList.add('hidden');this.classList.remove('flex');}">
+                                        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl max-h-[88vh] overflow-y-auto relative">
+                                            <div class="flex items-center justify-between border-b px-6 py-4">
+                                                <h4 class="text-lg font-bold text-gray-800">{{ $requestList->title }}</h4>
+                                                <button type="button" class="text-2xl text-gray-400 hover:text-gray-600"
+                                                    onclick="document.getElementById('view-modal-rejected-{{ $quote->id }}').classList.add('hidden');document.getElementById('view-modal-rejected-{{ $quote->id }}').classList.remove('flex');">&times;</button>
+                                            </div>
+                                            <div class="px-6 py-4 space-y-4">
+                                                <div class="grid grid-cols-2 gap-3 text-sm">
+                                                    <div><span class="text-gray-400">請託人</span><p class="font-semibold text-gray-800">{{ $requestList->user->name ?? '-' }}</p></div>
+                                                    <div><span class="text-gray-400">國家／地區</span><p class="font-semibold text-gray-800">{{ $requestList->country ?? '-' }}</p></div>
+                                                    <div><span class="text-gray-400">店家名稱</span><p class="font-semibold text-gray-800">{{ $requestList->store_name ?? '-' }}</p></div>
+                                                    <div><span class="text-gray-400">截止日</span><p class="font-semibold text-gray-800">{{ optional($requestList->deadline)->format('Y-m-d') ?? '-' }}</p></div>
+                                                    <div><span class="text-gray-400">報價金額</span><p class="font-semibold text-indigo-700">NT$ {{ number_format((float)($quote->price ?? 0), 0) }}</p></div>
+                                                    <div><span class="text-gray-400">收件地址</span><p class="font-semibold text-gray-800">{{ $requestList->detail_address ?? '-' }}</p></div>
+                                                </div>
+                                                @if($requestList->note)
+                                                    <div class="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+                                                        <p class="text-xs text-amber-600 font-bold mb-1">備註</p>
+                                                        <p class="text-sm text-gray-700 whitespace-pre-line">{{ $requestList->note }}</p>
+                                                    </div>
+                                                @endif
+                                                <div>
+                                                    <h5 class="font-bold text-gray-800 mb-3 text-sm">商品清單</h5>
+                                                    <div class="space-y-3">
+                                                        @foreach($requestList->items as $item)
+                                                            <div class="rounded-xl border border-gray-100 p-3 flex gap-4 items-start">
+                                                                @if($item->reference_image)
+                                                                    <img src="{{ route('request-item.image', $item) }}" alt="{{ $item->name }}" class="w-20 h-20 rounded-lg object-cover border border-gray-100 flex-shrink-0">
+                                                                @else
+                                                                    <div class="w-20 h-20 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300 flex-shrink-0"><i class="bi bi-image text-2xl"></i></div>
+                                                                @endif
+                                                                <div class="flex-1 min-w-0">
+                                                                    <p class="font-semibold text-gray-800">{{ $item->name }}</p>
+                                                                    <p class="text-xs text-gray-500 mt-0.5">數量：{{ (int)$item->quantity }}</p>
+                                                                    @if($item->expected_price)<p class="text-xs text-gray-500">期望單價：NT$ {{ number_format((float)$item->expected_price, 0) }}</p>@endif
+                                                                    @if($item->specification)<p class="text-xs text-gray-500">規格：{{ $item->specification }}</p>@endif
+                                                                    @if($item->reference_url)<a href="{{ $item->reference_url }}" target="_blank" class="text-xs text-indigo-500 hover:underline mt-1 inline-block">參考連結 →</a>@endif
+                                                                </div>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+
                                             </div>
                                         </div>
                                     </div>
