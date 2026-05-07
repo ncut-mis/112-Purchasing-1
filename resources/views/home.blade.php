@@ -442,37 +442,40 @@
     </div>
 </section>
 
-<!-- Section 2: 許願清單 (List/Grid Style) -->
-<section class="py-5 bg-light">
-    <div class="container">
-        <div class="text-center mb-5">
-            <h6 class="text-success fw-bold text-uppercase ls-1">Requests</h6>
-            <h2 class="fw-bold">大家都在找什麼？</h2>
-            <p class="text-muted">您可以接單這些請求，賺取代購費</p>
-        </div>
-        
-        <div class="text-center mt-5">
-            <a href="{{ route('store') }}" class="btn btn-outline-dark rounded-pill px-5 py-2">瀏覽所有貼文</a>
-        </div>
-    </div>
-</section>
 
-<!-- Newsletter / CTA Section -->
-<section class="py-5">
-    <div class="container">
-        <div class="bg-primary p-5 rounded-4 text-white text-center" style="background: linear-gradient(45deg, #5A9E8E, #3b7d6e);">
-            <div class="row justify-content-center">
-                <div class="col-lg-8">
-                    <h2 class="fw-bold mb-3">準備好開始代購了嗎？</h2>
-                    <p class="lead mb-4 opacity-75">無論您是想買東西，還是即將出國想順便賺旅費，這裡都是您的最佳選擇。</p>
-                    <a href="{{ route('register') }}" class="btn btn-light text-success btn-lg rounded-pill px-5 fw-bold shadow">
-                        免費註冊會員
-                    </a>
+
+<!-- Newsletter / CTA Section (這裡就是您截圖中的區塊) -->
+    <section class="py-5">
+        <div class="container">
+            <!-- 使用您代碼中的漸層色設定 -->
+            <div class="p-5 rounded-4 text-white text-center shadow-lg" style="background: linear-gradient(45deg, #5A9E8E, #3b7d6e);">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <h2 class="fw-black mb-3">準備好開始代購了嗎？</h2>
+                        <p class="lead mb-4 opacity-75">無論您是想買東西，還是即將出國想順便賺旅費，這裡都是您的最佳選擇。</p>
+                        
+                        <!-- 【核心修改】：註冊按鈕連結至 /register -->
+                        <a href="{{ route('register') }}" class="btn btn-light text-success btn-lg rounded-pill px-5 fw-bold shadow-sm transition hover-scale">
+                            免費註冊會員
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
+
+    <style>
+        .fw-black { font-weight: 900; }
+        .hover-shadow:hover { transform: translateY(-5px); box-shadow: 0 1rem 3rem rgba(0,0,0,.1) !important; }
+        .transition { transition: all 0.3s ease; }
+        .hover-scale:hover { transform: scale(1.05); }
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    </style>
 
 @endsection
 @push('scripts')
