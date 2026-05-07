@@ -169,8 +169,11 @@
                                                 @php
                                                     $acceptedOffer = $requestList->offers->firstWhere('status', 'accepted');
                                                     $activeOffer = $acceptedOffer ?? $requestList->offers->first();
-                                                    $latestQuoteUserId = $requestList->quotes->sortByDesc('created_at')->first()?->user_id;
-                                                    $chatPartnerId = $requestList->people ?: $latestQuoteUserId;
+                                                    $latestActiveQuoteUserId = $requestList->quotes
+                                                        ->whereIn('status', ['pending', 'accepted'])
+                                                        ->sortByDesc('created_at')
+                                                        ->first()?->user_id;
+                                                    $chatPartnerId = $requestList->people ?: $latestActiveQuoteUserId;
                                                 @endphp
 
                                                 <div class="inline-flex items-center gap-3">
@@ -381,7 +384,18 @@
                                                                         </span>
                                                                     </div>
                                                                     <div>
-                                                                        <span class="inline-flex rounded-full bg-red-100 px-3 py-1 text-[10px] text-red-700">待確認</span>
+                                                                       @php
+                                                                            $quoteStatus = $quote->status ?? 'pending';
+                                                                            $statusLabel = [
+                                                                                'pending' => '待確認',
+                                                                                'accepted' => '已接受',
+                                                                            ][$quoteStatus] ?? $quoteStatus;
+                                                                            $statusClass = [
+                                                                                'pending' => 'bg-amber-100 text-amber-700',
+                                                                                'accepted' => 'bg-emerald-100 text-emerald-700',
+                                                                            ][$quoteStatus] ?? 'bg-slate-100 text-slate-700';
+                                                                        @endphp
+                                                                        <span class="inline-flex rounded-full px-3 py-1 text-[10px] {{ $statusClass }}">{{ $statusLabel }}</span>
                                                                     </div>
                                                                 </div>
                                                             @endforeach
@@ -461,6 +475,7 @@
                                 </div>
                                 @php
                                     $quotedAgents = $requestList->quotes
+                                     ->whereIn('status', ['pending', 'accepted'])
                                         ->map(fn ($quote) => $quote->user)
                                         ->filter()
                                         ->unique('id')
