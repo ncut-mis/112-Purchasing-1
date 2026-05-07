@@ -6,6 +6,25 @@
         // 初始化：確保 ID 都是數字型態以利比對
         followedAgents: {{ Js::from(Auth::user() ? Auth::user()->followings->pluck('id')->map(fn($id) => (int)$id) : []) }}, 
         
+        // 輔助函式：確保回傳的是陣列，解決 JSON 字串顯示為亂碼字元的問題
+        getArray(data) {
+            if (!data) return [];
+            if (Array.isArray(data)) return data;
+            try {
+                // 如果是字串則嘗試解析 JSON
+                return JSON.parse(data);
+            } catch (e) {
+                return [];
+            }
+        },
+
+        // 跳轉至「大廳 (首頁)」並搜尋特定貼文
+        goToPostSearch(title, postId) {
+            // 導向首頁，並附帶 search 與 post_id 參數以確保精準搜尋
+            const searchUrl = '{{ route('home') }}?search=' + encodeURIComponent(title) + '&post_id=' + postId;
+            window.location.href = searchUrl;
+        },
+
         openProfile(agent) {
             this.activeAgent = agent;
             this.showModal = true;
@@ -22,7 +41,7 @@
             if (!id) return false;
             return this.followedAgents.includes(Number(id));
         },
-        // 【核心邏輯：串接資料庫】
+        // 【核心邏輯：切換追蹤】
         async toggleFollow(id) {
             @guest
                 window.location.href = {{ Js::from(route('login')) }};
@@ -42,7 +61,7 @@
                         'X-CSRF-TOKEN': token,
                         'Accept': 'application/json'
                     },
-                    body: JSON.stringify({ followed_id: id })
+                    body: JSON.stringify({ user_id: id }) // 這裡對應後端 controller 慣用參數
                 });
 
                 const result = await response.json();
@@ -128,7 +147,6 @@
                     <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
                         <div class="flex flex-col items-center text-center">
                             <div class="relative mb-4 cursor-pointer" @click="openProfile({{ Js::from($agent) }})">
-                                <!-- 初始渲染圖片防呆 -->
                                 <img src="{{ $agent->avatar ? asset('storage/' . $agent->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode($agent->name) . '&background=10b981&color=fff' }}" 
                                      class="w-24 h-24 rounded-full border-4 border-white shadow-md object-cover transition group-hover:scale-105">
                                 <div class="absolute bottom-0 right-0 w-6 h-6 bg-green-500 border-2 border-white rounded-full"></div>
@@ -138,40 +156,28 @@
                             <span class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mt-1">PRO AGENT</span>
 
                             <div class="flex flex-wrap justify-center gap-2 mt-4 mb-6 min-h-[32px]">
-                            @php
-                                // 取得原始資料
-                                $countriesData = $agent->purchasable_countries;
-                                
-                                // 核心修正：確保最終結果一定是陣列，防止 array_slice 報錯
-                                if (is_array($countriesData)) {
-                                    $countries = $countriesData;
-                                } else {
-                                    // 如果是字串則解析 JSON；若解析失敗或為空，則給予空陣列
-                                    $countries = json_decode($countriesData ?? '[]', true) ?? [];
-                                    
-                                    // 處理 Double Encoding (二次編碼) 的情況
-                                    if (is_string($countries)) {
-                                        $countries = json_decode($countries, true) ?? [];
+                                @php
+                                    $countriesData = $agent->purchasable_countries;
+                                    if (is_array($countriesData)) {
+                                        $countries = $countriesData;
+                                    } else {
+                                        $countries = json_decode($countriesData ?? '[]', true) ?? [];
+                                        if (is_string($countries)) { $countries = json_decode($countries, true) ?? []; }
                                     }
-                                }
+                                    if (!is_array($countries)) { $countries = []; }
+                                @endphp
 
-                                // 再次防呆：確保 $countries 即使在解析極端錯誤下也是陣列
-                                if (!is_array($countries)) {
-                                    $countries = [];
-                                }
-                            @endphp
+                                @forelse(array_slice($countries, 0, 3) as $country)
+                                    <span class="px-3 py-1 bg-gray-50 text-gray-500 text-[10px] font-bold rounded-full border border-gray-100">{{ $country }}</span>
+                                @empty
+                                    <span class="text-[10px] text-gray-400 italic">全球代購中</span>
+                                @endforelse
 
-                            {{-- 使用處理後的 $countries 陣列進行渲染 --}}
-                            @forelse(array_slice($countries, 0, 3) as $country)
-                                <span class="px-3 py-1 bg-gray-50 text-gray-500 text-[10px] font-bold rounded-full border border-gray-100">{{ $country }}</span>
-                            @empty
-                                <span class="text-[10px] text-gray-400 italic">全球代購中</span>
-                            @endforelse
-
-                            @if(count($countries) > 3)
-                                <span class="text-[10px] text-gray-400 font-bold">+{{ count($countries) - 3 }}</span>
-                            @endif
+                                @if(count($countries) > 3)
+                                    <span class="text-[10px] text-gray-400 font-bold">+{{ count($countries) - 3 }}</span>
+                                @endif
                             </div>
+
                             <div class="grid grid-cols-2 gap-3 w-full">
                                 <button type="button" @click="openProfile({{ Js::from($agent) }})" 
                                     class="bg-gray-100 text-gray-600 py-3 rounded-2xl text-sm font-bold hover:bg-gray-200 transition">
@@ -193,11 +199,7 @@
                     </div>
                 @empty
                     <div class="col-span-full py-20 text-center bg-white rounded-3xl border-2 border-dashed border-gray-100">
-                        <div class="w-20 h-20 bg-gray-50 text-gray-300 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
-                            <i class="bi bi-search"></i>
-                        </div>
-                        <p class="text-gray-400 font-medium">找不到符合條件的代購人，試試其他關鍵字或地區</p>
-                        <a href="{{ route('store') }}" class="mt-4 text-emerald-600 font-bold hover:underline inline-block">顯示全部代購人</a>
+                        <p class="text-gray-400 font-medium">目前暫時沒有認證代購人在線</p>
                     </div>
                 @endforelse
             </div>
@@ -208,7 +210,7 @@
             <div x-show="showModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" @click="closeProfile()" class="absolute inset-0 bg-emerald-950/60 backdrop-blur-sm"></div>
             
             <div x-show="showModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95 translate-y-8" x-transition:enter-end="opacity-100 scale-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 scale-100 translate-y-0" x-transition:leave-end="opacity-0 scale-95 translate-y-8" class="relative bg-white w-full max-w-4xl max-h-[90vh] rounded-[40px] shadow-2xl overflow-hidden flex flex-col">
-                <button @click="closeProfile()" class="absolute top-6 right-6 z-10 w-10 h-10 bg-black/10 hover:bg-black/20 rounded-full flex items-center justify-center text-white transition backdrop-blur-md">
+                <button @click="closeProfile()" class="absolute top-6 right-6 z-20 w-10 h-10 bg-black/10 hover:bg-black/20 rounded-full flex items-center justify-center text-white transition backdrop-blur-md">
                     <i class="bi bi-x-lg"></i>
                 </button>
 
@@ -228,7 +230,6 @@
                         </div>
                         
                         <div class="flex items-center gap-3 mb-2">
-                            <!-- 追蹤按鈕 -->
                             <button 
                                 @click="toggleFollow(activeAgent?.id)"
                                 :class="checkIsFollowed(activeAgent?.id) ? 'bg-white/20 border-white/40 text-white' : 'bg-white text-emerald-800 border-white'"
@@ -257,13 +258,14 @@
                             <div>
                                 <h5 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">個人簡介</h5>
                                 <div class="bg-gray-50 p-6 rounded-3xl border border-gray-100">
-                                    <p class="text-gray-600 leading-relaxed italic text-sm" x-text="activeAgent?.bio || '這位代購人還沒寫自我介紹唷！'"></p>
+                                    <p class="text-gray-600 leading-relaxed italic text-sm" x-text="activeAgent?.bio || '這是一位低調的代購職人！'"></p>
                                 </div>
                             </div>
                             <div>
                                 <h5 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">可代購地區</h5>
                                 <div class="flex flex-wrap gap-2">
-                                    <template x-for="country in (activeAgent?.purchasable_countries || [])">
+                                    <!-- 使用 getArray 修復地區顯示為 JSON 字元的亂碼問題 -->
+                                    <template x-for="country in getArray(activeAgent?.purchasable_countries)">
                                         <span class="px-4 py-2 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-xl border border-emerald-100" x-text="country"></span>
                                     </template>
                                 </div>
@@ -274,10 +276,11 @@
                                 <i class="bi bi-megaphone text-emerald-500"></i> 目前活躍的代購貼文
                             </h5>
                             <div class="space-y-4">
-                                <template x-for="post in activeAgent?.agent_posts" :key="post.id">
-                                    <div class="group flex gap-4 p-4 rounded-3xl border border-gray-100 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all duration-300">
+                                <template x-for="post in (activeAgent?.agent_posts || [])" :key="post.id">
+                                    <!-- 加入點擊事件：點擊貼文卡片跳轉至首頁搜尋 -->
+                                    <div @click="goToPostSearch(post.title, post.id)" 
+                                         class="group flex gap-4 p-4 rounded-3xl border border-gray-100 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all duration-300 cursor-pointer">
                                         <div class="w-20 h-20 bg-gray-100 rounded-2xl flex-shrink-0 overflow-hidden relative">
-                                            <!-- 修正點：使用三元運算子確保 src 不會出現 /storage/null，並使用 x-if 真正阻止請求 -->
                                             <template x-if="post.cover_image">
                                                 <img :src="'/storage/' + post.cover_image" class="w-full h-full object-cover">
                                             </template>
@@ -315,5 +318,6 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     </style>
 </x-app-layout>

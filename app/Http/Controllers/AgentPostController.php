@@ -216,18 +216,15 @@ class AgentPostController extends Controller
                 ->with(['user', 'products']);
 
     // 2. 寬鬆搜尋邏輯
-    if ($request->filled('search')) {
-        $searchTerm = '%' . $request->search . '%';
-
+    if ($postId = $request->input('post_id')) {
+        $query->where('id', $postId);
+    } 
+    // 2. 這裡處理關鍵字搜尋
+    elseif ($search = $request->input('search')) {
+        $searchTerm = "%{$search}%";
         $query->where(function($q) use ($searchTerm) {
-            // 搜尋貼文標題
             $q->where('title', 'like', $searchTerm)
-              // 搜尋貼文描述
-              ->orWhere('description', 'like', $searchTerm)
-              // 搜尋該貼文下方的所有商品名稱 (關聯查詢)
-              ->orWhereHas('products', function($pq) use ($searchTerm) {
-                  $pq->where('name', 'like', $searchTerm);
-              });
+              ->orWhere('description', 'like', $searchTerm);
         });
     }
 
