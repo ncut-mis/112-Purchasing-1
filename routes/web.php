@@ -262,6 +262,15 @@ Route::middleware('auth')->group(function () {
     Route::post('/quotes', [App\Http\Controllers\QuoteController::class, 'store'])->name('quotes.store');
 });
 
-Route::post('/quotes/{quote}/reject', [QuoteController::class, 'reject'])->name('quotes.reject');
+Route::middleware(['auth'])->group(function () {
+    // 查看單一報價詳細內容
+    Route::get('/quotes/{quote}', [QuoteController::class, 'show'])->name('quotes.show');
+    
+    // 接受報價
+    Route::post('/quotes/{quote}/accept', [QuoteController::class, 'accept'])->name('quotes.accept');
+    
+    // 拒絕報價
+    Route::post('/quotes/{quote}/reject', [QuoteController::class, 'reject'])->name('quotes.reject');
+});
 //展開貼文
 Route::get('/store', [AgentPostController::class, 'index'])->name('store.index');

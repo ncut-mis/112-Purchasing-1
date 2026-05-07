@@ -354,33 +354,72 @@
 
                                                     @if($pricedQuotes->isNotEmpty())
                                                         <div class="mt-4 space-y-4 rounded-2xl bg-white p-4 shadow-sm">
-                                                            @foreach($pricedQuotes as $quote)
-                                                                @php
-                                                                    // 獲取該報價的商品單價（如果表存在）
-                                                                    $quoteItemPrices = method_exists($quote, 'quoteItems') ? $quote->quoteItems->keyBy('request_item_id') : collect();
-                                                                @endphp
-                                                                <div class="rounded-2xl border border-slate-200 p-4 space-y-3">
-                                                                    <p class="text-xs font-semibold text-slate-800">代購人：{{ $quote->user->name ?? '未知代購人' }}</p>
+    @foreach($pricedQuotes as $quote)
+        @php
+            // 1. 確保關聯有預加載，並以 request_item_id 為索引
+            $quoteItemPrices = $quote->quoteItems->keyBy('request_item_id');
+        @endphp
+        
+        <div class="rounded-2xl border border-slate-200 p-4 space-y-3 shadow-sm hover:border-blue-300 transition">
+            {{-- 尋找顯示代購人名字的地方 --}}
+                <div class="flex justify-between items-center mb-2">
+                    <p class="text-xs font-semibold text-slate-800">代購人：{{ $quote->user->name ?? '未知' }}</p>
+                    <span class="text-sm font-bold text-blue-600">總報價：NT$ {{ number_format($quote->price) }}</span>
+                </div>
 
-                                                                    <div class="space-y-2 text-xs text-slate-500">
-                                                                        @foreach($requestList->items as $item)
-                                                                            @php
-                                                                                $quotedPrice = $quoteItemPrices->get($item->id)?->unit_price ?? $item->expected_price ?? 0;
-                                                                            @endphp
-                                                                            <div class="flex items-center justify-between gap-3">
-                                                                                <span class="truncate">{{ $item->name }}</span>
-                                                                                <span class="shrink-0 font-medium text-slate-700">NT$ {{ number_format($quotedPrice, 0) }}</span>
-                                                                            </div>
-                                                                        @endforeach
-                                                                    </div>
+           <div class="mt-4 space-y-4 rounded-2xl bg-white p-4 shadow-sm">
+    <div class="flex justify-between items-center border-b pb-2 mb-2">
+        <p class="text-sm font-bold text-slate-800">代購報價詳情</p>
+        <span class="text-blue-600 font-extrabold text-lg">
+            總計：NT$ {{ number_format($quote->price) }}
+        </span>
+    </div>
 
-                                                                    <p class="text-xs text-slate-500">可代購時段：{{ $quote->comment ?? '未提供' }}</p>
-                                                                    <div>
-                                                                        <span class="inline-flex rounded-full bg-red-100 px-3 py-1 text-[10px] text-red-700">待確認</span>
-                                                                    </div>
-                                                                </div>
-                                                            @endforeach
-                                                        </div>
+    <div class="space-y-2 text-xs text-slate-500 py-2">
+        @foreach($requestList->items as $item)
+            @php
+                $quoteDetail = $quoteItemPrices->get($item->id);
+                $finalUnitPrice = $quoteDetail ? $quoteDetail->unit_price : 0;
+            @endphp
+            <div class="flex items-center justify-between gap-3">
+                <span class="truncate">{{ $item->name }}</span>
+                <div class="flex flex-col items-end">
+                    <span class="shrink-0 font-medium text-slate-700">
+                        @if($finalUnitPrice > 0)
+                            NT$ {{ number_format($finalUnitPrice) }}
+                        @else
+                            <span class="text-slate-400">尚未提供單項價格</span>
+                        @endif
+                    </span>
+                </div>
+            </div>
+        @endforeach
+    </div>
+    
+    <p class="text-xs text-slate-500 italic">備註：{{ $quote->comment }}</p>
+</div>
+
+            <div class="flex justify-between items-end">
+                <div class="space-y-1">
+                    <p class="text-[10px] text-slate-400">可代購時段/備註：</p>
+                    <p class="text-xs text-slate-600">{{ $quote->comment ?? '未提供' }}</p>
+                </div>
+                
+                <div class="flex gap-2">
+                    <a href="{{ route('quotes.show', $quote->id) }}" class="rounded-lg bg-slate-100 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-200">
+                        查看詳情
+                    </a>
+                    <form action="{{ route('quotes.accept', $quote->id) }}" method="POST">
+                        @csrf
+                        <button type="submit" class="rounded-lg bg-blue-600 px-3 py-1.5 text-xs text-white hover:bg-blue-700">
+                            接受報價
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endforeach
+</div>
                                                     @elseif($pricedOffers->isNotEmpty())
                                                         <div class="mt-4 space-y-4 rounded-2xl bg-white p-4 shadow-sm">
                                                             @foreach($pricedOffers as $offer)
@@ -579,18 +618,56 @@
                                             <button type="button" class="rounded-full bg-slate-100 px-2 py-1 text-slate-500 hover:bg-slate-200" onclick="closeRequestNoticeModal({{ $requestList->id }})">✕</button>
                                         </div>
                                         <div class="space-y-4 px-5 py-5 text-sm leading-7 text-slate-700">
-                                            @if($requestList->status === 'pending')
-                                                <p>這裡會顯示此請託單有哪些代購人報價，您可以<span class="font-semibold text-green-600">接受</span>、<span class="font-semibold text-red-600">拒絕</span>、<span class="font-semibold text-amber-600">查看詳細內容</span>。</p>
-                                                <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                                                     <p class="text-slate-500">此請託單尚未有代購人報價請耐心等候...</p>
-                                                </div>
-                                            @elseif($requestList->status === 'offered')
-                                                <p>這裡會顯示此請託單有哪些代購人報價，您可以<span class="font-semibold text-green-600">接受</span>、<span class="font-semibold text-red-600">拒絕</span>、<span class="font-semibold text-amber-600">查看詳細內容</span>。</p>
-                                                <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                                                     <p class="text-slate-500">功能開發中...</p>
-                                                </div>
-                                            @endif
-                                        </div>
+    @if($requestList->status === 'pending')
+        <p>這裡會顯示此請託單有哪些代購人報價，您可以<span class="font-semibold text-green-600">接受</span>、<span class="font-semibold text-red-600">拒絕</span>、<span class="font-semibold text-amber-600">查看詳細內容</span>。</p>
+        <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+             <p class="text-slate-500">此請託單尚未有代購人報價請耐心等候...</p>
+        </div>
+    @elseif($requestList->status === 'offered')
+        <p>收到以下代購人的報價：</p>
+        
+        <div class="space-y-3">
+            @forelse($requestList->quotes as $quote)
+                <div class="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <div class="flex items-center space-x-3">
+                        <div class="h-10 w-10 flex-shrink-0 rounded-full bg-slate-200 flex items-center justify-center">
+                            <i class="bi bi-person text-slate-500"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-slate-900">{{ $quote->user->name }}</div>
+                            <div class="text-xs text-slate-500">
+                                報價金額：<span class="text-green-600 font-semibold">NT$ {{ number_format($quote->price) }}</span>
+                            </div>
+                    </div>
+
+                    <div class="flex space-x-2">
+                        <a href="{{ route('quotes.show', $quote->id) }}" class="rounded-lg px-3 py-1 bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100 transition">
+                            查看詳細
+                        </a>
+                        
+                        <form action="{{ route('quotes.accept', $quote->id) }}" method="POST">
+                            @csrf
+                            <button type="submit" class="rounded-lg px-3 py-1 bg-green-600 text-white hover:bg-green-700 transition">
+                                接受
+                            </button>
+                        </form>
+
+                        <form action="{{ route('quotes.reject', $quote->id) }}" method="POST">
+                            @csrf
+                            <button type="submit" class="rounded-lg px-3 py-1 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition">
+                                拒絕
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            @empty
+                <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center">
+                    <p class="text-slate-500">目前尚無有效報價</p>
+                </div>
+            @endforelse
+        </div>
+    @endif
+</div>
                                     </div>
                                 </div>
 

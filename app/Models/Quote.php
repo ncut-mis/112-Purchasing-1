@@ -45,4 +45,11 @@ class Quote extends Model
     {
         return $this->hasMany(QuoteItem::class);
     }
+    /**
+ * 取得此請託單收到的所有報價
+ */
+    public function quotes()
+    {
+        return $this->hasMany(Quote::class, 'request_list_id');
+    }
 }
