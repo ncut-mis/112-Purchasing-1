@@ -107,11 +107,7 @@
 
                             <div class="border-t border-gray-50 my-2 pt-2"></div>
                             
-                            <!-- 9. 發布代購貼文 (置底強調) -->
-                            <a href="#" class="flex items-center gap-3 p-3 rounded-xl text-indigo-600 font-bold hover:bg-indigo-50 transition">
-                                <i class="bi bi-plus-circle text-lg"></i>
-                                <span>發布代購貼文</span>
-                            </a>
+
                         </nav>
                     </div>
                     
