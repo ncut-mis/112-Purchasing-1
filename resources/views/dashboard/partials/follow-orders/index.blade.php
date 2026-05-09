@@ -1,4 +1,4 @@
-                        <div class="bg-white rounded-2xl shadow-sm p-6">
+<div class="bg-white rounded-2xl shadow-sm p-6">
                             <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                                 <div>
                                     <h3 class="text-lg font-bold text-gray-800">跟單紀錄</h3>
@@ -173,18 +173,49 @@
                                                 </div>
                                             </div>
 
+                                            {{-- 內容描述 --}}
+                                            @php $postDescription = $followOrder->source?->description ?? null; @endphp
+                                            <div class="mt-3 rounded-xl bg-slate-50 px-4 py-3 col-span-2">
+                                                <p class="text-xs text-slate-400">內容描述</p>
+                                                <p class="mt-1 text-sm text-slate-700 whitespace-pre-line">{{ $postDescription ?: '-' }}</p>
+                                            </div>
+
                                             <section class="mt-4 rounded-xl border border-slate-200 p-4">
-                                                <h5 class="text-sm font-bold text-slate-700">商品清單</h5>
-                                                <ul class="mt-3 space-y-2 text-sm text-slate-600">
+                                                <h5 class="text-sm font-bold text-slate-700 mb-3">商品清單</h5>
+                                                <div class="space-y-3">
                                                     @forelse($followOrder->items as $item)
-                                                        <li class="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                                                            <span class="truncate pr-4">{{ $item->name }}</span>
-                                                            <span class="shrink-0 text-slate-500">× {{ $item->quantity }}</span>
-                                                        </li>
+                                                        @php
+                                                            $product = $item->product_id ? \App\Models\PostProduct::find($item->product_id) : null;
+                                                        @endphp
+                                                        <div class="flex gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3">
+                                                            {{-- 圖片 --}}
+                                                            <div class="w-20 h-20 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
+                                                                @if($product && $product->display_image_url)
+                                                                    <img src="{{ $product->display_image_url }}" alt="{{ $item->name }}" class="w-full h-full object-cover">
+                                                                @else
+                                                                    <i class="bi bi-image text-2xl text-gray-300"></i>
+                                                                @endif
+                                                            </div>
+                                                            {{-- 資訊 --}}
+                                                            <div class="flex-1 min-w-0">
+                                                                <p class="font-semibold text-slate-800 text-sm">{{ $item->name }}</p>
+                                                                @if($item->options)
+                                                                    <p class="text-xs text-slate-500 mt-0.5">規格：{{ is_array($item->options) ? implode('、', $item->options) : $item->options }}</p>
+                                                                @endif
+                                                                <div class="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-500">
+                                                                    <span>單價：NT$ {{ number_format((float)$item->price, 0) }}</span>
+                                                                    <span>數量：{{ $item->quantity }} 件</span>
+                                                                    <span class="font-semibold text-indigo-600">小計：NT$ {{ number_format((float)$item->subtotal, 0) }}</span>
+                                                                </div>
+                                                                @if($product && $product->reference_url)
+                                                                    <a href="{{ $product->reference_url }}" target="_blank" class="text-xs text-indigo-500 hover:underline mt-1 inline-block">參考連結 →</a>
+                                                                @endif
+                                                            </div>
+                                                        </div>
                                                     @empty
-                                                        <li class="rounded-lg bg-slate-50 px-3 py-2 text-slate-400">無商品資料</li>
+                                                        <div class="rounded-lg bg-slate-50 px-3 py-2 text-slate-400 text-sm">無商品資料</div>
                                                     @endforelse
-                                                </ul>
+                                                </div>
                                             </section>
                                         </div>
                                     </div>
