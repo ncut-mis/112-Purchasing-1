@@ -1,4 +1,31 @@
-<div class="flex justify-between items-center mb-6">
+
+            @push('styles')
+            <style>
+                /* 自定義滾輪樣式 */
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 6px; /* 滾輪寬度 */
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: #f1f5f9; /* 滾輪軌道背景色 (slate-100) */
+                    border-radius: 10px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: #cbd5e1; /* 滾輪本體顏色 (slate-300) */
+                    border-radius: 10px;
+                    transition: background 0.3s;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: #94a3b8; /* 移上去變深色 (slate-400) */
+                }
+
+                /* 針對 Firefox 的設定 */
+                .custom-scrollbar {
+                    scrollbar-width: thin;
+                    scrollbar-color: #cbd5e1 #f1f5f9;
+                }
+            </style>
+            @endpush
+    <div class="flex justify-between items-center mb-6">
 
                             <h3 class="text-lg font-bold text-gray-800">目前請託單</h3>
 
@@ -592,63 +619,89 @@
                                     </div>
                                 @endif
 
-                                 <div id="request-notice-modal-{{ $requestList->id }}" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 px-4 py-6" onclick="handleRequestNoticeBackdrop(event, {{ $requestList->id }})">
-                                    <div class="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
-                                        <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-                                            <h4 class="text-lg font-bold text-slate-800">通知中心</h4>
-                                            <button type="button" class="rounded-full bg-slate-100 px-2 py-1 text-slate-500 hover:bg-slate-200" onclick="closeRequestNoticeModal({{ $requestList->id }})">✕</button>
-                                        </div>
-                                        <div class="space-y-4 px-5 py-5 text-sm leading-7 text-slate-700">
-    @if($requestList->status === 'pending')
-        <p>這裡會顯示此請託單有哪些代購人報價，您可以<span class="font-semibold text-green-600">接受</span>、<span class="font-semibold text-red-600">拒絕</span>、<span class="font-semibold text-amber-600">查看詳細內容</span>。</p>
-        <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-             <p class="text-slate-500">此請託單尚未有代購人報價請耐心等候...</p>
+                                 <div id="request-notice-modal-{{ $requestList->id }}" 
+     class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 px-4 py-6" 
+     onclick="handleRequestNoticeBackdrop(event, {{ $requestList->id }})">
+    
+    <div class="w-full max-w-2xl rounded-3xl bg-white shadow-2xl overflow-hidden">
+        <div class="flex items-center justify-between border-b border-slate-200 px-6 py-5 bg-slate-50/50">
+            <h4 class="text-xl font-extrabold text-slate-800 flex items-center">
+                <i class="bi bi-bell-fill text-amber-500 mr-2"></i>通知中心
+            </h4>
+            <button type="button" class="rounded-full bg-white border border-slate-200 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition shadow-sm" onclick="closeRequestNoticeModal({{ $requestList->id }})">
+                <i class="bi bi-x-lg"></i>
+            </button>
         </div>
-    @elseif($requestList->status === 'offered')
-    <p>這裡會顯示此請託單有哪些代購人報價，您可以<span class="font-semibold text-green-600">接受</span>、<span class="font-semibold text-red-600">拒絕</span>、<span class="font-semibold text-amber-600">查看詳細內容</span>。</p>
-    <p>收到以下代購人的報價：</p>    
-        <div class="space-y-3">
-            @forelse($requestList->quotes as $quote)
-                <div class="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <div class="flex items-center space-x-3">
-                        <div class="h-10 w-10 flex-shrink-0 rounded-full bg-slate-200 flex items-center justify-center">
-                            <i class="bi bi-person text-slate-500"></i>
-                        </div>
-                        <div>
-                            <div class="font-bold text-slate-900">{{ $quote->user->name }}</div>
-                            <div class="text-xs text-slate-500">
-                                報價金額：<span class="text-green-600 font-semibold">NT$ {{ number_format($quote->price) }}</span>
+
+        <div class="px-6 py-6 text-base leading-relaxed text-slate-700">
+            @if($requestList->status === 'pending')
+                <div class="text-center py-10">
+                    <p class="text-lg text-slate-600 mb-6">這裡會顯示此請託單有哪些代購人報價，您可以<span class="font-semibold text-green-600">接受</span>、<span class="font-semibold text-red-600">拒絕</span>、<span class="font-semibold text-amber-600">查看詳細內容</span>。</p>
+                    <div class="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-6 py-10">
+                         <div class="animate-pulse flex flex-col items-center">
+                             <i class="bi bi-hourglass-split text-4xl text-slate-300 mb-3"></i>
+                             <p class="text-slate-400 font-medium">此請託單尚未有代購人報價，請耐心等候...</p>
+                         </div>
+                    </div>
+                </div>
+            @elseif($requestList->status === 'offered')
+                <div class="mb-6">
+                    <p class="text-lg text-slate-700">收到以下代購人的報價：</p>
+                    <p class="text-sm text-slate-400">您可以點擊查看詳細資訊後再決定是否接受。</p>
+                </div>
+
+                <div class="space-y-4 pr-2 custom-scrollbar" style="max-height: 450px; overflow-y: auto;">
+                    @forelse($requestList->quotes as $quote)
+                        <div class="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                            
+                            <div class="flex items-center space-x-5">
+                                <div class="h-14 w-14 flex-shrink-0 rounded-full bg-amber-50 flex items-center justify-center border-2 border-white shadow-sm ring-1 ring-slate-100">
+                                    @if($quote->user->avatar)
+                                        <img src="{{ asset('storage/' . $quote->user->avatar) }}" class="h-full w-full rounded-full object-cover">
+                                    @else
+                                        <i class="bi bi-person-fill text-2xl text-amber-300"></i>
+                                    @endif
+                                </div>
+                                <div>
+                                    <div class="text-lg font-bold text-slate-900 group-hover:text-amber-600 transition-colors">{{ $quote->user->name }}</div>
+                                    <div class="text-sm text-slate-500 mt-1">
+                                        報價總額：<span class="text-green-600 font-extrabold text-lg">NT$ {{ number_format($quote->price) }}</span>
+                                    </div>
+                                </div>
                             </div>
-                    </div>
 
-                    <div class="flex space-x-2">
-                        
-                        <form action="{{ route('quotes.accept', $quote->id) }}" method="POST">
-                            @csrf
-                            <button type="submit" class="rounded-lg px-3 py-1 bg-green-600 text-white hover:bg-green-700 transition">
-                                接受
-                            </button>
-                        </form>
+                            <div class="flex items-center space-x-3">
+                                <button type="button" 
+                                        onclick="window.openQuoteModal({{ $quote->id }})"
+                                        class="rounded-xl px-4 py-2 text-sm font-bold bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-500 hover:text-white transition-all shadow-sm">
+                                    查看詳細
+                                </button>
 
-                        <form action="{{ route('quotes.reject', $quote->id) }}" method="POST">
-                            @csrf
-                            <button type="submit" class="rounded-lg px-3 py-1 bg-red-600 text-white  hover:bg-red-700 transition">
-                                拒絕
-                            </button>
-                        </form>
+                                <form action="{{ route('quotes.accept', $quote->id) }}" method="POST" onsubmit="return confirm('確定要接受此報價嗎？')">
+                                    @csrf
+                                    <button type="submit" class="rounded-xl px-4 py-2 text-sm font-bold bg-green-600 text-white hover:bg-green-700 shadow-md shadow-green-100 transition-all">
+                                        接受
+                                    </button>
+                                </form>
 
-                        <a href="{{ route('quotes.show', $quote->id) }}" class="rounded-lg px-3 py-1 bg-amber-600 text-white border  hover:bg-amber-700 transition">
-                            查看詳細
-                        </a>
-                    </div>
+                                <form action="{{ route('quotes.reject', $quote->id) }}" method="POST" onsubmit="return confirm('確定要拒絕此報價嗎？')">
+                                    @csrf
+                                    <button type="submit" class="rounded-xl px-4 py-2 text-sm font-bold bg-white text-red-500 border border-red-100 hover:bg-red-50 transition-all">
+                                        拒絕
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="text-center py-12 rounded-3xl border-2 border-dashed border-slate-100 text-slate-300">
+                            <i class="bi bi-inbox text-5xl mb-3 block"></i>
+                            <p class="text-lg">目前尚無報價</p>
+                        </div>
+                    @endforelse
                 </div>
-            @empty
-                <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center">
-                    <p class="text-slate-500">目前尚無有效報價</p>
-                </div>
-            @endforelse
+            @endif
         </div>
-    @endif
+    </div>
 </div>
                                     </div>
                                 </div>
