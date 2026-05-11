@@ -2,7 +2,6 @@
 @extends('layouts.furni')
 
 @section('content')
-<!-- Start Hero Section -->
 <div class="hero">
     <div class="container">
         <div class="row justify-content-between">
@@ -18,7 +17,6 @@
 <div class="untree_co-section">
     <div class="container">
         @if(Session::has('success'))
-            <!-- 訂單成功頁面 -->
             <div class="row">
                 <div class="col-md-12 text-center pt-5">
                     <span class="display-3 thankyou-icon text-primary mb-5">
@@ -29,98 +27,94 @@
                     </span>
                     <h2 class="display-3 text-black">感謝訂購！</h2>
                     <p class="lead mb-5">{{ Session::get('success') }}</p>
-                    <p><a href="{{ route('shop.index') }}" class="btn btn-sm btn-outline-black">返回商店</a></p>
+                    <p><a href="{{ route('shop') }}" class="btn btn-sm btn-outline-black">返回商店</a></p>
                 </div>
             </div>
         @else
-            <!-- 購物車主內容 -->
             <div class="row justify-content-center">
                 <div class="col-md-10">
-                    @if($cartItems->isEmpty())
-                        <!-- 空的購物車 -->
+                    {{-- 合併處理 Session 購物車與資料庫購物車 --}}
+                    @php
+                        $sessionCart = session('cart', []);
+                        $totalCount = $cartItems->count() + count($sessionCart);
+                        $subtotal = 0;
+                    @endphp
+
+                    @if($totalCount == 0)
                         <div class="row text-center py-5">
                             <div class="col-md-12">
                                 <i class="fas fa-shopping-cart fa-5x text-muted mb-4"></i>
                                 <h3>您的結帳區是空的</h3>
-                                <p class="text-muted">快去挑選喜歡的商品吧！</p>
-                                <a href="/store" class="btn btn-primary btn-lg">前往貼文</a>
+                                <p class="text-muted">快去挑選喜歡的商品或查看報價吧！</p>
+                                <a href="/dashboard" class="btn btn-primary btn-lg">回我的儀表板</a>
                             </div>
                         </div>
                     @else
-                        <!-- 商品列表 -->
                         <div class="row mb-5">
-                            <div class="col-md-12">
-                                <h2 class="mb-4">購物車 <span class="text-primary">({{ $cartItems->count() }} 項)</span></h2>
+                            <div class="col-md-12 border-bottom pb-3">
+                                <h2 class="h3">待結帳項目 <span class="text-primary">({{ $totalCount }})</span></h2>
                             </div>
                         </div>
 
-                        @foreach($cartItems as $item)
-                        <div class="row mb-4 align-items-center">
-                            <div class="col-md-2">
-                                <img src="{{ asset('storage/' . $item->product->image) }}" 
-                                     alt="{{ $item->product->name }}" 
-                                     class="img-fluid rounded">
-                            </div>
-                            <div class="col-md-4">
-                                <h5>{{ $item->product->name }}</h5>
-                                <p class="text-muted small">{{ Str::limit($item->product->description, 100) }}</p>
-                            </div>
-                            <div class="col-md-2 text-center">
-                                <h5 class="text-primary">${{ number_format($item->product->price, 0) }}</h5>
-                            </div>
-                            <div class="col-md-2">
-                                <form action="{{ route('cart.update', $item->id) }}" method="POST" class="d-inline">
-                                    @csrf
-                                    @method('PATCH')
-                                    <div class="input-group input-group-sm">
-                                        <input type="number" name="quantity" value="{{ $item->quantity }}" 
-                                               min="1" max="{{ $item->product->stock }}" class="form-control">
-                                        <button type="submit" class="btn btn-outline-primary btn-sm">更新</button>
-                                    </div>
-                                </form>
-                            </div>
-                            <div class="col-md-2 text-end">
-                                <h5 class="text-success">
-                                    ${{ number_format($item->quantity * $item->product->price, 0) }}
-                                </h5>
-                                <form action="{{ route('cart.remove', $item->id) }}" method="POST" class="d-inline mt-2">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" 
-                                            onclick="return confirm('確定要刪除嗎？')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                        @endforeach
-
-                        <!-- 結帳總計 -->
-                        <div class="row justify-content-end mt-5">
-                            <div class="col-md-4">
-                                <div class="card shadow-sm">
-                                    <div class="card-body">
-                                        <h4 class="card-title mb-4">訂單總計</h4>
-                                        <div class="d-flex justify-content-between mb-3">
-                                            <span>商品總計:</span>
-                                            <span class="h5">${{ number_format($subtotal, 0) }}</span>
-                                        </div>
-                                        <div class="d-flex justify-content-between mb-3">
-                                            <span>運費:</span>
-                                            <span class="h6">${{ number_format($shipping, 0) }}</span>
-                                        </div>
-                                        <hr class="my-3">
-                                        <div class="d-flex justify-content-between mb-4">
-                                            <span class="h4">總計:</span>
-                                            <span class="h3 text-primary">${{ number_format($total, 0) }}</span>
-                                        </div>
-                                        <a href="{{ route('checkout.index') }}" class="btn btn-primary btn-lg w-100">
-                                            前往結帳 <i class="fas fa-arrow-right ms-2"></i>
-                                        </a>
+                        {{-- 1. 顯示來自報價單的項目 (Session) --}}
+                        @foreach($sessionCart as $id => $details)
+                            @php $subtotal += $details['price'] * $details['quantity']; @endphp
+                            <div class="row mb-4 align-items-center bg-light p-3 rounded-3 shadow-sm border-start border-4 border-amber-500">
+                                <div class="col-md-2">
+                                    <div class="bg-amber-100 text-amber-600 rounded d-flex align-items-center justify-content-center" style="height: 100px;">
+                                        <i class="fas fa-file-invoice-dollar fa-3x"></i>
                                     </div>
                                 </div>
+                                <div class="col-md-4">
+                                    <span class="badge bg-amber-500 mb-2">代購委託</span>
+                                    <h5 class="text-dark">{{ $details['name'] }}</h5>
+                                    <p class="text-muted small mb-0">代購人：{{ $details['agent_name'] }}</p>
+                                    <div class="mt-2">
+                                        @foreach($details['items'] as $innerItem)
+                                            <span class="badge bg-white text-slate-600 border mr-1">{{ $innerItem }}</span>
+                                        @endforeach
+                                    </div>
+                                </div>
+                                <div class="col-md-2 text-center">
+                                    <h5 class="text-primary font-weight-bold">${{ number_format($details['price'], 0) }}</h5>
+                                </div>
+                                <div class="col-md-2 text-center">
+                                    <span>數量: {{ $details['quantity'] }}</span>
+                                </div>
+                                <div class="col-md-2 text-end">
+                                    <h5 class="text-success">${{ number_format($details['price'] * $details['quantity'], 0) }}</h5>
+                                    {{-- 這裡可以補一個從 session 移除的 route --}}
+                                </div>
                             </div>
-                        </div>
+                        @endforeach
+
+                        {{-- 2. 顯示一般商品項目 (Database) --}}
+                        @foreach($cartItems as $item)
+                            @php $subtotal += $item->quantity * $item->product->price; @endphp
+                            <div class="row mb-4 align-items-center border-bottom pb-4">
+                                <div class="col-md-2">
+                                    <img src="{{ asset('storage/' . $item->product->image) }}" class="img-fluid rounded shadow-sm">
+                                </div>
+                                <div class="col-md-4">
+                                    <h5 class="text-dark">{{ $item->product->name }}</h5>
+                                    <p class="text-muted small">{{ Str::limit($item->product->description, 50) }}</p>
+                                </div>
+                                <div class="col-md-2 text-center">
+                                    <h5 class="text-primary">${{ number_format($item->product->price, 0) }}</h5>
+                                </div>
+                                <div class="col-md-2">
+                                    <form action="{{ route('cart.update', $item->id) }}" method="POST">
+                                        @csrf @method('PATCH')
+                                        <input type="number" name="quantity" value="{{ $item->quantity }}" class="form-control form-control-sm text-center">
+                                    </form>
+                                </div>
+                                <div class="col-md-2 text-end">
+                                    <h5 class="text-success">${{ number_format($item->quantity * $item->product->price, 0) }}</h5>
+                                </div>
+                            </div>
+                        @endforeach
+
+                        
                     @endif
                 </div>
             </div>

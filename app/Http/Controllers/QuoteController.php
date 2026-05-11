@@ -74,69 +74,35 @@ class QuoteController extends Controller
 
     return view('quotes.show', compact('quote'));
 }
+        public function accept($id)
+        {
+            // 1. 取得該筆報價，並關聯請託單 (requestList) 與報價人 (user)
+            $quote = Quote::with(['requestList', 'user', 'quoteItems'])->findOrFail($id);
 
-    // 【修改】3. 接受報價 (對應路由: quotes.accept)
-    public function accept(Quote $quote)
-    {
-        $requestList = $quote->requestList;
-
-        // 權限檢查：只有案主能選人
-        if ($requestList->user_id !== auth()->id()) {
-            abort(403, '只有請託單主人能接受報價');
-        }
-
-        DB::transaction(function () use ($quote, $requestList) {
-            // 接受此報價
-            $quote->update(['status' => 'accepted']);
-            
-            // 自動把該單子的「其他報價」狀態更新為已拒絕 (可選)
-            Quote::where('request_list_id', $requestList->id)
-                 ->where('id', '!=', $quote->id)
-                 ->update(['status' => 'rejected']);
-            
-            // 寫入代購人 ID，這會讓單子從大廳消失，更新狀態為 matched
-            $requestList->update([
-                'people' => $quote->user_id,
-                'status' => 'matched', 
-                'agent_quote_total' => $quote->price // 你的欄位是 $quote->price
+            // 2. 更新請託單 (RequestList) 的關鍵欄位
+            // 這裡直接執行你要求的動作：連結 ID 與 金額
+            $quote->requestList->update([
+                'status'       => 'matched',     // 狀態改為已接受
+                'people'       => $quote->user_id, // 報價人 ID 轉入 people 欄位
+                'budget_total' => $quote->price,  // 報價金額連結到 budget_total 欄位
             ]);
-        });
 
-        // 配合傳統 Form 提交，重定向回上一頁，並帶上 Session 訊息
-        return back()->with('success', '已成功選定代購人！');
-    }
+            
+           
 
-    // 【新增】4. 拒絕報價 (對應路由: quotes.reject)
-    public function reject(Quote $quote)
-    {
-        $requestList = $quote->requestList;
+            // 4. 將資料推送到購物車 Session (確保購物車能顯示正確金額與代購人)
+            $cart = session()->get('cart', []);
+            $cart[$quote->id] = [
+                "id"         => $quote->id,
+                "name"       => "請託單報價: " . $quote->requestList->title,
+                "price"      => $quote->price,        // 最終報價金額
+                "agent_name" => $quote->user->name,   // 代購人名稱
+                "quantity"   => 1,
+                "items"      => $quote->quoteItems->pluck('name')->toArray(),
+            ];
+            session()->put('cart', $cart);
 
-        if ($requestList->user_id !== auth()->id()) {
-            abort(403, '只有請託單主人能拒絕報價');
+            // 5. 導向購物車頁面
+            return redirect()->route('shopping.cart')->with('success', '已接受報價，訂單已轉入購物車！');
         }
-
-        DB::transaction(function () use ($quote, $requestList) {
-    // 拒絕後直接移除該代購人的報價資料與明細
-            if (Schema::hasTable('quote_items')) {
-                QuoteItem::where('quote_id', $quote->id)->delete();
-            }
-            $quote->delete();
-
-            // 檢查是否還有「有效中的報價」(pending / accepted)
-            $hasActiveQuotes = Quote::where('request_list_id', $requestList->id)
-                ->whereIn('status', ['pending', 'accepted'])
-                ->exists();
-
-            // 若已無有效報價，請託單狀態恢復為等待報價，並清空已配對資料
-            if (!$hasActiveQuotes) {
-                $requestList->update([
-                    'status' => 'pending',
-                    'people' => null,
-                    'agent_quote_total' => null,
-                ]);
-            }
-        });
-
-        return back()->with('success', '已拒絕該代購人的報價。');
-    }
 }
