@@ -147,7 +147,7 @@
                                                     <details class="group">
                                                         <summary class="cursor-pointer select-none hover:text-blue-600">
                                                             {{ $firstItem }}
-                                                            <span class="text-xs text-gray-400">（另有 {{ $extraItems->count() }} 項）</span>
+                                                              <span class="text-xs text-gray-400">（另有 {{ $extraItems->count() }} 項）</span>
                                                         </summary>
                                                         <ul class="mt-2 ml-4 list-disc text-gray-500 text-xs space-y-1">
                                                             @foreach($extraItems as $item)
@@ -163,7 +163,8 @@
                                             <td class="py-4 text-gray-500">{{ $countryLabel }}</td>
                                             <td class="py-4 text-gray-800">
                                                 @if(in_array($requestList->status, ['pending', 'offered', 'matched'], true))
-                                                    <button type="button" class="text-blue-600 hover:underline cursor-pointer font-medium" onclick="openRequestCountdownModal({{ $requestList->id }})" title="點擊查看截止倒數">{{ optional($requestList->deadline)->format('Y-m-d') ?? '-' }}</button>
+                                                    <button type="button" class="text-blue-600 hover:underline cursor-pointer font-medium" onclick="openRequestCountdownModal({{ $requestList->id }})" title="點擊
+查看截止倒數">{{ optional($requestList->deadline)->format('Y-m-d') ?? '-' }}</button>
                                                 @else
                                                     {{ optional($requestList->deadline)->format('Y-m-d') ?? '-' }}
                                                 @endif
@@ -210,7 +211,7 @@
                                                         <button type="button" class="inline-flex items-center rounded-lg bg-emerald-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-600">完成</button>
                                                     @elseif($requestList->status === 'editing')
                                                         <button type="button" class="text-blue-500 hover:underline" onclick="openEditModal({{ $requestList->id }})">編輯</button>
-                        
+
                                                         <form method="POST" action="{{ route('request-list.destroy', $requestList) }}" onsubmit="return confirm('確定要刪除此請購清單嗎？');">
                                                             @csrf
                                                             @method('DELETE')
@@ -227,16 +228,16 @@
                                                         @if(!empty($chatPartnerId))
                                                             <button type="button" class="inline-flex items-center rounded-lg bg-green-400 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-green-500" onclick="openRequestChatModal({{ $requestList->id }})">聊天</button>
                                                         @else
-                                                            <button type="button" class="inline-flex items-center rounded-lg bg-gray-300 px-4 py-2 text-xs font-semibold text-white cursor-not-allowed" disabled>聊天</button>
+                                                            <button type="button" class="inline-flex items-center rounded-lg bg-gray-300 px-4 py-2 text-xs font-semibold text-white cursor-not-allowed" disabled>聊 天</button>
                                                         @endif
                                                         <form method="POST" action="{{ route('request-list.complete', $requestList) }}" onsubmit="return confirm('是否已完成？');">
                                                             @csrf
                                                             @method('PATCH')
                                                             <button type="submit" class="inline-flex items-center rounded-lg bg-emerald-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-600">完成</button>
-                                                        </form>  
+                                                        </form>
                                                          <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-amber-200 bg-amber-100 text-amber-600 shadow-sm transition hover:bg-amber-200" title="通知中心" aria-label="通知中心" onclick="openRequestNoticeModal({{ $requestList->id }})">
-                                                            🔔
-                                                        </button>              
+                                                            �
+                                                        </button>
                                                     @endif
                                                 </div>
                                             </td>
@@ -351,8 +352,8 @@
                                                                     <dd class="text-right font-medium text-slate-800">{{ $requestList->store_name ?: '未提供' }}</dd>
                                                                 </div>
                                                                 <div>
-                                                                    <dt class="text-slate-500">店家詳細地址</dt>
-                                                                    <dd class="mt-1 rounded-xl bg-slate-50 px-3 py-3 leading-6 text-slate-700">{{ $requestList->detail_address ?: '未提供詳細地址' }}</dd>
+                                                                    <dt class="text-slate-500">店家詳細地>                                                                    <dd class="mt-1 rounded-xl bg-slate-5
+0 px-3 py-3 leading-6 text-slate-700">{{ $requestList->detail_address ?: '未提供詳細地址' }}</dd>
                                                                 </div>
                                                                 <div class="flex items-start justify-between gap-4">
                                                                     <dt class="text-slate-500">商品截止日</dt>
@@ -380,7 +381,7 @@
                                                             return !is_null($offer->offered_price);
                                                         });
                                                         $pricedQuotes = $requestList->quotes->filter(function ($quote) {
-                                                            return !is_null($quote->price);
+                                                            return !is_null($quote->price) && in_array($quote->status, ['pending', 'accepted'], true);
                                                         });
                                                         $hasQuotedItems = $pricedOffers->isNotEmpty() || $pricedQuotes->isNotEmpty();
                                                     @endphp
@@ -403,13 +404,13 @@
                                                                             <div class="flex items-center justify-between gap-3">
                                                                                 <span class="truncate">{{ $item->name }}</span>
                                                                                 <span class="shrink-0 font-medium text-slate-700">NT$ {{ number_format($quotedPrice, 0) }}</span>
-                                                                            </div>                             
-                                                                        @endforeach 
+                                                                            </div>
+                                                                        @endforeach
                                                                     </div>
-                                                                        
+
                                                                     <p class="text-xs text-slate-500">預計代購日期：{{ $quote->estimated_date ?? '未提供' }}</p>
                                                                     <p class="text-xs text-slate-500">報價備註：{{ $quote->comment ?? '未提供' }}</p>
-                                                                    <div>                                                         
+                                                                    <div>
                                                                         <span class="text-blue-600 font-extrabold text-xs">
                                                                                 總計：NT$ {{ number_format($quote->price) }}
                                                                         </span>
@@ -457,7 +458,8 @@
                                                                 <img src="{{ $agentAvatar }}" alt="{{ $displayAgent->name }}" class="h-full w-full object-cover">
                                                             </div>
                                                             <p class="mt-3 text-base font-semibold text-slate-800">{{ $displayAgent->name }}</p>
-                                                            <p class="mt-1 text-sm text-slate-500">{{ $requestList->status === 'offered' ? '此代購人已下單並提供商品單價' : ($acceptedOffer ? '已確認接單的代購人' : '已有代購人提出接單意願') }}</p>
+                                                            <p class="mt-1 text-sm text-slate-500">{{ $requestList->status === 'offered' ? '此代購人已下單並提供商品單價' : ($acceptedOffer ? '已確認接單的代購人'
+: '已有代購人提出接單意願') }}</p>
 
                                                             @if(in_array($requestList->status, ['offered', 'matched'], true))
                                                                 @php
@@ -470,7 +472,7 @@
                                                         </div>
                                                     @else
                                                         <div class="mt-4 rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center">
-                                                            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-2xl">🕒</div>
+                                                            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-2xl">�</div>
                                                             <p class="mt-4 text-sm font-medium text-slate-700">目前尚未有代購人接單</p>
                                                             <p class="mt-2 text-xs leading-5 text-slate-400">當有代購人接單或提出報價時，這裡會顯示對方的名字與各商品之單價。</p>
                                                         </div>
@@ -532,7 +534,8 @@
                                                     <h4 class="text-lg font-bold text-slate-800">請購單聊天室</h4>
                                                     <p class="text-sm text-slate-500">{{ $requestList->title }}</p>
                                                 </div>
-                                                <button type="button" class="text-slate-500 text-2xl leading-none hover:text-slate-700" onclick="closeRequestChatModal({{ $requestList->id }})" aria-label="關閉聊天室">✕</button>
+                                                <button type="button" class="text-slate-500 text-2xl leading-none hover:text-slate-700" onclick="closeRequestChatModal({{ $requestList->id }})" aria-label="關閉聊
+天室">✕</button>
                                             </div>
 
                                             <div class="grid lg:grid-cols-[280px_minmax(0,1fr)]">
@@ -556,8 +559,7 @@
 
                                                                 $activeClass = $loop->first
                                                                     ? 'bg-emerald-100 text-emerald-700 border-l-4 border-emerald-500'
-                                                                    : 'text-slate-600 hover:bg-slate-100';
-                                                            @endphp
+                                                                    : 'text-slate-600 hover:bg-slate-100';                                                            @endphp
                                                             <button
                                                                 type="button"
                                                                 class="request-chat-agent-tab w-full px-4 py-3 text-left text-sm transition {{ $activeClass }}"
@@ -600,8 +602,7 @@
                                                                 $inner->where('sender_id', $requestList->user_id)
                                                                     ->where('receiver_id', $chatAgent->id);
                                                             })->orWhere(function ($inner) use ($requestList, $chatAgent) {
-                                                                $inner->where('sender_id', $chatAgent->id)
-                                                                    ->where('receiver_id', $requestList->user_id);
+                                                                $inner->where('sender_id', $chatAgent->id)                                                                    ->where('receiver_id', $requestList->user_id);
                                                             });
                                                         })
                                                         ->with(['sender:id,name'])
@@ -650,13 +651,12 @@
                                     </div>
                                 @endif
 
-                                 <div id="request-notice-modal-{{ $requestList->id }}" 
-     class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 px-4 py-6" 
+                                 <div id="request-notice-modal-{{ $requestList->id }}"
+   class="hidden fixed inset-0 z-[60] items-center justify-center bg-slate-900/60 px-4 py-6"
      onclick="handleRequestNoticeBackdrop(event, {{ $requestList->id }})">
-    
+
     <div class="w-full max-w-2xl rounded-3xl bg-white shadow-2xl overflow-hidden">
-        <div class="flex items-center justify-between border-b border-slate-200 px-6 py-5 bg-slate-50/50">
-            <h4 class="text-xl font-extrabold text-slate-800 flex items-center">
+        <div class="flex items-center justify-between border-b border-slate-200 px-6 py-5 bg-slate-50/50">            <h4 class="text-xl font-extrabold text-slate-800 flex items-center">
                 <i class="bi bi-bell-fill text-amber-500 mr-2"></i>通知中心
             </h4>
             <button type="button" class="rounded-full bg-white border border-slate-200 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition shadow-sm" onclick="closeRequestNoticeModal({{ $requestList->id }})">
@@ -667,7 +667,8 @@
         <div class="px-6 py-6 text-base leading-relaxed text-slate-700">
             @if($requestList->status === 'pending')
                 <div class="text-center py-10">
-                    <p class="text-lg text-slate-600 mb-6">這裡會顯示此請託單有哪些代購人報價，您可以<span class="font-semibold text-green-600">接受</span>、<span class="font-semibold text-red-600">拒絕</span>、<span class="font-semibold text-amber-600">查看詳細內容</span>。</p>
+                    <p class="text-lg text-slate-600 mb-6">這裡會顯示此請託單有哪些代購人報價，您可以<span class="font-semibold text-green-600">接受</span>、<span class="font-semibold text-red-600">拒絕</span>、
+<span class="font-semibold text-amber-600">查看詳細內容</span>。</p>
                     <div class="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-6 py-10">
                          <div class="animate-pulse flex flex-col items-center">
                              <i class="bi bi-hourglass-split text-4xl text-slate-300 mb-3"></i>
@@ -681,10 +682,12 @@
                     <p class="text-sm text-slate-400">您可以點擊查看詳細資訊後再決定是否接受。</p>
                 </div>
 
-                <div class="space-y-4 pr-2 custom-scrollbar" style="max-height: 450px; overflow-y: auto;">
-                    @forelse($requestList->quotes as $quote)
+                <div class="space-y-4 pr-2 custom-scrollbar" style="max-height: 450px; overflow-y: auto;">                    @php
+                        $activeQuotes = $requestList->quotes->whereIn('status', ['pending', 'accepted']);
+                    @endphp
+                    @forelse($activeQuotes as $quote)
                         <div class="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                            
+
                             <div class="flex items-center space-x-5">
                                 <div class="h-14 w-14 flex-shrink-0 rounded-full bg-amber-50 flex items-center justify-center border-2 border-white shadow-sm ring-1 ring-slate-100">
                                     @if($quote->user->avatar)
@@ -702,7 +705,7 @@
                             </div>
 
                             <div class="flex items-center space-x-3">
-                                <button type="button" 
+                                <button type="button"
                                         onclick="window.openQuoteModal({{ $quote->id }})"
                                         class="rounded-xl px-4 py-2 text-sm font-bold bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-500 hover:text-white transition-all shadow-sm">
                                     查看詳細
@@ -738,13 +741,11 @@
                                 </div>
 
 
-                            @endif
-
                             @if($requestList->status === 'editing')
                                 <div id="edit-modal-{{ $requestList->id }}" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
                                     <div class="bg-white w-full max-w-3xl rounded-xl shadow-lg max-h-[90vh] overflow-y-auto">
-                                        <div class="flex justify-between items-center border-b px-6 py-4">
-                                            <h4 class="text-lg font-bold text-gray-800">編輯請購清單</h4>
+                                        <div class="flex justify-between items-center border-b px-6 py-4">                                            <h4 class="text-lg font-bold text-gray-800">編輯請購清單</h4>
+
                                             <button type="button" class="text-gray-400 hover:text-gray-600" onclick="closeEditModal({{ $requestList->id }})">✕</button>
                                         </div>
 
@@ -796,6 +797,7 @@
                                             <div>
                                                 <label class="block text-sm font-medium text-gray-700 mb-1">備註</label>
                                                 <textarea name="note" class="w-full border-gray-300 rounded-lg" rows="2" placeholder="可填寫代購需求補充、規格、交付注意事項等">{{ $requestList->note }}</textarea>
+
                                             </div>
 
                                             <div class="space-y-4 pt-2 edit-items-wrapper" data-request-list-id="{{ $requestList->id }}" data-max-items="3" data-next-index="{{ $requestList->items->count() }}">
@@ -827,7 +829,8 @@
                                                             <div>
                                                                 <label class="block text-sm font-medium text-gray-700 mb-1">商品圖片</label>
                                                                 @if($item->reference_image)
-                                                                  <img src="{{ route('request-item.image', ['requestList' => $requestList->id, 'requestItem' => $item->id]) }}" alt="商品圖片" class="w-24 h-24 object-cover rounded border mb-2 edit-item-image-preview" data-original-src="{{ route('request-item.image', ['requestList' => $requestList->id, 'requestItem' => $item->id]) }}">
+                                                                  <img src="{{ route('request-item.image', ['requestList' => $requestList->id, 'requestItem' => $item->id]) }}" alt="商品圖片" class="w-24 h-24 obj
+ect-cover rounded border mb-2 edit-item-image-preview" data-original-src="{{ route('request-item.image', ['requestList' => $requestList->id, 'requestItem' => $item->id]) }}">
                                                                     <p class="text-xs text-gray-500 mb-2 edit-item-image-status">未重新上傳會保留原圖片</p>
                                                                 @endif
                                                                 <input type="file" name="items[{{ $index }}][item_image]" class="w-full border-gray-300 rounded-lg edit-item-image-input" accept="image/*">
@@ -871,7 +874,7 @@
                                         </form>
                                     </div>
                                 </div>
+                                 @endif
 
                             @endif
-
                         @endforeach

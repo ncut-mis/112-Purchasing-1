@@ -27,7 +27,7 @@
                     </span>
                     <h2 class="display-3 text-black">感謝訂購！</h2>
                     <p class="lead mb-5">{{ Session::get('success') }}</p>
-                    <p><a href="{{ route('shop') }}" class="btn btn-sm btn-outline-black">返回商店</a></p>
+                      <p><a href="{{ route('store.index') }}" class="btn btn-sm btn-outline-black">返回商店</a></p>
                 </div>
             </div>
         @else

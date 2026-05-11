@@ -766,16 +766,25 @@
         function openRequestNoticeModal(id) {
             const modal = document.getElementById(`request-notice-modal-${id}`);
             if (!modal) return;
+
+            // modal 原始節點位在表格內，先移到 body 避免受到 table 版面影響
+            if (modal.parentElement !== document.body) {
+                document.body.appendChild(modal);
+            }
+
             modal.classList.remove('hidden');
             modal.classList.add('flex');
+            modal.style.display = 'flex';
             document.body.classList.add('overflow-hidden');
         }
 
         function closeRequestNoticeModal(id) {
             const modal = document.getElementById(`request-notice-modal-${id}`);
             if (!modal) return;
+
             modal.classList.add('hidden');
             modal.classList.remove('flex');
+            modal.style.display = 'none';
             document.body.classList.remove('overflow-hidden');
         }
 
