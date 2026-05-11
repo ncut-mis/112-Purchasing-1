@@ -1,8 +1,7 @@
                         <div class="bg-white rounded-2xl shadow-sm p-6">
                             <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                                 <div>
-                                    <h3 class="text-lg font-bold text-gray-800">目前收藏貼文</h3>
-                                    <p class="mt-1 text-sm text-gray-500">這裡會顯示你在「最新代購連線」中收藏的代購人貼文。</p>
+                                    <h3 class="text-lg font-bold text-gray-800">目前收藏內容</h3>
                                 </div>
 
                                 <div class="flex items-center gap-4">                        
@@ -110,7 +109,7 @@
             @if(request('favorite_search'))
                 找不到符合「{{ request('favorite_search') }}」的收藏貼文。
             @else
-                目前尚未收藏任何代購貼文，請先到首頁的「最新代購連線」按下愛心收藏。
+                目前尚未收藏任何內容，請先到首頁的「代購團」按下愛心收藏。
             @endif
         </div>
     @endforelse

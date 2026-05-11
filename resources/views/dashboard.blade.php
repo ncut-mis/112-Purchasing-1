@@ -24,7 +24,7 @@
                     <div class="text-2xl font-bold text-gray-800">{{ $stats['unread_messages'] }}</div>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-pink-500">
-                    <div class="text-sm text-gray-500 mb-1">收藏貼文</div>
+                    <div class="text-sm text-gray-500 mb-1">收藏</div>
                      <div id="favorite-posts-count" class="text-2xl font-bold text-gray-800" data-count="{{ $stats['favorite_posts'] }}">{{ $stats['favorite_posts'] }}</div>
                 </div>
             </div>
@@ -51,7 +51,7 @@
 
                             <a href="{{ route('dashboard', ['section' => 'favorite-posts']) }}" class="flex items-center space-x-3 p-3 rounded-lg {{ $currentSection === 'favorite-posts' ? 'bg-pink-50 text-pink-600 font-medium' : 'text-gray-600 hover:bg-gray-50 transition' }}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
-                                <span>收藏貼文</span>
+                                <span>收藏</span>
                             </a>
                             
                             <a href="{{ route('dashboard', ['section' => 'notifications']) }}" class="flex items-center space-x-3 p-3 rounded-lg {{ $currentSection === 'notifications' ? 'bg-amber-50 text-amber-600 font-bold' : 'text-gray-600 hover:bg-gray-50 transition' }}">
@@ -404,7 +404,7 @@
         const favoriteUnfavoriteConfirmButton = document.getElementById('favorite-unfavorite-confirm');
         const favoritePostsCountElement = document.getElementById('favorite-posts-count');
         let pendingFavoriteRemovalButton = null;
-        const favoriteEmptyStateHtml = '<div class="rounded-2xl border border-dashed border-pink-200 bg-pink-50/40 px-6 py-12 text-center text-sm text-gray-500">目前尚未收藏任何代購貼文，請先到首頁的「最新代購連線」按下愛心收藏。</div>';
+        const favoriteEmptyStateHtml = '<div class="rounded-2xl border border-dashed border-pink-200 bg-pink-50/40 px-6 py-12 text-center text-sm text-gray-500">目前尚未收藏任何內容，請先到首頁的「最新代購連線」按下愛心收藏。</div>';
 
         function updateFavoritePostsCount(nextCount) {
             if (!favoritePostsCountElement) {

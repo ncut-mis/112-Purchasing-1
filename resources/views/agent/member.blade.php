@@ -83,10 +83,10 @@
                                 <i class="bi bi-wallet2 text-emerald-500 text-lg"></i>
                                 <span>撥款紀錄</span>
                             </a>
-                            <!-- 6. 收藏請購清單 -->
+                            <!-- 6. 收藏請託單 -->
                             <a href="#" @click.prevent="activeTab = 'favorites'" :class="activeTab === 'favorites' ? 'bg-pink-50 text-pink-600 font-bold' : 'text-gray-600'" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition">
                                 <i class="bi bi-heart text-pink-500 text-lg"></i>
-                                <span>收藏請購清單</span>
+                                <span>收藏請託單</span>
                             </a>
                             <!-- 7. 歷史紀錄 -->
                             <a href="#" @click.prevent="activeTab = 'history-records'" :class="activeTab === 'history-records' ? 'bg-amber-50 text-amber-600 font-bold' : 'text-gray-600 hover:bg-gray-50'" 

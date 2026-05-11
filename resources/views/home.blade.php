@@ -27,7 +27,7 @@
                             style="width: 300px;">
                             <select name="country" class="form-select shadow-sm" style="width: 150px;">
                             <option value="">所有國家</option>
-                            @foreach(['日本', '韓國', '美國', '歐洲', '澳洲', '其他'] as $country)
+                            @foreach(['日本', '韓國', '美國', '英國'] as $country)
                 <option value="{{ $country }}" {{ request('country') == $country ? 'selected' : '' }}>
                     {{ $country }}
                 </option>
@@ -47,7 +47,69 @@
     </div>
 </section>
 
-<!-- Agent Posts Section (最新代購連線) -->
+<!-- 【熱門代購團區塊】：加入 Alpine.js 控制延伸 -->
+<section class="py-5 bg-white" x-data="{ expanded: false }">
+    <div class="container">
+        <div class="mb-5 text-center text-md-start">
+            <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-2 mb-1">
+                <div style="width: 40px; height: 2px; background-color: #ef4444;"></div>
+                <h6 class="text-danger fw-bold text-uppercase m-0" style="letter-spacing: 2px;">Trending Now</h6>
+            </div>
+            <h2 class="fw-black m-0" style="font-weight: 900; font-size: 2.5rem;">熱門代購團</h2>
+            <p class="text-muted mt-2">目前社群內最受歡迎、最多人收藏的代購團。</p>
+        </div>
+
+        <div class="row g-4">
+            {{-- 預設抓取前 9 筆，利用 Alpine.js 控制顯示數量 --}}
+            @forelse($agentPosts->take(9) as $index => $popPost)
+                <div class="col-md-6 col-lg-4" 
+                     x-show="expanded || {{ $index }} < 3" 
+                     x-transition:enter="transition ease-out duration-500"
+                     x-transition:enter-start="opacity-0 translate-y-4"
+                     x-transition:enter-end="opacity-100 translate-y-0">
+                    <div class="card h-100 border-0 shadow-lg rounded-4 overflow-hidden position-relative hover-lift transition">
+                        <div class="position-relative" style="height: 240px;">
+                            @php
+                                $firstPopImg = $popPost->products->first()?->display_image_url;
+                            @endphp
+                            <img src="{{ $firstPopImg ?? ($popPost->cover_image ? asset('storage/' . $popPost->cover_image) : 'https://via.placeholder.com/400x240?text=GlobalBuy') }}" class="w-100 h-100 object-fit-cover">
+                            <div class="position-absolute top-0 start-0 m-3">
+                                <span class="badge bg-danger shadow-sm rounded-pill px-3 py-2">
+                                    <i class="bi bi-fire me-1"></i> HOT
+                                </span>
+                            </div>
+                            <span class="position-absolute bottom-0 start-0 m-3 badge bg-white/90 backdrop-blur-sm text-dark shadow-sm rounded-pill px-3">
+                                {{ $popPost->country }}
+                            </span>
+                        </div>
+                        <div class="card-body p-4">
+                            <h5 class="fw-bold mb-2 text-truncate">{{ $popPost->title }}</h5>
+                            <p class="text-muted small mb-4 line-clamp-2">
+                                {{ $popPost->description }}
+                            </p>
+                            <div class="d-flex align-items-center justify-content-between pt-3 border-top">
+                                <div class="d-flex align-items-center gap-2">
+                                    <img src="https://ui-avatars.com/api/?name={{ urlencode($popPost->user->name) }}&background=6366f1&color=fff" class="rounded-circle" width="28" height="28">
+                                    <span class="small fw-bold text-gray-700">{{ $popPost->user->nickname ?? $popPost->user->name }}</span>
+                                </div>
+                                <span class="text-danger fw-bold" style="font-size: 12px;">
+                                    <i class="bi bi-heart-fill"></i> 熱門收藏
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <div class="col-12 text-center py-5">
+                    <p class="text-muted">目前暫無熱門團</p>
+                </div>
+            @endforelse
+        </div>
+
+
+
+
+<!-- Agent Posts Section (最新代購團) -->
 <section class="py-5">
     <div class="container">
         @if(session('status'))
@@ -91,9 +153,8 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h6 class="text-success fw-bold text-uppercase mb-1">Agent Posts</h6>
-                    <h2 class="fw-bold">最新代購貼文</h2>
+                    <h2 class="fw-bold">最新代購團</h2>
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h4 class="fw-bold mb-0">推薦代購人</h4>
                     {{-- 連結名稱改為「查看全部代購人」會更精準 --}}
                     <a href="{{ route('store.index') }}" class="text-decoration-none text-muted">
                         查看全部 <i class="bi bi-arrow-right"></i>
@@ -140,10 +201,10 @@
                                         type="button"
                                         class="agent-post-report-btn rounded-circle d-inline-flex align-items-center justify-content-center border-0 shadow-sm flex-shrink-0"
                                         style="width: 2.25rem; height: 2.25rem; background: #f3f4f6; transition: background-color 0.2s ease, transform 0.2s ease; {{ $isOwner ? 'opacity:0.5;cursor:not-allowed;' : '' }}"
-                                        aria-label="{{ $isOwner ? '不能檢舉自己的代購貼文' : '檢舉代購貼文' }}"
+                                        aria-label="{{ $isOwner ? '不能檢舉自己的代購團' : '檢舉代購團' }}"
                                         data-agent-post-id="{{ $agentPost->id }}"
                                         @disabled($isOwner)
-                                        title="{{ $isOwner ? '不能檢舉自己的代購貼文' : '檢舉代購貼文' }}"
+                                        title="{{ $isOwner ? '不能檢舉自己的代購團' : '檢舉代購團' }}"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#ef4444" class="w-5 h-5" style="width: 1.2rem; height: 1.2rem; filter: drop-shadow(0 0 1px rgba(0,0,0,0.1));">
                                             <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
@@ -153,11 +214,11 @@
                                         type="button"
                                         class="favorite-toggle rounded-circle d-inline-flex align-items-center justify-content-center border-0 shadow-sm flex-shrink-0"
                                         style="width: 2.25rem; height: 2.25rem; background: {{ $isFavorited ? '#fce7f3' : '#f3f4f6' }}; color: {{ $isFavorited ? '#ec4899' : '#9ca3af' }}; transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease; {{ $isOwner ? 'opacity:0.5;cursor:not-allowed;' : '' }}"
-                                        aria-label="{{ $isOwner ? '不能收藏自己的代購貼文' : '收藏代購貼文' }}"
+                                        aria-label="{{ $isOwner ? '不能收藏自己的代購團' : '收藏代購團' }}"
                                         aria-pressed="{{ $isFavorited ? 'true' : 'false' }}"
                                         data-agent-post-id="{{ $agentPost->id }}"
                                         @disabled($isOwner)
-                                        title="{{ $isOwner ? '不能收藏自己的代購貼文' : '收藏代購貼文' }}"
+                                        title="{{ $isOwner ? '不能收藏自己的代購團' : '收藏代購團' }}"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5" style="width: 1.1rem; height: 1.1rem;">
                                             <path d="M12.001 4.529c2.349-2.532 6.15-2.533 8.498-.001 2.41 2.6 2.41 6.815 0 9.416l-7.66 8.266a1.14 1.14 0 0 1-1.677 0l-7.66-8.266c-2.41-2.601-2.41-6.817 0-9.416 2.348-2.532 6.149-2.531 8.499.001Z"/>
@@ -353,7 +414,7 @@
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
                             <div class="modal-header border-0 bg-light py-3 px-4">
-                                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-exclamation-triangle me-2 text-danger"></i>檢舉代購貼文</h5>
+                                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-exclamation-triangle me-2 text-danger"></i>檢舉代購團</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             
@@ -421,7 +482,7 @@
                     <div class="col-12">
                         <div class="text-center py-12 bg-light rounded-4 border-dashed border-2 border-warning">
                             <i class="bi bi-search display-1 text-muted mb-4 opacity-50"></i>
-                            <h3 class="text-muted mb-3">沒有找到符合條件的代購貼文</h3>
+                            <h3 class="text-muted mb-3">沒有找到符合條件的代購團</h3>
                             <p class="text-muted mb-4">請嘗試：</p>
                             <ul class="text-start text-muted mb-0">
                                 <li>使用其他關鍵字（如商品名稱、國家）</li>
@@ -433,7 +494,7 @@
                 @else
                     <div class="col-12">
                         <div class="rounded-4 border border-dashed p-5 text-center text-muted bg-light">
-                            目前尚無最新代購連線，歡迎代購人前往會員專區建立貼文。
+                            目前尚無最新代購連線，歡迎代購人前往會員專區建立團。
                         </div>
                     </div>
                 @endif
@@ -444,10 +505,10 @@
 
 
 
-<!-- Newsletter / CTA Section (這裡就是您截圖中的區塊) -->
+<!-- Newsletter / CTA Section -->
     <section class="py-5">
         <div class="container">
-            <!-- 使用您代碼中的漸層色設定 -->
+            <!-- 漸層色設定 -->
             <div class="p-5 rounded-4 text-white text-center shadow-lg" style="background: linear-gradient(45deg, #5A9E8E, #3b7d6e);">
                 <div class="row justify-content-center">
                     <div class="col-lg-8">
