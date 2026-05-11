@@ -122,28 +122,66 @@
                     </div>
                 </div>
 
+                
 
 
-                <!-- 右側主內容區 -->
-                <div class="flex-1 space-y-6">
-
-                    @if($currentSection === 'favorite-posts')
-                        @includeIf('dashboard/partials/favorite-posts/index')
-                    @elseif($currentSection === 'notifications')
-                        @includeIf('dashboard/partials/notifications/index')
-                    @elseif($currentSection === 'follow-orders')
-                        @includeIf('dashboard/partials/follow-orders/index')
-                    @elseif($currentSection === 'messages')
-                        @includeIf('dashboard/partials/messages/index')
-                    @elseif($currentSection === 'history-records')
-                        @includeIf('dashboard/partials/history-records/index')
-                    @else
-                        @includeIf('dashboard/partials/request-lists/index')
-                    @endif
-                </div>
+                <!-- 右側主內容區 (加入順暢切換動畫) -->
+                <div class="flex-1 min-w-0">
+                    <div class="content-fade-in space-y-6">
+                        @if($currentSection === 'favorite-posts')
+                            @includeIf('dashboard/partials/favorite-posts/index')
+                        @elseif($currentSection === 'notifications')
+                            @includeIf('dashboard/partials/notifications/index')
+                        @elseif($currentSection === 'follow-orders')
+                            @includeIf('dashboard/partials/follow-orders/index')
+                        @elseif($currentSection === 'messages')
+                            @includeIf('dashboard/partials/messages/index')
+                        @elseif($currentSection === 'history-records')
+                            @includeIf('dashboard/partials/history-records/index')
+                        @else
+                            {{-- 預設顯示請託清單 --}}
+                            @includeIf('dashboard/partials/request-lists/index')
+                        @endif
+                    </div>
             </div>
         </div>
     </div>
+
+    <style>
+        /* 內容進入淡入與微幅上移效果 */
+        .content-fade-in {
+            animation: dashboardContentIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes dashboardContentIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 針對行動裝置的間距優化 */
+        @media (max-width: 1024px) {
+            .sticky {
+                position: static !important;
+            }
+        }
+
+        [x-cloak] { display: none !important; }
+
+        /* 自定義捲軸 */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+    </style>
 
     <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
     <script>
