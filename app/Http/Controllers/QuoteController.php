@@ -16,7 +16,8 @@ class QuoteController extends Controller
         $validated = $request->validate([
             'request_list_id' => 'required|exists:request_lists,id',
             'agent_quote_total' => 'required|numeric|min:0.01',
-            'time' => 'required|string|max:500',
+            'estimated_date' => 'required|date',
+            'comment' => 'nullable|string|max:1000',
             'items' => 'required|array|min:1',
             'items.*.id' => 'required|exists:request_items,id',
             'items.*.agent_quote' => 'required|numeric|min:0'
@@ -37,7 +38,8 @@ class QuoteController extends Controller
             'request_list_id' => $requestList->id,
             'user_id'         => auth()->id(),
             'price'           => $validated['agent_quote_total'],
-            'comment'         => $validated['time'],
+            'estimated_date'  => $validated['estimated_date'],
+            'comment'         => $validated['comment'] ?? null,
             'status'          => 'pending',
         ]);
 

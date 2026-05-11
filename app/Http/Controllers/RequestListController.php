@@ -188,11 +188,11 @@ class RequestListController extends Controller
     {
         abort_unless($requestList->user_id === Auth::id(), 403);
 
-        if (in_array($requestList->status, ['completed', 'cancelled'], true)) {
+        if (in_array($requestList->status, ['arrivaled', 'shipped'], true)) {
             return redirect()->route('dashboard')->with('status', '此請購清單已是結案狀態。');
         }
 
-        $requestList->update(['status' => 'completed']);
+        $requestList->update(['status' => 'arrivaled']);
 
         return redirect()->route('dashboard', ['section' => 'request-lists'])->with('status', '請購清單已標記完成，已移至歷史紀錄。');
     }

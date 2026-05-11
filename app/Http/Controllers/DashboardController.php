@@ -44,7 +44,7 @@ class DashboardController extends Controller
         $requestQuery = RequestList::with(['items', 'offers.agent', 'quotes.user'])->where('user_id', $user->id);
 
         // 過濾狀態與日期（保留既有邏輯，僅排除已結案）
-        $requestQuery->where('status', '!=', 'completed');
+         $requestQuery->whereNotIn('status', ['shipped', 'arrivaled']);
         $requestQuery->where(function ($q) use ($today) {
             $q->where('status', '!=', 'pending')
                 ->orWhereDate('deadline', '>=', $today);
@@ -139,7 +139,7 @@ class DashboardController extends Controller
             if ($currentHistoryType === 'request-lists') {
                 $completedRequestListsQuery = RequestList::with(['items', 'agent'])
                     ->where('user_id', $user->id)
-                    ->where('status', 'completed');
+                      ->whereIn('status', ['shipped', 'arrivaled']);
 
                 if ($historySearch !== '') {
                     $completedRequestListsQuery->where(function ($q) use ($historySearch) {

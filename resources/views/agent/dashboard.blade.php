@@ -50,6 +50,7 @@
     selectedRequest: null,
     agentQuoteTotal: '',
     availableTime: '',
+    quoteRemarks: '',
     loading: false,
 
     get totalQuote() {
@@ -97,6 +98,7 @@
         document.body.style.overflow = 'auto';
         this.agentQuoteTotal = '';
         this.availableTime = '';
+        this.quoteRemarks = '';
     },
 submitQuote() {
     // 1. 計算總額
@@ -115,7 +117,8 @@ submitQuote() {
     const payload = {
         request_list_id: this.selectedRequest.id, // 修改這裡：改名為 request_list_id 比較標準
         agent_quote_total: total,
-        time: this.availableTime.trim(),
+        estimated_date: this.availableTime.trim(),
+        comment: this.quoteRemarks.trim() || null,
         items: this.selectedRequest.items.map(item => ({
             id: item.id,
             agent_quote: item.agent_quote

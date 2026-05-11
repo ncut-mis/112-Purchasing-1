@@ -1,4 +1,3 @@
-
             @push('styles')
             <style>
                 /* 自定義滾輪樣式 */
@@ -119,9 +118,9 @@
 
                                                 'matched' => '已確認代購人',
 
-                                                'completed' => '訂單已完成',
+                                                'shipped' => '商品已出貨',
 
-                                                'cancelled' => '訂單已取消',
+                                                'arrivaled' => '商品已到貨',
 
                                             ][$requestList->status] ?? $requestList->status;
 
@@ -134,9 +133,9 @@
 
                                                 'matched' => 'bg-green-100 text-green-700',
 
-                                                'completed' => 'bg-emerald-100 text-emerald-700',
+                                                'shipped' => 'bg-indigo-100 text-indigo-700',
 
-                                                'cancelled' => 'bg-gray-200 text-gray-600',
+                                                'arrivaled' => 'bg-emerald-100 text-emerald-700',
 
                                             ][$requestList->status] ?? 'bg-gray-100 text-gray-700';
 
@@ -163,7 +162,7 @@
 
                                             <td class="py-4 text-gray-500">{{ $countryLabel }}</td>
                                             <td class="py-4 text-gray-800">
-                                                @if(in_array($requestList->status, ['pending', 'offered'], true))
+                                                @if(in_array($requestList->status, ['pending', 'offered', 'matched'], true))
                                                     <button type="button" class="text-blue-600 hover:underline cursor-pointer font-medium" onclick="openRequestCountdownModal({{ $requestList->id }})" title="點擊查看截止倒數">{{ optional($requestList->deadline)->format('Y-m-d') ?? '-' }}</button>
                                                 @else
                                                     {{ optional($requestList->deadline)->format('Y-m-d') ?? '-' }}
@@ -179,6 +178,7 @@
                                                         'editing' => ['text' => '清單送出後將不能修改與刪除,請先確認內容后再按「送出」', 'class' => 'bg-slate-100 text-slate-700'],
                                                         'pending' => ['text' => '等待代購人報價中,請留意通知中心', 'class' => 'bg-yellow-50 text-yellow-700'],
                                                         'offered' => ['text' => '請至通知中心確認代購人', 'class' => 'bg-blue-50 text-blue-700'],
+                                                        'matched' => ['text' => '已確認代購人，可檢視、聊天與完成訂單', 'class' => 'bg-green-50 text-green-700'],
                                                     ];
                                                     $notice = $noticeMap[$requestList->status] ?? null;
                                                 @endphp
@@ -205,7 +205,9 @@
 
                                                 <div class="inline-flex items-center gap-3">
                                                     @if($requestList->status === 'matched')
-                                                        <button class="text-gray-500 hover:underline">檢視</button>
+                                                        <button type="button" class="inline-flex items-center rounded-lg bg-blue-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-600" onclick="openRequestDetailModal({{ $requestList->id }})">檢視</button>
+                                                        <button type="button" class="inline-flex items-center rounded-lg bg-green-400 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-green-500">聊天</button>
+                                                        <button type="button" class="inline-flex items-center rounded-lg bg-emerald-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-600">完成</button>
                                                     @elseif($requestList->status === 'editing')
                                                         <button type="button" class="text-blue-500 hover:underline" onclick="openEditModal({{ $requestList->id }})">編輯</button>
                         
@@ -260,7 +262,7 @@
                     </div>
 
                         @foreach($requestLists ?? [] as $requestList)
-                             @if(in_array($requestList->status, ['pending', 'offered'], true))
+                             @if(in_array($requestList->status, ['pending', 'offered', 'matched'], true))
                                 @php
                                     $modalCountryLabel = [
                                         'jp' => '日本',
@@ -271,7 +273,7 @@
                                     $acceptedOffer = $requestList->offers->firstWhere('status', 'accepted');
                                     $activeOffer = $acceptedOffer ?? $requestList->offers->first();
                                     $activeAgent = optional($activeOffer)->agent;
-                                    $assignedAgentUser = ($requestList->status === 'offered' && !empty($requestList->people))
+                                    $assignedAgentUser = (in_array($requestList->status, ['offered', 'matched'], true) && !empty($requestList->people))
                                         ? \App\Models\User::find($requestList->people)
                                         : null;
                                     $displayAgent = $assignedAgentUser ?: $activeAgent;
@@ -285,8 +287,9 @@
                                     $countdownEndAt = optional($requestList->deadline)->format('Y-m-d') ? optional($requestList->deadline)->format('Y-m-d') . ' 23:59:00' : null;
 
                                     $isOffered = $requestList->status === 'offered';
-                                    $modalHeading = $isOffered ? '代購人已報價的請託單' : '等待報價中的請託單';
-                                    $modalSubHeading = $isOffered ? '可查看商品明細與目前接單狀況。' : '可查看商品明細與目前接單狀況。';
+                                    $isMatched = $requestList->status === 'matched';
+                                    $modalHeading = $isMatched ? '已確認代購人的請託單' : ($isOffered ? '代購人已報價的請託單' : '等待報價中的請託單');
+                                    $modalSubHeading = '可查看商品明細與目前接單狀況。';
 
                                 @endphp
 
@@ -404,7 +407,8 @@
                                                                         @endforeach 
                                                                     </div>
                                                                         
-                                                                    <p class="text-xs text-slate-500">可代購時段：{{ $quote->comment ?? '未提供' }}</p>
+                                                                    <p class="text-xs text-slate-500">預計代購日期：{{ $quote->estimated_date ?? '未提供' }}</p>
+                                                                    <p class="text-xs text-slate-500">報價備註：{{ $quote->comment ?? '未提供' }}</p>
                                                                     <div>                                                         
                                                                         <span class="text-blue-600 font-extrabold text-xs">
                                                                                 總計：NT$ {{ number_format($quote->price) }}
@@ -440,7 +444,8 @@
                                                                         @foreach($requestList->items as $item)
                                                                             <p>{{ $item->name }}單價：NT$ {{ number_format($item->expected_price ?? $unitPrice, 0) }}</p>
                                                                         @endforeach
-                                                                        <p>可代購時段：{{ $quote->comment ?? '未提供' }}</p>
+                                                                        <p>預計代購日期：未提供</p>
+                                                                        <p>報價備註：未提供</p>
                                                                         <p class="font-medium text-slate-700">待確認</p>
                                                                     </div>
                                                                 </div>
@@ -454,7 +459,7 @@
                                                             <p class="mt-3 text-base font-semibold text-slate-800">{{ $displayAgent->name }}</p>
                                                             <p class="mt-1 text-sm text-slate-500">{{ $requestList->status === 'offered' ? '此代購人已下單並提供商品單價' : ($acceptedOffer ? '已確認接單的代購人' : '已有代購人提出接單意願') }}</p>
 
-                                                            @if($requestList->status === 'offered')
+                                                            @if(in_array($requestList->status, ['offered', 'matched'], true))
                                                                 @php
                                                                     $specification = $requestList->time ?: collect($requestList->items ?? [])->pluck('specification')->filter()->unique()->implode('、');
                                                                 @endphp
@@ -468,6 +473,15 @@
                                                             <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-2xl">🕒</div>
                                                             <p class="mt-4 text-sm font-medium text-slate-700">目前尚未有代購人接單</p>
                                                             <p class="mt-2 text-xs leading-5 text-slate-400">當有代購人接單或提出報價時，這裡會顯示對方的名字與各商品之單價。</p>
+                                                        </div>
+                                                    @endif
+
+                                                    @if($requestList->status === 'matched')
+                                                        <div class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                                                            <h6 class="text-sm font-bold text-emerald-700">物流狀況</h6>
+                                                            <p class="mt-2 text-sm text-emerald-800">
+                                                                {{ $requestList->logistics_status ?? '代購人已確認接單，待更新物流進度。' }}
+                                                            </p>
                                                         </div>
                                                     @endif
                                                 </aside>
@@ -502,52 +516,68 @@
                                 </div>
                                 @php
                                     $quotedAgents = $requestList->quotes
-                                     ->whereIn('status', ['pending', 'accepted'])
+                                        ->whereIn('status', ['pending', 'accepted'])
                                         ->map(fn ($quote) => $quote->user)
                                         ->filter()
                                         ->unique('id')
                                         ->values();
                                     $chatAgents = $quotedAgents;
-
-                                    if (!empty($requestList->people)) {
-                                        $assignedAgent = \App\Models\User::find($requestList->people);
-                                        if ($assignedAgent) {
-                                            $chatAgents = $chatAgents->prepend($assignedAgent)->unique('id')->values();
-                                        }
-                                    }
                                 @endphp
+
                                 @if($chatAgents->isNotEmpty())
-                                    <div id="request-chat-modal-{{ $requestList->id }}" class="request-chat-modal hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4 py-4" onclick="handleRequestChatBackdrop(event, {{ $requestList->id }})">
-                                        <div class="w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+                                    <div id="request-chat-modal-{{ $requestList->id }}" class="request-chat-modal hidden fixed inset-0 z-[55] flex items-center justify-center bg-slate-900/60 px-4 py-6" onclick="handleRequestChatBackdrop(event, {{ $requestList->id }})">
+                                        <div class="w-full max-w-5xl rounded-2xl bg-white shadow-2xl overflow-hidden">
                                             <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
                                                 <div>
-                                                    <p class="text-xs text-slate-500">{{ $requestList->title }}</p>
-                                                    <h4 class="text-lg font-bold text-slate-800">請託單商品：{{ $requestList->items->map(fn($item) => ($item->name ?? '未命名商品') . '×' . ((int)($item->quantity ?? 1)))->implode('、') }}</h4>
+                                                    <h4 class="text-lg font-bold text-slate-800">請購單聊天室</h4>
+                                                    <p class="text-sm text-slate-500">{{ $requestList->title }}</p>
                                                 </div>
                                                 <button type="button" class="text-slate-500 text-2xl leading-none hover:text-slate-700" onclick="closeRequestChatModal({{ $requestList->id }})" aria-label="關閉聊天室">✕</button>
                                             </div>
 
-                                            <div class="border-b border-slate-200 px-5 py-3">
-                                                <p class="text-xs font-semibold text-slate-500 mb-2">切換代購人</p>
-                                                <div class="flex items-center gap-3">
-                                                    @foreach($chatAgents as $idx => $chatAgent)
-                                                        @php
-                                                            $chatAvatar = $chatAgent->avatar
-                                                                ? asset('storage/' . $chatAgent->avatar)
-                                                                : 'https://ui-avatars.com/api/?name=' . urlencode($chatAgent->name) . '&background=2563eb&color=fff&size=128';
-                                                        @endphp
-                                                        <button
-                                                            type="button"
-                                                            class="request-chat-agent-btn relative h-11 w-11 overflow-hidden rounded-full ring-2 {{ $idx === 0 ? 'ring-blue-500' : 'ring-transparent' }}"
-                                                            data-request-list-id="{{ $requestList->id }}"
-                                                            data-agent-id="{{ $chatAgent->id }}"
-                                                        >
-                                                            <img src="{{ $chatAvatar }}" alt="{{ $chatAgent->name }}" class="h-full w-full object-cover">
-                                                        </button>
-                                                    @endforeach
-                                                </div>
-                                            </div>
+                                            <div class="grid lg:grid-cols-[280px_minmax(0,1fr)]">
+                                                <aside class="border-r border-slate-200 bg-slate-50">
+                                                    <div class="max-h-[70vh] overflow-y-auto">
+                                                        @foreach($chatAgents as $chatAgent)
+                                                            @php
+                                                                $agentQuote = $requestList->quotes->firstWhere('user_id', $chatAgent->id);
+                                                                $quoteItemPrices = method_exists($agentQuote, 'quoteItems')
+                                                                    ? $agentQuote->quoteItems->keyBy('request_item_id')
+                                                                    : collect();
+                                                                $agentUnitPrices = $requestList->items->map(function ($item) use ($quoteItemPrices) {
+                                                                    $unitPrice = $quoteItemPrices->get($item->id)?->unit_price;
 
+                                                                    if ($unitPrice === null) {
+                                                                        return null;
+                                                                    }
+
+                                                                    return number_format((float) $unitPrice, 0);
+                                                                })->filter()->values();
+
+                                                                $activeClass = $loop->first
+                                                                    ? 'bg-emerald-100 text-emerald-700 border-l-4 border-emerald-500'
+                                                                    : 'text-slate-600 hover:bg-slate-100';
+                                                            @endphp
+                                                            <button
+                                                                type="button"
+                                                                class="request-chat-agent-tab w-full px-4 py-3 text-left text-sm transition {{ $activeClass }}"
+                                                                data-request-list-id="{{ $requestList->id }}"
+                                                                data-agent-id="{{ $chatAgent->id }}"
+                                                                onclick="switchRequestChatAgent({{ $requestList->id }}, {{ $chatAgent->id }})"
+                                                            >
+                                                                <p class="font-semibold">{{ $chatAgent->name }}</p>
+                                                                <p class="mt-1 text-xs text-slate-500">
+                                                                    單價：
+                                                                    <span class="font-semibold text-emerald-600">
+                                                                        NT${{ $agentUnitPrices->isNotEmpty() ? $agentUnitPrices->implode('/NT$') : '-' }}
+                                                                    </span>
+                                                                </p>
+                                                            </button>
+                                                        @endforeach
+                                                    </div>
+                                                </aside>
+
+                                        <div class="bg-white">
                                             @foreach($chatAgents as $idx => $chatAgent)
                                                 @php
                                                     $agentQuote = $requestList->quotes->firstWhere('user_id', $chatAgent->id);
@@ -556,7 +586,8 @@
                                                         : collect();
                                                     $agentUnitPrices = $requestList->items->map(function ($item) use ($quoteItemPrices) {
                                                         $unitPrice = $quoteItemPrices->get($item->id)?->unit_price;
-                                                        if (is_null($unitPrice)) {
+
+                                                        if ($unitPrice === null) {
                                                             return null;
                                                         }
 

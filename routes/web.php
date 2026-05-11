@@ -105,7 +105,7 @@ Route::get('/', function () {
     $user = Auth::user();
     // 1. 取得該代購人處理中的訂單數
     $finishedOrdersCount = RequestList::where('user_id', $user->id) 
-        ->where('status', 'completed')
+      ->where('status', 'arrivaled')
         ->count();
     // 2. 修正點：暫時將累計收入設為 0
     // 錯誤原因：您的資料表中沒有 total_price 欄位。
@@ -114,7 +114,7 @@ Route::get('/', function () {
     $totalIncome = 0; 
     /* 如果您確定了欄位名稱，可以取消下方註解並修改欄位名：
     $totalIncome = RequestList::where('user_id', $user->id)
-        ->where('status', 'completed')
+        ->where('status', 'arrivaled')
         ->sum('budget'); // 假設欄位叫 budget
     */
     return view('agent.member', compact('finishedOrdersCount', 'totalIncome'));

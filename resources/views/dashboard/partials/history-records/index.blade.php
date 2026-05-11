@@ -45,15 +45,15 @@
                 $recordModel = $historyRecord['raw'];
 
                 $statusText = match ($historyRecord['status']) {
-                    'completed' => '已完成',
-                    'cancelled' => '已取消',
+                    'shipped' => '商品已出貨',
+                    'arrivaled' => '商品已到貨',
                     'refunded' => '已退款',
                     default => $historyRecord['status'],
                 };
 
                 $statusStyle = match ($historyRecord['status']) {
-                    'completed' => 'bg-emerald-100 text-emerald-700',
-                    'cancelled' => 'bg-rose-100 text-rose-700',
+                    'shipped' => 'bg-indigo-100 text-indigo-700',
+                    'arrivaled' => 'bg-emerald-100 text-emerald-700',
                     'refunded' => 'bg-amber-100 text-amber-700',
                     default => 'bg-slate-100 text-slate-700',
                 };
