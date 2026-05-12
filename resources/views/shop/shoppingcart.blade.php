@@ -21,11 +21,8 @@
                 <div class="col-md-12 text-center pt-5">
                     <h2 class="display-3 text-black">感謝訂購！</h2>
                     <p class="lead mb-5">{{ Session::get('success') }}</p>
-<<<<<<< HEAD
                       <p><a href="{{ route('store.index') }}" class="btn btn-sm btn-outline-black">返回商店</a></p>
-=======
                     <p><a href="/request-lists" class="btn btn-sm btn-outline-black">返回商店</a></p>
->>>>>>> 7924682 (導入結帳功能)
                 </div>
             </div>
         @else
