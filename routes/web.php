@@ -237,7 +237,15 @@ Route::middleware(['auth'])->prefix('dashboard/settings')->group(function () {
 });
 
 //導入結帳功能
-Route::get('/shopping-cart', [CartController::class, 'index'])->name('shopping.cart');
+
+Route::get('/shopping-cart', function () {
+    // 使用 collect() 將空陣列轉換為 Laravel 集合物件
+    $cartItems = collect([]); 
+
+    return view('shop.shoppingcart', [
+        'cartItems' => $cartItems
+    ]); 
+})->name('shopping.cart');
 
 require __DIR__.'/auth.php';
 
