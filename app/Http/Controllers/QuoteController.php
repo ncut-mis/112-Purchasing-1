@@ -75,6 +75,7 @@ class QuoteController extends Controller
     return view('quotes.show', compact('quote'));
 }
         public function accept($id)
+<<<<<<< HEAD
         {
             $quote = Quote::with(['requestList', 'user', 'quoteItems'])->findOrFail($id);
             $requestList = $quote->requestList;
@@ -137,4 +138,44 @@ class QuoteController extends Controller
         return back()->with('success', '已拒絕該筆報價。');
     }
 
+=======
+{
+    // 1. 取得這筆被接受的報價
+    $quote = Quote::with(['requestList', 'user', 'quoteItems'])->findOrFail($id);
+    
+    // 【關鍵：定義變數】
+    $requestListId = $quote->request_list_id;
+
+    // 2. 更新請託單狀態
+    $quote->requestList->update([
+        'status'       => 'matched', 
+        'people'       => $quote->user_id, 
+        'budget_total' => $quote->price,  
+    ]);
+
+    // 3. 更新這筆報價單狀態
+    $quote->update(['status' => 'accepted']);
+
+    // 4. 退回其他人的報價 (現在這裏就不會報錯了)
+    Quote::where('request_list_id', $requestListId)
+        ->where('id', '!=', $id)
+        ->where('status', 'pending')
+        ->update(['status' => 'rejected']);
+
+    // 5. 寫入 Session
+    $cart = session()->get('cart', []);
+    $cart[$quote->id] = [
+        "id"         => $quote->id,
+        "request_id" => $requestListId,
+        "name"       => "請託單報價: " . $quote->requestList->title,
+        "price"      => $quote->price,
+        "agent_name" => $quote->user->name,
+        "quantity"   => 1,
+        "items"      => $quote->quoteItems->pluck('name')->toArray(),
+    ];
+    session()->put('cart', $cart);
+
+    return redirect()->route('shopping.cart')->with('success', '接受報價成功！');
+}
+>>>>>>> 7924682 (導入結帳功能)
 }
