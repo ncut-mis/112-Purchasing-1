@@ -633,14 +633,15 @@
                                     </div>
 
                                     @php
+                                        $myAgentId = Auth::id();
                                         $agentChatMessages = \App\Models\Message::query()
                                             ->where('request_list_id', $requestList->id)
-                                            ->where(function ($query) use ($requestList) {
-                                                $query->where(function ($inner) use ($requestList) {
+                                            ->where(function ($query) use ($requestList, $myAgentId) {
+                                                $query->where(function ($inner) use ($requestList, $myAgentId) {
                                                     $inner->where('sender_id', $requestList->user_id)
-                                                        ->where('receiver_id', $requestList->people);
-                                                })->orWhere(function ($inner) use ($requestList) {
-                                                    $inner->where('sender_id', $requestList->people)
+                                                        ->where('receiver_id', $myAgentId);
+                                                })->orWhere(function ($inner) use ($requestList, $myAgentId) {
+                                                    $inner->where('sender_id', $myAgentId)
                                                         ->where('receiver_id', $requestList->user_id);
                                                 });
                                             })
@@ -684,6 +685,7 @@
                                                   class="agent-request-chat-form flex items-center gap-2 border-t border-gray-200 px-4 py-3"
                                                   data-request-list-id="{{ $requestList->id }}">
                                                 @csrf
+                                                <input type="hidden" name="receiver_id" value="{{ $requestList->user_id }}">
                                                 <input type="text" name="body" class="w-full rounded-full border-gray-300 px-4 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="輸入訊息..." maxlength="2000" required>
                                                 <button type="submit" class="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">送出</button>
                                             </form>
@@ -784,6 +786,59 @@
                                                 </div>
 
                                             </div>
+                                        </div>
+                                    </div>
+                                    @php
+                                        $myAgentId = Auth::id();
+                                        $agentChatMessages = \App\Models\Message::query()
+                                            ->where('request_list_id', $requestList->id)
+                                            ->where(function ($query) use ($requestList, $myAgentId) {
+                                                $query->where(function ($inner) use ($requestList, $myAgentId) {
+                                                    $inner->where('sender_id', $requestList->user_id)
+                                                        ->where('receiver_id', $myAgentId);
+                                                })->orWhere(function ($inner) use ($requestList, $myAgentId) {
+                                                    $inner->where('sender_id', $myAgentId)
+                                                        ->where('receiver_id', $requestList->user_id);
+                                                });
+                                            })
+                                            ->with(['sender:id,name'])
+                                            ->orderBy('created_at')
+                                            ->get();
+                                    @endphp
+                                    <div id="agent-request-chat-modal-{{ $requestList->id }}" class="agent-request-chat-modal fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4" onclick="handleAgentRequestChatBackdrop(event, {{ $requestList->id }})">
+                                        <div class="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+                                            <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+                                                <div>
+                                                    <p class="text-xs text-gray-500">請託單【{{ $requestList->title}}】</p>
+                                                    <h4 class="text-lg font-bold text-gray-800">請託人{{ $requestList->user->name ?? '使用者' }}</h4>
+                                                </div>
+                                                <button type="button" class="text-2xl text-gray-500 hover:text-gray-700" onclick="closeAgentRequestChatModal({{ $requestList->id }})" aria-label="關閉聊天室">✕</button>
+                                            </div>
+                                            <div id="agent-request-chat-messages-{{ $requestList->id }}" class="max-h-[55vh] overflow-y-auto bg-gray-50 px-5 py-4">
+                                                @forelse($agentChatMessages as $message)
+                                                    @php $isMine = (int) $message->sender_id === (int) auth()->id(); @endphp
+                                                    <div class="mb-3 flex {{ $isMine ? 'justify-end' : 'justify-start' }}">
+                                                        <div class="max-w-[75%]">
+                                                            <div class="rounded-xl border px-3 py-2 {{ $isMine ? 'bg-indigo-100 border-indigo-200' : 'bg-white border-gray-200' }}">
+                                                                <p class="text-xs text-gray-500">{{ $message->sender->name ?? '使用者' }}</p>
+                                                                <p class="mt-1 text-sm text-gray-800 break-words">{{ $message->body }}</p>
+                                                            </div>
+                                                            <p class="mt-1 text-xs text-gray-500 {{ $isMine ? 'text-right' : 'text-left' }}">{{ optional($message->created_at)->format('Y-m-d H:i') }}</p>
+                                                        </div>
+                                                    </div>
+                                                @empty
+                                                    <p class="agent-request-chat-empty py-12 text-center text-sm text-gray-400">目前尚無訊息，開始第一句對話吧。</p>
+                                                @endforelse
+                                            </div>
+                                            <form method="POST"
+                                                  action="{{ route('request-list.chat.send', $requestList) }}"
+                                                  class="agent-request-chat-form flex items-center gap-2 border-t border-gray-200 px-4 py-3"
+                                                  data-request-list-id="{{ $requestList->id }}">
+                                                @csrf
+                                                <input type="hidden" name="receiver_id" value="{{ $requestList->user_id }}">
+                                                <input type="text" name="body" class="w-full rounded-full border-gray-300 px-4 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="輸入訊息..." maxlength="2000" required>
+                                                <button type="submit" class="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">送出</button>
+                                            </form>
                                         </div>
                                     </div>
                                 @empty

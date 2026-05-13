@@ -872,14 +872,40 @@
 
         // ── 請購單內嵌聊天 JS ─────────────────────────────────
 
-        function openRequestChatModal(id) {
+        function openRequestChatModal(id, agentId = null) {
             const modal = document.getElementById(`request-chat-modal-${id}`);
             if (!modal) return;
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             document.body.classList.add('overflow-hidden');
+
+            const sidebar = modal.querySelector('.request-chat-sidebar');
+            const grid = modal.querySelector('.request-chat-grid');
+
+            if (agentId) {
+                // 隱藏左側列表，聊天區佔滿
+                if (sidebar) sidebar.style.display = 'none';
+                if (grid) grid.style.gridTemplateColumns = '1fr';
+
+                // 切換到對應代購人的 panel
+                modal.querySelectorAll('.request-chat-agent-panel').forEach((panel) => {
+                    const isTarget = String(panel.dataset.agentId) === String(agentId);
+                    panel.classList.toggle('hidden', !isTarget);
+                });
+            } else {
+                // 顯示左側列表
+                if (sidebar) sidebar.style.display = '';
+                if (grid) grid.style.gridTemplateColumns = '';
+
+                // 顯示第一個 panel
+                modal.querySelectorAll('.request-chat-agent-panel').forEach((panel, idx) => {
+                    panel.classList.toggle('hidden', idx !== 0);
+                });
+            }
+
             // 捲到最底
-            const box = document.getElementById(`request-chat-messages-${id}`);
+            const targetAgentId = agentId || modal.querySelector('.request-chat-agent-panel')?.dataset?.agentId;
+            const box = document.getElementById(`request-chat-messages-${id}-${targetAgentId}`);
             if (box) box.scrollTop = box.scrollHeight;
         }
 

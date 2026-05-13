@@ -1,4 +1,4 @@
-            @push('styles')
+@push('styles')
             <style>
                 /* 自定義滾輪樣式 */
                 .custom-scrollbar::-webkit-scrollbar {
@@ -206,7 +206,7 @@
                                                 <div class="inline-flex items-center gap-3">
                                                     @if($requestList->status === 'matched')
                                                         <button type="button" class="inline-flex items-center rounded-lg bg-blue-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-600" onclick="openRequestDetailModal({{ $requestList->id }})">檢視</button>
-                                                        <button type="button" class="inline-flex items-center rounded-lg bg-green-400 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-green-500">聊天</button>
+                                                        <button type="button" class="inline-flex items-center rounded-lg bg-green-400 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-green-500" onclick="openRequestChatModal({{ $requestList->id }}, {{ $requestList->people ?? 'null' }})">聊天</button>
                                                         <button type="button" class="inline-flex items-center rounded-lg bg-emerald-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-600">完成</button>
                                                     @elseif($requestList->status === 'editing')
                                                         <button type="button" class="text-blue-500 hover:underline" onclick="openEditModal({{ $requestList->id }})">編輯</button>
@@ -224,11 +224,7 @@
                                                         </form>
                                                     @elseif(in_array($requestList->status, ['pending', 'offered'], true))
                                                         <button type="button" class="inline-flex items-center rounded-lg bg-blue-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-600" onclick="openRequestDetailModal({{ $requestList->id }})">檢視</button>
-                                                        @if(!empty($chatPartnerId))
-                                                            <button type="button" class="inline-flex items-center rounded-lg bg-green-400 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-green-500" onclick="openRequestChatModal({{ $requestList->id }})">聊天</button>
-                                                        @else
-                                                            <button type="button" class="inline-flex items-center rounded-lg bg-gray-300 px-4 py-2 text-xs font-semibold text-white cursor-not-allowed" disabled>聊天</button>
-                                                        @endif
+                                                        <button type="button" class="inline-flex items-center rounded-lg bg-gray-300 px-4 py-2 text-xs font-semibold text-white cursor-not-allowed" disabled title="尚未接受報價，無法聊天">聊天</button>
                                                         <form method="POST" action="{{ route('request-list.complete', $requestList) }}" onsubmit="return confirm('是否已完成？');">
                                                             @csrf
                                                             @method('PATCH')
@@ -525,7 +521,7 @@
                                 @endphp
 
                                 @if($chatAgents->isNotEmpty())
-                                    <div id="request-chat-modal-{{ $requestList->id }}" class="request-chat-modal hidden fixed inset-0 z-[55] flex items-center justify-center bg-slate-900/60 px-4 py-6" onclick="handleRequestChatBackdrop(event, {{ $requestList->id }})">
+                                    <div id="request-chat-modal-{{ $requestList->id }}" class="request-chat-modal hidden fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 px-4 py-6" onclick="handleRequestChatBackdrop(event, {{ $requestList->id }})">
                                         <div class="w-full max-w-5xl rounded-2xl bg-white shadow-2xl overflow-hidden">
                                             <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
                                                 <div>
@@ -535,8 +531,8 @@
                                                 <button type="button" class="text-slate-500 text-2xl leading-none hover:text-slate-700" onclick="closeRequestChatModal({{ $requestList->id }})" aria-label="關閉聊天室">✕</button>
                                             </div>
 
-                                            <div class="grid lg:grid-cols-[280px_minmax(0,1fr)]">
-                                                <aside class="border-r border-slate-200 bg-slate-50">
+                                            <div class="grid lg:grid-cols-[280px_minmax(0,1fr)] request-chat-grid">
+                                                <aside class="request-chat-sidebar border-r border-slate-200 bg-slate-50">
                                                     <div class="max-h-[70vh] overflow-y-auto">
                                                         @foreach($chatAgents as $chatAgent)
                                                             @php
@@ -702,6 +698,12 @@
                             </div>
 
                             <div class="flex items-center space-x-3">
+                                <button type="button" 
+                                        onclick="openRequestChatModal({{ $requestList->id }}, {{ $quote->user->id }})"
+                                        class="rounded-xl px-4 py-2 text-sm font-bold bg-green-50 text-green-600 border border-green-200 hover:bg-green-500 hover:text-white transition-all shadow-sm">
+                                    聊天
+                                </button>
+
                                 <button type="button" 
                                         onclick="window.openQuoteModal({{ $quote->id }})"
                                         class="rounded-xl px-4 py-2 text-sm font-bold bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-500 hover:text-white transition-all shadow-sm">
