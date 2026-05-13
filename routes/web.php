@@ -23,6 +23,7 @@ use App\Http\Controllers\ContentReportController;
 use App\Http\Controllers\QuoteController;
 use App\Events\MessageSent;
 use App\Http\Controllers\FollowController; 
+use App\Http\Controllers\FollowOrderController; 
 
 Route::get('/agent/dashboard', [AgentDashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
@@ -39,6 +40,7 @@ Route::get('/store/{id}', [ShopController::class, 'show'])->name('shop.show');
 Route::middleware(['auth'])->group(function () {
     Route::post('/follow/toggle', [FollowController::class, 'toggle'])->name('follow.toggle');
     Route::get('/follows', [FollowController::class, 'index'])->name('follows.index');
+    Route::post('/follow-orders', [FollowOrderController::class, 'store'])->name('follow-orders.store');
 });
 
 Route::get('/post-product-image/{postProduct}', [AgentPostController::class, 'image'])->name('post-product.image');
