@@ -264,6 +264,9 @@ Route::middleware(['auth'])->group(function () {
     
     // 拒絕報價
     Route::post('/quotes/{quote}/reject', [QuoteController::class, 'reject'])->name('quotes.reject');
+    // 修改報價
+    Route::post('/quotes/{quote}/return', [QuoteController::class, 'return'])->name('quotes.return');
+
 });
 //展開貼文
 Route::get('/store', [AgentPostController::class, 'index'])->name('store.index');

@@ -139,4 +139,14 @@ class QuoteController extends Controller
 
         return back()->with('success', '已拒絕該代購人的報價。');
     }
+    
+        public function return(Quote $quote) {
+        // 更新報價單狀態，讓代購人知道需要修改
+        $quote->update(['status' => 'returned']); 
+
+        // 也可以同時把請託單狀態改回開放中，視你的業務邏輯而定
+        // $quote->requestList->update(['status' => 'pending']);
+
+        return back()->with('success', '報價已退回給代購人修改。');
+    }
 }

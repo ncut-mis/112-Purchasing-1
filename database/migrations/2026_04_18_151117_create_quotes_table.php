@@ -26,7 +26,7 @@ return new class extends Migration
         $table->text('comment')->nullable(); 
         
         // 5. 狀態
-        $table->enum('status', ['pending', 'accepted', 'rejected'])->default('pending');
+        $table->enum('status', ['pending', 'accepted', 'rejected','returned'])->default('pending');
         
         $table->timestamps();
     });

@@ -654,7 +654,7 @@
      class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 px-4 py-6" 
      onclick="handleRequestNoticeBackdrop(event, {{ $requestList->id }})">
     
-    <div class="w-full max-w-2xl rounded-3xl bg-white shadow-2xl overflow-hidden">
+    <div class="w-full max-w-4xl rounded-3xl bg-white shadow-2xl overflow-hidden">
         <div class="flex items-center justify-between border-b border-slate-200 px-6 py-5 bg-slate-50/50">
             <h4 class="text-xl font-extrabold text-slate-800 flex items-center">
                 <i class="bi bi-bell-fill text-amber-500 mr-2"></i>通知中心
@@ -682,7 +682,7 @@
                 </div>
 
                 <div class="space-y-4 pr-2 custom-scrollbar" style="max-height: 450px; overflow-y: auto;">
-                    @forelse($requestList->quotes as $quote)
+                    @forelse($requestList->quotes->where('status', 'pending') as $quote)
                         <div class="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                             
                             <div class="flex items-center space-x-5">
@@ -715,6 +715,13 @@
                                     </button>
                                 </form>
 
+                                <form action="{{ route('quotes.return', $quote->id) }}" method="POST" onsubmit="return confirm('確定要退回此報價並請代購人修改嗎？')">
+                                    @csrf
+                                    <button type="submit" class="rounded-xl px-4 py-2 text-sm font-bold bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-500 hover:text-white transition-all shadow-sm">
+                                        退回修改
+                                    </button>
+                                </form>
+
                                 <form action="{{ route('quotes.reject', $quote->id) }}" method="POST" onsubmit="return confirm('確定要拒絕此報價嗎？')">
                                     @csrf
                                     <button type="submit" class="rounded-xl px-4 py-2 text-sm font-bold bg-white text-red-500 border border-red-100 hover:bg-red-50 transition-all">
@@ -726,7 +733,7 @@
                     @empty
                         <div class="text-center py-12 rounded-3xl border-2 border-dashed border-slate-100 text-slate-300">
                             <i class="bi bi-inbox text-5xl mb-3 block"></i>
-                            <p class="text-lg">目前尚無報價</p>
+                            <p class="text-lg">目前尚無待處理報價</p>
                         </div>
                     @endforelse
                 </div>
