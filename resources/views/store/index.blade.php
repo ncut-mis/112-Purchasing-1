@@ -138,6 +138,14 @@
             padding: 15px 0;
             color: #4a5568;
         }
+        
+        /* 結帳按鈕未滿足條件時的禁用狀態樣式 */
+        .btn-checkout:disabled {
+            background-color: #a8c7bd !important;
+            border-color: #a8c7bd !important;
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
     </style>
 
     <div class="store-container">
@@ -252,9 +260,12 @@
                             @csrf
                             <input type="hidden" name="agent_post_id" value="{{ $post->id }}">
 
-                            <div style="background-color: #63a388; height: 45px; width: 100%;"></div>
-                            
+                            <div style="background-color: #63a388; height: 45px; width: 100%;">
+                                     <h5 class="modal-title fw-bold text-white p-md-2"><i class="bi bi-cart-plus me-2 text-white"></i>確認跟單商品</h5>
+                            </div>
                             <div class="modal-body p-4 p-md-8 pt-4">
+
+                            
                                 <div class="row mb-5 g-3">
                                     <div class="col-lg-3 col-md-6 d-flex align-items-center">
                                         <span class="text-nowrap me-2 fw-bold text-muted">代購人</span>
@@ -371,8 +382,9 @@
                                                 <h5 class="fw-bold m-0 text-dark total-amount">總計金額：NT$0</h5>
                                             </div>
                                             <div class="d-flex justify-content-end gap-3">
-                                                <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">取消</button>
-                                                <button type="submit" class="btn text-white px-4 py-2" style="background-color: #63a388;">確認跟單</button>
+                                                <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">再逛逛</button>
+                                                {{-- 預設加入 disabled 屬性，並加上 btn-checkout class 以便操作 --}}
+                                                <button type="submit" class="btn text-white px-4 py-2 btn-checkout" style="background-color: #63a388;" disabled>確認結帳</button>
                                             </div>
                                         </div>
                                     </div>
@@ -430,15 +442,23 @@
 
             function updateTotal(modal) {
                 let total = 0;
+                let totalQty = 0; // 用來計算總數量
                 const rows = modal.querySelectorAll('.product-row');
                 
                 rows.forEach(row => {
                     const price = parseFloat(row.dataset.price);
                     const qty = parseInt(row.querySelector('.qty-text').innerText);
                     total += (price * qty);
+                    totalQty += qty; // 累加目前這項商品的數量
                 });
                 
                 modal.querySelector('.total-amount').innerText = '總計金額：NT$' + total.toLocaleString();
+
+                // 判斷總數量是否大於0，決定是否解除禁用「確認結帳」按鈕
+                const checkoutBtn = modal.querySelector('.btn-checkout');
+                if (checkoutBtn) {
+                    checkoutBtn.disabled = (totalQty === 0);
+                }
             }
         });
     </script>
