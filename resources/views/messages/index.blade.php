@@ -168,9 +168,15 @@
             }));
             renderUserList();
 
-            // 如果有 autoOpenPartnerId（從找代購頁面來的），自動開啟該對話
+            // 如果有 autoOpenPartnerId（從追蹤名單來的），自動開啟該對話
             const autoOpenId = {{ $autoOpenPartnerId ?? 'null' }};
+            const autoOpenName = @json($autoOpenPartnerName ?? null);
             if (autoOpenId) {
+                // 若該 partner 還不在列表中（尚無歷史對話），先加入
+                if (!partners.find(p => p.id === autoOpenId)) {
+                    partners.push({ id: autoOpenId, name: autoOpenName || '代購人', messages: [], unread: 0 });
+                    renderUserList();
+                }
                 openChat(autoOpenId);
             } else if (partners.length > 0) {
                 // 預設開啟第一個對話

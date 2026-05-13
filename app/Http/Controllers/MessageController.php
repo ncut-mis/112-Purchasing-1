@@ -24,19 +24,22 @@ class MessageController extends Controller
 
         $chatPartners = User::whereIn('id', $sentToIds)->get();
 
-        // 如果從找代購頁面帶來 ?partner=ID，自動加入對話列表
+        // 如果從追蹤名單或找代購頁面帶來 ?partner=ID 或 ?user_id=ID，自動加入對話列表
         $autoOpenPartnerId = null;
-        if ($request->filled('partner')) {
-            $partner = User::find($request->partner);
+        $autoOpenPartnerName = null;
+        $partnerId = $request->filled('partner') ? $request->partner : ($request->filled('user_id') ? $request->user_id : null);
+        if ($partnerId) {
+            $partner = User::find($partnerId);
             if ($partner && $partner->id !== $userId) {
                 if (!$chatPartners->contains('id', $partner->id)) {
                     $chatPartners->push($partner);
                 }
                 $autoOpenPartnerId = $partner->id;
+                $autoOpenPartnerName = $partner->name;
             }
         }
 
-        return view('messages.index', compact('chatPartners', 'autoOpenPartnerId'));
+        return view('messages.index', compact('chatPartners', 'autoOpenPartnerId', 'autoOpenPartnerName'));
     }
 
     // 代購人聊天頁：顯示「以 buyer 身份傳給我」或「我以 agent 身份回覆過」的對話對象

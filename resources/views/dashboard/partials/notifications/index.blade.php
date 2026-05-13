@@ -122,7 +122,7 @@
                                    class="bg-gray-100 text-gray-600 py-3 rounded-2xl text-xs font-bold hover:bg-gray-100 transition border border-gray-100 flex items-center justify-center gap-1">
                                     <i class="bi bi-person-badge"></i> 檔案
                                 </button>
-                                <a href="{{ route('agent.chat', ['user_id' => $agent->id]) }}" 
+                                <a href="{{ route('messages.index', ['partner' => $agent->id]) }}" 
                                    class="bg-amber-500 text-white py-3 rounded-2xl text-xs font-bold hover:bg-amber-600 shadow-lg shadow-amber-100 transition flex items-center justify-center gap-1">
                                     <i class="bi bi-chat-dots-fill"></i> 聊聊
                                 </a>
@@ -201,7 +201,7 @@
                                     <i class="bi bi-person-check-fill"></i>
                                     <span>已追蹤</span>
                                 </button>
-                                <a :href="'/agent/chat?user_id=' + selectedAgent.id" class="bg-white text-emerald-800 px-8 py-3 rounded-2xl font-black shadow-lg hover:bg-emerald-50 transition flex items-center gap-2">
+                                <a :href="'/messages?partner=' + selectedAgent.id" class="bg-white text-emerald-800 px-8 py-3 rounded-2xl font-black shadow-lg hover:bg-emerald-50 transition flex items-center gap-2">
                                     <i class="bi bi-chat-heart-fill"></i> 立即聊一聊
                                 </a>
                             </div>
