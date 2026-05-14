@@ -274,3 +274,8 @@ Route::middleware(['auth'])->group(function () {
 Route::get('/store', [AgentPostController::class, 'index'])->name('store.index');
 //退回跟單
 Route::delete('/order/cancel/{id}', [App\Http\Controllers\CartController::class, 'cancelOrder'])->name('order.cancel');
+// 處理結帳提交
+Route::post('/checkout/process', [App\Http\Controllers\CartController::class, 'processCheckout'])->name('checkout.process');
+//結帳確認
+// 確保這裡的 'processCheckout' 跟 Controller 裡寫的一模一樣
+Route::post('/checkout/process', [App\Http\Controllers\CartController::class, 'processCheckout'])->name('checkout.process');

@@ -9,6 +9,7 @@ use App\Models\RequestList;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Order;
 use App\Models\PostProduct;
+use App\Models\Logistics;
 
 class CartController extends Controller
 {
@@ -39,7 +40,8 @@ class CartController extends Controller
         
 
         $subtotal = $followTotal + $requestTotal ;
-        $total = ($subtotal > 0) ? ($subtotal + 100) : 0;
+        $total = ($subtotal > 0) ? ($subtotal + 60) : 0;
+        $logistics = \DB::table('logistics')->where('status', 1)->get();
 
         return view('shop.shoppingcart', compact(
             'cartItems', 
@@ -47,7 +49,8 @@ class CartController extends Controller
             'sessionCart', 
             'subtotal', 
             'followOrders',
-            'total'
+            'total',
+            'logistics'
         ));
     }
     public function cancelOrder($id)
@@ -77,5 +80,34 @@ class CartController extends Controller
     }
 
     return back()->with('error', '找不到該項目。');
+}
+public function processCheckout(Request $request)
+{
+    $userId = \Auth::id();
+
+    // 1. 驗證輸入（地址與物流必填）
+    $request->validate([
+        'address' => 'required|string',
+        'logistics_id' => 'required',
+    ]);
+
+    // 使用 Transaction 確保所有狀態同時更新成功
+    \DB::transaction(function () use ($userId) {
+        
+        // 2. 將「跟單」狀態轉為 completed
+        \App\Models\Order::where('buyer_id', $userId)
+            ->where('status', 'pending_payment')
+            ->update(['status' => 'completed']);
+
+        // 3. 將「報價單」狀態轉為 completed
+        \DB::table('request_lists')
+            ->where('user_id', $userId)
+            ->where('status', 'matched')
+            ->update(['status' => 'completed']);
+            
+        // 4. (選填) 如果有需要紀錄收件地址，可以在這裡處理
+    });
+
+    return redirect()->route('shopping.cart')->with('success', '結帳完成！訂單狀態已轉為已完成。');
 }
 }
