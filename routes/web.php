@@ -272,3 +272,5 @@ Route::middleware(['auth'])->group(function () {
 });
 //展開貼文
 Route::get('/store', [AgentPostController::class, 'index'])->name('store.index');
+//退回跟單
+Route::delete('/order/cancel/{id}', [App\Http\Controllers\CartController::class, 'cancelOrder'])->name('order.cancel');

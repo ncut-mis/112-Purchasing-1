@@ -25,6 +25,16 @@
                                 <div class="col-md-5 text-end">
                                     <h5 class="text-success fw-bold">NT$ {{ number_format($list->total_amount, 0) }}</h5>
                                 </div>
+                                <div class="col-md-3 text-end">
+                                    {{-- 跟單退回按鈕 --}}
+                                    <form action="{{ route('order.cancel', $list->id) }}" method="POST" onsubmit="return confirm('確定要移除這項跟單商品嗎？')">
+                                        @csrf
+                                        @method('DELETE') {{-- 注意這裡要用 DELETE 方法 --}}
+                                        <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                            <i class="bi bi-trash me-1"></i>移除項目
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
                         @endforeach
                     </div>
