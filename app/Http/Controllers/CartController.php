@@ -57,10 +57,7 @@ class CartController extends Controller
 
     // 1. 先用傳過來的 ID 找到「其中一筆」訂單，藉此拿到開團貼文 ID (source_id)
     $baseOrder = \App\Models\Order::where('id', $id)
-    // 1. 找到該筆訂單，僅允許尚未付款的跟單訂單取消
-    $order = \App\Models\Order::where('id', $id)
                 ->where('buyer_id', $userId)
-                ->where('status', 'pending_payment')
                 ->first();
 
     if ($baseOrder) {
@@ -100,30 +97,9 @@ class CartController extends Controller
             ->delete();
 
         return back()->with('success', "已成功移除該項目，並一次釋出全部共 {$returnQty} 個名額。");
-
-    if ($order) {
-        // 2. 逐筆還原訂單明細對應的 sold_quantity
-        $returnedQty = 0;
-
-        foreach ($order->items as $item) {
-            $quantity = $item->quantity ?? 1;
-            $returnedQty += $quantity;
-
-            $product = PostProduct::find($item->product_id);
-            if ($product) {
-                $product->sold_quantity = max(0, ($product->sold_quantity ?? 0) - $quantity);
-                $product->save();
-            }
-        }
-
-        // 3. 刪除訂單
-        $order->delete();
-
-        return back()->with('success', "已移除項目，並釋出 {$returnedQty} 個名額。請購人移除後已還原該商品可跟單數量。");
-
     }
 
-    return back()->with('error', '找不到該項目或該訂單無法移除。');
+    return back()->with('error', '找不到該項目。');
 }
     public function processCheckout(Request $request)
     {
@@ -190,23 +166,5 @@ class CartController extends Controller
         DB::table('post_products')->where('agent_post_id', $sourceId)->decrement('max_quantity', $buyQty);
         return back()->with('success', '已成功加入！');
     }
-
-    // 使用 Transaction 確保所有狀態同時更新成功
-    \DB::transaction(function () use ($userId) {
-        
-        // 2. 將「跟單」狀態轉為 wait-for-ship（等待出貨）
-        \App\Models\Order::where('buyer_id', $userId)
-            ->where('status', 'pending_payment')
-            ->update(['status' => 'wait-for-ship']);
-        // 3. 將「報價單」狀態轉為 wait-for-ship
-        \DB::table('request_lists')
-            ->where('user_id', $userId)
-            ->where('status', 'matched')
-            ->update(['status' => 'wait-for-ship']);
-            
-        // 4. (選填) 如果有需要紀錄收件地址，可以在這裡處理
-    });
-
-    return redirect()->route('shopping.cart')->with('success', '結帳完成！請託單狀態已轉為等待出貨。');
 }
 }
