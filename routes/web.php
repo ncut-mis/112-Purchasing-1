@@ -26,6 +26,7 @@ use App\Http\Controllers\QuoteController;
 use App\Events\MessageSent;
 use App\Http\Controllers\FollowController; 
 use App\Http\Controllers\FollowOrderController; 
+use App\Http\Controllers\HistoryController;
 
 Route::get('/agent/dashboard', [AgentDashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
@@ -296,3 +297,8 @@ Route::post('/checkout/process', [App\Http\Controllers\CartController::class, 'p
 //結帳確認
 // 確保這裡的 'processCheckout' 跟 Controller 裡寫的一模一樣
 Route::post('/checkout/process', [App\Http\Controllers\CartController::class, 'processCheckout'])->name('checkout.process');
+
+Route::middleware(['auth'])->group(function () {
+    // 代購人歷史紀錄主路由
+    Route::get('/agent/member', [HistoryController::class, 'agentHistory'])->name('agent.member');
+});

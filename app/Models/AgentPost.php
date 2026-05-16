@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
+use Illuminate\Database\Eloquent\Relations\HasMany;
 class AgentPost extends Model
 {
     use HasFactory, SoftDeletes;
@@ -72,5 +72,9 @@ class AgentPost extends Model
         }
 
         return route('agent-post.cover-image', $this);
+    }
+    public function postProducts(): HasMany
+    {
+        return $this->hasMany(PostProduct::class, 'agent_post_id');
     }
 }

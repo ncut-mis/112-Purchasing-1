@@ -950,63 +950,145 @@
                     </div>
 
                     <!-- 分頁三：歷史紀錄 -->
-                    <div x-show="activeTab === 'agent-history'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4">
-                        <section id="agent-history" class="bg-white rounded-2xl shadow-sm border border-amber-100 p-6">
-                            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-                                <div>
-                                    <h3 class="text-lg font-bold text-amber-600">歷史紀錄</h3>
-                                    <p class="text-sm text-gray-500">查看您已完成的代購訂單與成交紀錄。</p>
+                   <div x-show="activeTab === 'agent-history'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4">
+    <section id="agent-history" class="bg-white rounded-2xl shadow-sm border border-amber-100 p-6" x-data="{ subTab: 'lists' }">
+        
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <div>
+                <h3 class="text-lg font-bold text-amber-600">代購歷史紀錄</h3>
+                <p class="text-sm text-gray-500">查看您已完成的代購貼文團務與請購清單紀錄。</p>
+            </div>
+            
+            <form method="GET" action="{{ route('agent.member') }}" class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <input type="hidden" name="tab" value="agent-history">
+                <input type="text" name="agent_history_search" value="{{ $agentHistorySearch ?? '' }}" placeholder="搜尋清單編號 / 貼文標題 / 買家"
+                    class="w-full sm:w-72 rounded-xl border border-gray-200 px-4 py-2 text-sm text-gray-700 focus:border-amber-300 focus:ring-amber-200 focus:outline-none">
+                <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-amber-500 text-white px-4 py-2 text-sm font-semibold hover:bg-amber-600 transition">
+                    搜尋
+                </button>
+            </form>
+        </div>
+
+        <div class="flex border-b border-gray-100 mb-6 gap-2">
+            <button @click="subTab = 'lists'" 
+                :class="subTab === 'lists' ? 'border-amber-500 text-amber-600 font-bold' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                class="pb-3 px-4 text-sm border-b-2 font-medium transition focus:outline-none">
+                已接請購清單 ({{ $agentHistoryOrders->count() }})
+            </button>
+            <button @click="subTab = 'posts'" 
+                :class="subTab === 'posts' ? 'border-amber-500 text-amber-600 font-bold' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                class="pb-3 px-4 text-sm border-b-2 font-medium transition focus:outline-none">
+                已完成代購貼文 ({{ $completedPosts->count() }})
+            </button>
+        </div>
+
+        <div x-show="subTab === 'lists'" x-transition>
+    @if($agentHistoryOrders->isEmpty())
+        <div class="rounded-2xl border border-dashed border-amber-200 bg-amber-50/30 p-12 text-center">
+            <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white text-amber-400 shadow-sm">
+                <i class="bi bi-journal-x text-2xl"></i>
+            </div>
+            <p class="text-sm text-amber-700 font-semibold">尚未有完成的請購清單紀錄。</p>
+            <p class="mt-1 text-xs text-amber-500">當您承接的請購清單順利結案後，相關明細將會呈現在這裡。</p>
+        </div>
+    @else
+        <div class="grid gap-4">
+            @foreach($agentHistoryOrders as $list)
+                <article class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm hover:border-amber-200 transition">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div class="min-w-0">
+                            <h4 class="text-base font-bold text-gray-800 truncate">{{ $list->title }}</h4>
+                            <p class="text-xs text-gray-500 mt-1">
+                                委託買家：{{ $list->user->name ?? '未知買家' }} ・ 結案日期：{{ $list->updated_at->format('Y-m-d') }}
+                            </p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                                {{ $list->status === 'completed' ? '已結案' : '處理中' }}
+                            </span>
+                            <span class="text-sm font-bold text-gray-700">NT$ {{ number_format((float)$list->agent_quote_total, 0) }}</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-gray-600">
+                        <div class="rounded-2xl bg-gray-50 p-3">
+                            <p class="text-[11px] text-gray-400">代購目的地</p>
+                            <p class="font-semibold text-gray-800 truncate mt-0.5">
+                                {{ $list->country }}{{ $list->city ? ' - '.$list->city : '' }}
+                            </p>
+                        </div>
+                        <div class="rounded-2xl bg-gray-50 p-3">
+                            <p class="text-[11px] text-gray-400">委託商品筆數</p>
+                            <p class="font-semibold text-gray-800 mt-0.5">
+                                {{ $list->items ? $list->items->count() : 0 }} 件商品
+                            </p>
+                        </div>
+                        <div class="rounded-2xl bg-gray-50 p-3">
+                            <p class="text-[11px] text-gray-400">主要購買店家</p>
+                            <p class="font-semibold text-gray-800 mt-0.5 truncate">
+                                {{ $list->store_name ?? '未指定店家' }}
+                            </p>
+                        </div>
+                    </div>
+                </article>
+            @endforeach
+        </div>
+    @endif
+</div>
+
+        <div x-show="subTab === 'posts'" x-transition>
+            @if($completedPosts->isEmpty())
+                <div class="rounded-2xl border border-dashed border-amber-200 bg-amber-50/30 p-12 text-center">
+                    <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white text-amber-400 shadow-sm">
+                        <i class="bi bi-collection text-2xl"></i>
+                    </div>
+                    <p class="text-sm text-amber-700 font-semibold">尚未有已完成的代購貼文開團紀錄。</p>
+                    <p class="mt-1 text-xs text-amber-500">當您自己發布的代購貼文結束或結案後，紀錄將會顯示於此。</p>
+                </div>
+            @else
+                <div class="grid gap-4">
+                    @foreach($completedPosts as $post)
+                        <article class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm hover:border-amber-200 transition">
+                            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                <div class="min-w-0">
+                                    <h4 class="text-base font-bold text-gray-800 truncate">{{ $post->title }}</h4>
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        開團日期：{{ $post->created_at->format('Y-m-d') }} ・ 結束結案：{{ $post->updated_at->format('Y-m-d') }}
+                                    </p>
                                 </div>
-                                <form method="GET" action="{{ route('agent.member') }}" class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                                    <input type="hidden" name="tab" value="agent-history">
-                                    <input type="text" name="agent_history_search" value="{{ $agentHistorySearch }}" placeholder="搜尋訂單編號 / 買家 / 來源"
-                                        class="w-full sm:w-72 rounded-xl border border-gray-200 px-4 py-2 text-sm text-gray-700 focus:border-amber-300 focus:ring-amber-200 focus:outline-none">
-                                    <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-amber-500 text-white px-4 py-2 text-sm font-semibold hover:bg-amber-600 transition">
-                                        搜尋
-                                    </button>
-                                </form>
+                                <div class="flex flex-wrap items-center gap-3">
+                                    <span class="rounded-full bg-purple-50 px-3 py-1 text-xs font-bold text-purple-700">開團已結束</span>
+                                </div>
                             </div>
 
-                            @if($agentHistoryOrders->isEmpty())
-                                <div class="rounded-2xl border border-amber-100 bg-amber-50/80 p-8 text-center">
-                                    <p class="text-sm text-amber-700 font-semibold">尚未有完成訂單紀錄。</p>
-                                    <p class="mt-2 text-xs text-amber-600">完成您的第一筆代購訂單後，歷史紀錄將會在這裡顯示。</p>
+                            <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-gray-600">
+                                <div class="rounded-2xl bg-gray-50 p-3">
+                                    <p class="text-[11px] text-gray-400">包含商品品項</p>
+                                    <p class="font-semibold text-gray-800 mt-0.5">
+                                        {{ $post->postProducts ? $post->postProducts->count() : 0 }} 個商品
+                                    </p>
                                 </div>
-                            @else
-                                <div class="grid gap-4">
-                                    @foreach($agentHistoryOrders as $order)
-                                        <article class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                                            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                                                <div class="min-w-0">
-                                                    <h4 class="text-base font-bold text-gray-800 truncate">訂單編號：{{ $order->order_no }}</h4>
-                                                    <p class="text-xs text-gray-500 mt-1">買家：{{ $order->buyer->name ?? '匿名' }} ・ {{ $order->updated_at->format('Y-m-d') }}</p>
-                                                </div>
-                                                <div class="flex flex-wrap items-center gap-2">
-                                                    <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">已完成</span>
-                                                    <span class="text-xs text-gray-500">NT$ {{ number_format((float)$order->total_amount, 0) }}</span>
-                                                </div>
-                                            </div>
+                                <div class="rounded-2xl bg-gray-50 p-3">
+                                    <p class="text-[11px] text-gray-400">總收單筆數</p>
+                                    <p class="font-semibold text-gray-800 mt-0.5">
+                                        {{ $post->requestLists ? $post->requestLists->count() : 0 }} 筆請購委託
+                                    </p>
+                                </div>
+                                <div class="rounded-2xl bg-gray-50 p-3">
+                                    <p class="text-[11px] text-gray-400">國家/來源</p>
+                                    <p class="font-semibold text-gray-800 mt-0.5">
+                                        {{ $post->country ?? '未標記區域' }}
+                                    </p>
+                                </div>
+                            </div>
+                        </article>
+                    @endforeach
+                </div>
+            @endif
+        </div>
 
-                                            <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-gray-600">
-                                                <div class="rounded-2xl bg-gray-50 p-3">
-                                                    <p class="text-[11px] text-gray-400">來源</p>
-                                                    <p class="font-semibold text-gray-800 truncate">{{ optional($order->source)->title ?? class_basename($order->source_type) }}</p>
-                                                </div>
-                                                <div class="rounded-2xl bg-gray-50 p-3">
-                                                    <p class="text-[11px] text-gray-400">商品筆數</p>
-                                                    <p class="font-semibold text-gray-800">{{ $order->items->count() }} 件</p>
-                                                </div>
-                                                <div class="rounded-2xl bg-gray-50 p-3">
-                                                    <p class="text-[11px] text-gray-400">物流編號</p>
-                                                    <p class="font-semibold text-gray-800">{{ $order->tracking_number ?? '-' }}</p>
-                                                </div>
-                                            </div>
-                                        </article>
-                                    @endforeach
-                                </div>
-                            @endif
-                        </section>
-                    </div>
+    </section>
+</div>
 
                     <!-- 分頁三：代購商品管理 -->
                     <div x-show="activeTab === 'product-management'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4">
