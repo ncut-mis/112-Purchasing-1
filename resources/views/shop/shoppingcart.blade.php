@@ -9,37 +9,62 @@
                 
                 {{-- A 區塊：跟單商品 (Primary 藍色系) --}}
 
-                @if($followOrders->isNotEmpty())
-                    <div class="mb-5">
-                        <h4 class="text-info fw-bold mb-3"><i class="bi bi-file-earmark-text-fill"></i> 專屬團代購團</h4>
-                        @foreach($followOrders as $list) {{-- 這裡你定義了變數叫 $list --}}
-                            <div class="row mb-4 align-items-center bg-white p-3 rounded-3 shadow-sm border-start border-5 border-info">
-                                <div class="col-md-7">
-                                    <span class="badge bg-info mb-3 text-white">需求單</span>
-                                    <h5 class="text-dark">{{ $list->title }}</h5>
-                                    <p class="mb-2 small text-muted">
-                                        {{-- 關鍵修正：將 $order 改成 $list --}}
-                                        代購人：{{ $list->seller->name ?? '系統匹配' }}
-                                    </p>
-                                </div>
-                                <div class="col-md-5 text-end">
-                                    <h5 class="text-success fw-bold">NT$ {{ number_format($list->total_amount, 0) }}</h5>
-                                </div>
-                                <div class="col-md-3 text-end">
-                                    {{-- 跟單退回按鈕 --}}
-                                    <form action="{{ route('order.cancel', $list->id) }}" method="POST" onsubmit="return confirm('確定要移除這項跟單商品嗎？')">
-                                        @csrf
-                                        @method('DELETE') {{-- 注意這裡要用 DELETE 方法 --}}
-                                        <button type="submit" class="btn btn-outline-secondary btn-sm">
-                                            <i class="bi bi-trash me-1"></i>移除項目
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                @endif
+               @if($followOrders->isNotEmpty())
+    {{-- 💡 核心優化：在前端將待付款的訂單依照 source_id（貼文ID）進行分組，徹底解決重複顯示的問題 --}}
+    @php
+        $groupedOrders = $followOrders->groupBy('source_id');
+    @endphp
 
+    <div class="mb-5">
+        <h4 class="text-info fw-bold mb-3"><i class="bi bi-file-earmark-text-fill"></i> 專屬團代購團</h4>
+        
+        @foreach($groupedOrders as $sourceId => $ordersInGroup) 
+            @php
+                // 拿這組裡面的第一筆訂單來當作基礎資料（標題、代購人等）
+                $firstOrder = $ordersInGroup->first();
+                // 💡 自動累加這一組裡面所有重複訂單的總金額
+                $groupTotalAmount = $ordersInGroup->sum('total_amount');
+                
+                // 撈取單價用來精準計算數量
+                $productItem = \DB::table('post_products')->where('agent_post_id', $sourceId)->first();
+                $productPrice = $productItem->price ?? 0;
+                // 反推總數量
+                $totalQty = $productPrice > 0 ? (int)($groupTotalAmount / $productPrice) : $ordersInGroup->count();
+            @endphp
+
+            <div class="row mb-4 align-items-center bg-white p-3 rounded-3 shadow-sm border-start border-5 border-info">
+                <div class="col-md-5">
+                    <span class="badge bg-info mb-3 text-white">需求單</span>
+                    <h5 class="text-dark">{{ $firstOrder->title }}</h5>
+                    <p class="mb-2 small text-muted">
+                        代購人：{{ $firstOrder->seller->name ?? '系統匹配' }}
+                    </p>
+                    {{-- 顯示累加後的總數量 --}}
+                    <span class="badge bg-light text-dark border">本次跟單共：{{ $totalQty }} 件</span>
+                </div>
+                
+                <div class="col-md-4 text-end">
+                    {{-- 顯示這一組合併後的總金額 --}}
+                    <h5 class="text-success fw-bold">NT$ {{ number_format($groupTotalAmount, 0) }}</h5>
+                    @if($productPrice > 0)
+                        <small class="text-muted">(單價: NT$ {{ number_format($productPrice, 0) }})</small>
+                    @endif
+                </div>
+
+                <div class="col-md-3 text-end">
+                    {{-- 跟單退回按鈕：因為前端合併了，點擊移除時，我們用這組的第一筆 ID 去做刪除 --}}
+                    <form action="{{ route('order.cancel', $firstOrder->id) }}" method="POST" onsubmit="return confirm('確定要移除這項跟單商品嗎？')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-trash me-1"></i>移除項目
+                        </button>
+                    </form>
+                </div>
+            </div>
+        @endforeach
+    </div>
+@endif
                 {{-- B 區塊：代購報價單 (Info 青色系) --}}
                
                 @if($requestLists->isNotEmpty())
