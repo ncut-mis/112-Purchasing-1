@@ -71,7 +71,10 @@ class AgentPost extends Model
             return null;
         }
 
-        return route('agent-post.cover-image', $this);
+        return route('agent-post.cover-image', [
+            'agentPost' => $this->id,
+            'v' => $this->updated_at?->timestamp ?? now()->timestamp,
+        ]);
     }
     public function postProducts(): HasMany
     {

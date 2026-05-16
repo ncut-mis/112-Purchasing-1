@@ -42,21 +42,26 @@ class AgentPostController extends Controller
     {
         $imageData = $postProduct->image_path;
 
+        $headers = [
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ];
+
         if ($imageData && ! $this->isBinaryImageData($imageData)) {
             $resolvedPath = $postProduct->resolveStoredImagePath();
 
             if ($resolvedPath) {
-                return response()->file(Storage::disk('public')->path($resolvedPath));
+                return response()->file(Storage::disk('public')->path($resolvedPath), $headers);
             }
         }
 
         if ($imageData && $this->isBinaryImageData($imageData)) {
             $mime = $this->detectImageMime($imageData) ?? 'image/jpeg';
 
-            return response($imageData, 200, [
+            return response($imageData, 200, array_merge($headers, [
                 'Content-Type' => $mime,
-                'Cache-Control' => 'public, max-age=31536000',
-            ]);
+            ]));
         }
 
         abort(404);
@@ -66,20 +71,25 @@ class AgentPostController extends Controller
     {
         $imageData = $agentPost->cover_image;
 
+        $headers = [
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ];
+
         if ($imageData && ! $this->isBinaryImageData($imageData)) {
             $normalized = $this->normalizeStoragePath($imageData);
             if ($normalized && Storage::disk('public')->exists($normalized)) {
-                return response()->file(Storage::disk('public')->path($normalized));
+                return response()->file(Storage::disk('public')->path($normalized), $headers);
             }
         }
 
         if ($imageData && $this->isBinaryImageData($imageData)) {
             $mime = $this->detectImageMime($imageData) ?? 'image/jpeg';
 
-            return response($imageData, 200, [
+            return response($imageData, 200, array_merge($headers, [
                 'Content-Type' => $mime,
-                'Cache-Control' => 'public, max-age=31536000',
-            ]);
+            ]));
         }
 
         abort(404);

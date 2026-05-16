@@ -116,15 +116,12 @@ class QuoteController extends Controller
         }
 
         DB::transaction(function () use ($quote, $requestList) {
-    // 拒絕後直接移除該代購人的報價資料與明細
-            if (Schema::hasTable('quote_items')) {
-                QuoteItem::where('quote_id', $quote->id)->delete();
-            }
-            $quote->delete();
+            // 保留被拒絕的報價與明細，只更新狀態
+            $quote->update(['status' => 'rejected']);
 
-            // 檢查是否還有「有效中的報價」(pending / accepted)
+            // 檢查是否還有「有效中的報價」(pending / accepted / returned)
             $hasActiveQuotes = Quote::where('request_list_id', $requestList->id)
-                ->whereIn('status', ['pending', 'accepted'])
+                ->whereIn('status', ['pending', 'accepted', 'returned'])
                 ->exists();
 
             // 若已無有效報價，請託單狀態恢復為等待報價，並清空已配對資料

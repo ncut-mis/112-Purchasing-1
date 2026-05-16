@@ -118,9 +118,13 @@
 
                                                 'matched' => '已確認代購人',
 
+                                                'wait-for-ship' => '等待出貨',
+
                                                 'shipped' => '商品已出貨',
 
                                                 'arrivaled' => '商品已到貨',
+
+                                                'expired' => '已過期',
 
                                             ][$requestList->status] ?? $requestList->status;
 
@@ -133,9 +137,13 @@
 
                                                 'matched' => 'bg-green-100 text-green-700',
 
+                                                'wait-for-ship' => 'bg-cyan-100 text-cyan-700',
+
                                                 'shipped' => 'bg-indigo-100 text-indigo-700',
 
                                                 'arrivaled' => 'bg-emerald-100 text-emerald-700',
+
+                                                'expired' => 'bg-rose-100 text-rose-700',
 
                                             ][$requestList->status] ?? 'bg-gray-100 text-gray-700';
 
@@ -179,6 +187,8 @@
                                                         'pending' => ['text' => '等待代購人報價中,請留意通知中心', 'class' => 'bg-yellow-50 text-yellow-700'],
                                                         'offered' => ['text' => '請至通知中心確認代購人', 'class' => 'bg-blue-50 text-blue-700'],
                                                         'matched' => ['text' => '已確認代購人，可檢視、聊天與完成訂單', 'class' => 'bg-green-50 text-green-700'],
+                                                        'wait-for-ship' => ['text' => '已結帳等待代購人出貨', 'class' => 'bg-cyan-50 text-cyan-700'],
+                                                        'expired' => ['text' => '此請購單已過期', 'class' => 'bg-rose-50 text-rose-700'],
                                                     ];
                                                     $notice = $noticeMap[$requestList->status] ?? null;
                                                 @endphp
@@ -310,7 +320,7 @@
                                                                 <div class="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center">
                                                                     <div class="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl bg-slate-100">
                                                                         @if($item->reference_image)
-                                                                              <img src="{{ route('request-item.image', ['requestList' => $requestList->id, 'requestItem' => $item->id]) }}" alt="{{ $item->name }}" class="h-full w-full object-cover">
+                                                                              <img src="{{ route('request-item.image', ['requestList' => $requestList->id, 'requestItem' => $item->id, 'v' => $item->updated_at?->timestamp ?? now()->timestamp]) }}" alt="{{ $item->name }}" class="h-full w-full object-cover">
                                                                         @else
                                                                             <span class="text-xs text-slate-400">無商品圖片</span>
                                                                         @endif
@@ -379,6 +389,12 @@
                                                             return !is_null($quote->price);
                                                         });
                                                         $hasQuotedItems = $pricedOffers->isNotEmpty() || $pricedQuotes->isNotEmpty();
+                                                    @endphp
+
+                                                    @php
+                                                        $pricedQuotes = $pricedQuotes->filter(function ($quote) {
+                                                            return $quote->status !== 'rejected';
+                                                        });
                                                     @endphp
 
                                                     @if($pricedQuotes->isNotEmpty())
@@ -836,7 +852,7 @@
                                                             <div>
                                                                 <label class="block text-sm font-medium text-gray-700 mb-1">商品圖片</label>
                                                                 @if($item->reference_image)
-                                                                  <img src="{{ route('request-item.image', ['requestList' => $requestList->id, 'requestItem' => $item->id]) }}" alt="商品圖片" class="w-24 h-24 object-cover rounded border mb-2 edit-item-image-preview" data-original-src="{{ route('request-item.image', ['requestList' => $requestList->id, 'requestItem' => $item->id]) }}">
+                                                                  <img src="{{ route('request-item.image', ['requestList' => $requestList->id, 'requestItem' => $item->id, 'v' => $item->updated_at?->timestamp ?? now()->timestamp]) }}" alt="商品圖片" class="w-24 h-24 object-cover rounded border mb-2 edit-item-image-preview" data-original-src="{{ route('request-item.image', ['requestList' => $requestList->id, 'requestItem' => $item->id, 'v' => $item->updated_at?->timestamp ?? now()->timestamp]) }}">
                                                                     <p class="text-xs text-gray-500 mb-2 edit-item-image-status">未重新上傳會保留原圖片</p>
                                                                 @endif
                                                                 <input type="file" name="items[{{ $index }}][item_image]" class="w-full border-gray-300 rounded-lg edit-item-image-input" accept="image/*">

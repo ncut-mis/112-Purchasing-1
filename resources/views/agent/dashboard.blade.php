@@ -218,7 +218,7 @@ submitQuote() {
                     'id' => $i->id,
                     'name' => $i->name, 
                     'quantity' => $i->quantity,
-                    'image' => $i->reference_image ? url('/request-item-image/' . $i->id) : null
+                    'image' => $i->reference_image ? route('request-item.image', ['requestItem' => $i->id, 'v' => $i->updated_at?->timestamp ?? now()->timestamp]) : null
                 ])
             ];
         @endphp

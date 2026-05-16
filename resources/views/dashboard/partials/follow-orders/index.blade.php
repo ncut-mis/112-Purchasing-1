@@ -69,10 +69,10 @@
                                                     @php
                                                         $statusText = match ($followOrder->status) {
                                                             'pending_payment' => '待付款',
-                                                            'paid' => '已付款',
-                                                            'purchasing' => '採購中',
-                                                            'shipped' => '已出貨',
-                                                            'completed' => '已完成',
+                                                                'wait-for-ship' => '等待出貨',
+                                                                'shipped' => '已出貨',
+                                                                'arrivaled' => '已到貨',
+                                                                'completed' => '已完成',
                                                             'cancelled' => '已取消',
                                                             'refunded' => '已退款',
                                                             default => $followOrder->status,
@@ -126,9 +126,9 @@
                                         ?? '未命名貼文';
                                     $followOrderStatusText = match ($followOrder->status) {
                                         'pending_payment' => '待付款',
-                                        'paid' => '已付款',
-                                        'purchasing' => '採購中',
+                                        'wait-for-ship' => '等待出貨',
                                         'shipped' => '已出貨',
+                                        'arrivaled' => '已到貨',
                                         'completed' => '已完成',
                                         'cancelled' => '已取消',
                                         'refunded' => '已退款',

@@ -214,7 +214,7 @@
                                     <div class="carousel-inner h-100">
                                         @foreach($cardImages as $index => $product)
                                             <div class="carousel-item h-100 {{ $loop->first ? 'active' : '' }}">
-                                                <img src="{{ route('post-product.image', $product) }}" class="card-slider-img" alt="商品圖片 {{ $index + 1 }}">
+                                                <img src="{{ route('post-product.image', ['postProduct' => $product->id, 'v' => $product->updated_at?->timestamp ?? now()->timestamp]) }}" class="card-slider-img" alt="商品圖片 {{ $index + 1 }}">
                                             </div>
                                         @endforeach
                                     </div>
@@ -306,7 +306,7 @@
                                                 <div class="carousel-inner h-100">
                                                     @foreach($modalImages as $index => $product)
                                                         <div class="carousel-item h-100 {{ $loop->first ? 'active' : '' }}">
-                                                            <img src="{{ route('post-product.image', $product) }}" class="modal-slider-img" alt="商品圖片 {{ $index + 1 }}">
+                                                            <img src="{{ route('post-product.image', ['postProduct' => $product->id, 'v' => $product->updated_at?->timestamp ?? now()->timestamp]) }}" class="modal-slider-img" alt="商品圖片 {{ $index + 1 }}">
                                                         </div>
                                                     @endforeach
                                                 </div>

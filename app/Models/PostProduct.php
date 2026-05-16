@@ -61,7 +61,10 @@ class PostProduct extends Model
             return null;
         }
 
-        return route('post-product.image', $this);
+        return route('post-product.image', [
+            'postProduct' => $this->id,
+            'v' => $this->updated_at?->timestamp ?? now()->timestamp,
+        ]);
     }
 
     // 關聯：這個商品被加到了哪些購物車 (選配，若之後要統計購物車數據可用)

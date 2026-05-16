@@ -604,7 +604,7 @@
                                                         <div class="rounded-xl border border-gray-100 p-3 flex gap-3">
                                                             <div class="w-20 h-20 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
                                                                 @if($item->reference_image)
-                                                                    <img src="{{ route('request-item.image', $item) }}" alt="{{ $item->name }}" class="w-full h-full object-cover">
+                                                                    <img src="{{ route('request-item.image', ['requestItem' => $item->id, 'v' => $item->updated_at?->timestamp ?? now()->timestamp]) }}" alt="{{ $item->name }}" class="w-full h-full object-cover">
                                                                 @else
                                                                     <i class="bi bi-image text-2xl text-gray-300"></i>
                                                                 @endif
@@ -768,7 +768,7 @@
                                                         @foreach($requestList->items as $item)
                                                             <div class="rounded-xl border border-gray-100 p-3 flex gap-4 items-start">
                                                                 @if($item->reference_image)
-                                                                    <img src="{{ route('request-item.image', $item) }}" alt="{{ $item->name }}" class="w-20 h-20 rounded-lg object-cover border border-gray-100 flex-shrink-0">
+                                                                    <img src="{{ route('request-item.image', ['requestItem' => $item->id, 'v' => $item->updated_at?->timestamp ?? now()->timestamp]) }}" alt="{{ $item->name }}" class="w-20 h-20 rounded-lg object-cover border border-gray-100 flex-shrink-0">
                                                                 @else
                                                                     <div class="w-20 h-20 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300 flex-shrink-0"><i class="bi bi-image text-2xl"></i></div>
                                                                 @endif
@@ -920,7 +920,7 @@
                                                         @foreach($requestList->items as $item)
                                                             <div class="rounded-xl border border-gray-100 p-3 flex gap-4 items-start">
                                                                 @if($item->reference_image)
-                                                                    <img src="{{ route('request-item.image', $item) }}" alt="{{ $item->name }}" class="w-20 h-20 rounded-lg object-cover border border-gray-100 flex-shrink-0">
+                                                                    <img src="{{ route('request-item.image', ['requestItem' => $item->id, 'v' => $item->updated_at?->timestamp ?? now()->timestamp]) }}" alt="{{ $item->name }}" class="w-20 h-20 rounded-lg object-cover border border-gray-100 flex-shrink-0">
                                                                 @else
                                                                     <div class="w-20 h-20 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300 flex-shrink-0"><i class="bi bi-image text-2xl"></i></div>
                                                                 @endif
