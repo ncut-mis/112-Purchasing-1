@@ -29,25 +29,25 @@ class HistoryController extends Controller
        // 2. 抓取：我作為代購，且已經順利結案(completed)的請購清單
         // 2. 抓取：我作為代購（people 欄位記錄著我的 ID），且已經順利結案的請購清單
 // 2. 抓取：已接請購清單
-$agentHistoryOrders = RequestList::where('people', $user->id)
-    // 💡 確保你的第二筆資料在庫裡的 status 確實是 completed。如果 matched 也算完成，可以用 whereIn('status', ['completed', 'matched'])
-    ->where('status', 'completed') 
-    ->with(['user', 'items']) // 確保預載的是 user，不是 buyer
-    ->when($agentHistorySearch, function ($query, $search) {
-        return $query->where(function ($q) use ($search) {
-            // 修正：因為你的表裡欄位是 title，沒有 list_no
-            $q->where('title', 'like', "%{$search}%") 
-              ->orWhereHas('user', function ($bQ) use ($search) {
-                  $bQ->where('name', 'like', "%{$search}%");
-              });
-        });
-    })
-    ->latest('updated_at')
-    ->get();
+        $agentHistoryOrders = RequestList::where('people', $user->id)
+            // 💡 確保你的第二筆資料在庫裡的 status 確實是 completed。如果 matched 也算完成，可以用 whereIn('status', ['completed', 'matched'])
+            ->where('status', 'completed') 
+            ->with(['user', 'items']) // 確保預載的是 user，不是 buyer
+            ->when($agentHistorySearch, function ($query, $search) {
+                return $query->where(function ($q) use ($search) {
+                    // 修正：因為你的表裡欄位是 title，沒有 list_no
+                    $q->where('title', 'like', "%{$search}%") 
+                    ->orWhereHas('user', function ($bQ) use ($search) {
+                        $bQ->where('name', 'like', "%{$search}%");
+                    });
+                });
+            })
+            ->latest('updated_at')
+            ->get();
 
-// 💡 3. 修正：計算統計數據（換成你 Migration 裡的真正欄位 budget_total）
-$totalIncome = $agentHistoryOrders->sum('budget_total'); 
-$finishedOrdersCount = $agentHistoryOrders->count();  // 💡 新增：已完成訂單筆數
+        // 💡 3. 修正：計算統計數據（換成你 Migration 裡的真正欄位 budget_total）
+        $totalIncome = $agentHistoryOrders->sum('budget_total'); 
+        $finishedOrdersCount = $agentHistoryOrders->count();  // 💡 新增：已完成訂單筆數
 
         // 4. 抓取報價單狀態
         $quotes_pending = Quote::where('user_id', $user->id)->where('status', 'pending')->latest('updated_at')->get();
