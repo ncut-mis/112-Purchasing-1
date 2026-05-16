@@ -205,20 +205,16 @@
 
                             @php
                                 // 抓取這則貼文下的所有商品圖片
-                                $cardImages = $post->products->pluck('image_path')->filter();
+                                $cardImages = $post->products->filter(fn($product) => $product->image_path);
                             @endphp
 
                             @if($cardImages->isNotEmpty())
                                 {{-- 外層卡片的圖片輪播 --}}
                                 <div id="carouselCard{{ $post->id }}" class="carousel slide h-100" data-bs-ride="carousel">
                                     <div class="carousel-inner h-100">
-                                        @foreach($cardImages as $index => $imgData)
+                                        @foreach($cardImages as $index => $product)
                                             <div class="carousel-item h-100 {{ $loop->first ? 'active' : '' }}">
-                                                @if(strlen($imgData) > 255)
-                                                    <img src="data:image/jpeg;base64,{{ base64_encode($imgData) }}" class="card-slider-img" alt="...">
-                                                @else
-                                                    <img src="{{ asset($imgData) }}" class="card-slider-img" alt="...">
-                                                @endif
+                                                <img src="{{ route('post-product.image', $product) }}" class="card-slider-img" alt="商品圖片 {{ $index + 1 }}">
                                             </div>
                                         @endforeach
                                     </div>
@@ -288,7 +284,7 @@
                                     {{-- 左側：商品圖片輪播 (Slider) --}}
                                     <div class="col-md-4">
                                         @php
-                                            $modalImages = $post->products->pluck('image_path')->filter();
+                                            $modalImages = $post->products->filter(fn($product) => $product->image_path);
                                         @endphp
 
                                         @if($modalImages->isNotEmpty())
@@ -296,7 +292,7 @@
                                                 
                                                 @if($modalImages->count() > 1)
                                                     <div class="carousel-indicators mb-2">
-                                                        @foreach($modalImages as $index => $image)
+                                                        @foreach($modalImages as $index => $product)
                                                             <button type="button" 
                                                                     data-bs-target="#carouselModal{{ $post->id }}" 
                                                                     data-bs-slide-to="{{ $index }}" 
@@ -308,13 +304,9 @@
                                                 @endif
 
                                                 <div class="carousel-inner h-100">
-                                                    @foreach($modalImages as $index => $image_data)
+                                                    @foreach($modalImages as $index => $product)
                                                         <div class="carousel-item h-100 {{ $loop->first ? 'active' : '' }}">
-                                                            @if(strlen($image_data) > 255)
-                                                                <img src="data:image/jpeg;base64,{{ base64_encode($image_data) }}" class="modal-slider-img" alt="商品圖片 {{ $index + 1 }}">
-                                                            @else
-                                                                <img src="{{ asset($image_data) }}" class="modal-slider-img" alt="商品圖片 {{ $index + 1 }}">
-                                                            @endif
+                                                            <img src="{{ route('post-product.image', $product) }}" class="modal-slider-img" alt="商品圖片 {{ $index + 1 }}">
                                                         </div>
                                                     @endforeach
                                                 </div>

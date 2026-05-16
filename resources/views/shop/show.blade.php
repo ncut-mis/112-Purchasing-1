@@ -88,8 +88,8 @@
                         <div class="flex flex-col md:flex-row">
                             <!-- 貼文封面 -->
                             <div class="w-full md:w-48 h-48 bg-gray-100 flex-shrink-0 relative">
-                                @if($post->cover_image)
-                                    <img src="{{ asset('storage/' . $post->cover_image) }}" class="w-full h-full object-cover">
+                                @if($post->cover_image_url)
+                                    <img src="{{ $post->cover_image_url }}" class="w-full h-full object-cover">
                                 @else
                                     <div class="w-full h-full flex items-center justify-center text-gray-300">
                                         <i class="bi bi-image text-4xl"></i>

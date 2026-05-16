@@ -72,7 +72,7 @@
                             @php
                                 $firstPopImg = $popPost->products->first()?->display_image_url;
                             @endphp
-                            <img src="{{ $firstPopImg ?? ($popPost->cover_image ? asset('storage/' . $popPost->cover_image) : 'https://via.placeholder.com/400x240?text=GlobalBuy') }}" class="w-100 h-100 object-fit-cover">
+                            <img src="{{ $firstPopImg ?? $popPost->cover_image_url ?? 'https://via.placeholder.com/400x240?text=GlobalBuy' }}" class="w-100 h-100 object-fit-cover">
                             <div class="position-absolute top-0 start-0 m-3">
                                 <span class="badge bg-danger shadow-sm rounded-pill px-3 py-2">
                                     <i class="bi bi-fire me-1"></i> HOT
@@ -174,8 +174,8 @@
                             @endphp
                             @if($firstProductImageUrl)
                                 <img src="{{ $firstProductImageUrl }}" alt="{{ $agentPost->title }} 商品圖片" class="w-100 h-100 object-fit-cover">
-                            @elseif($agentPost->cover_image)
-                                <img src="{{ asset('storage/' . $agentPost->cover_image) }}" alt="{{ $agentPost->title }}" class="w-100 h-100 object-fit-cover">
+                            @elseif($agentPost->cover_image_url)
+                                <img src="{{ $agentPost->cover_image_url }}" alt="{{ $agentPost->title }}" class="w-100 h-100 object-fit-cover">
                             @else
                                 <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-light text-secondary">
                                     <i class="bi bi-image fs-1"></i>

@@ -239,7 +239,7 @@
                                         <div @click="goToPostSearch(post.title, post.id)"
                                              class="group flex gap-5 p-5 rounded-[2rem] border border-gray-100 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all duration-300 cursor-pointer">
                                             <div class="w-24 h-24 bg-gray-100 rounded-2xl flex-shrink-0 overflow-hidden relative shadow-sm">
-                                                <img :src="post.cover_image ? '/storage/' + post.cover_image : 'https://placehold.co/200x200?text=No+Image'" class="w-full h-full object-cover">
+                                                <img :src="post.cover_image_url || 'https://placehold.co/200x200?text=No+Image'" class="w-full h-full object-cover">
                                             </div>
                                             <div class="flex-1 min-w-0">
                                                 <div class="flex justify-between items-start mb-1">

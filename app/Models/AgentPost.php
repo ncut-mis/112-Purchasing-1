@@ -46,6 +46,10 @@ class AgentPost extends Model
         return $this->hasMany(PostProduct::class);
     }
 
+    protected $appends = [
+        'cover_image_url',
+    ];
+
     public function favorites()
     {
         return $this->morphMany(Favorite::class, 'favoriteable');
@@ -59,5 +63,14 @@ class AgentPost extends Model
     public function reports()
     {
         return $this->morphMany(ContentReport::class, 'reportable');
+    }
+
+    public function getCoverImageUrlAttribute(): ?string
+    {
+        if (! $this->cover_image) {
+            return null;
+        }
+
+        return route('agent-post.cover-image', $this);
     }
 }

@@ -12,6 +12,8 @@ use App\Http\Controllers\ShopController;
 use App\Models\AgentPost;
 use App\Models\PurchasingRequest;
 use App\Models\RequestList;
+use App\Models\Order;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use Illuminate\Http\Request;
@@ -44,6 +46,7 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::get('/post-product-image/{postProduct}', [AgentPostController::class, 'image'])->name('post-product.image');
+Route::get('/agent-post-cover-image/{agentPost}', [AgentPostController::class, 'coverImage'])->name('agent-post.cover-image');
 
 
 Route::middleware(['auth'])->group(function () {
@@ -103,24 +106,38 @@ Route::get('/', function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // 代購人會員專區
-    Route::get('/agent/member', function () {
-    $user = Auth::user();
-    // 1. 取得該代購人處理中的訂單數
-    $finishedOrdersCount = RequestList::where('user_id', $user->id) 
-      ->where('status', 'arrivaled')
-        ->count();
-    // 2. 修正點：暫時將累計收入設為 0
-    // 錯誤原因：您的資料表中沒有 total_price 欄位。
-    // 如果您有其他代表金額的欄位（例如 budget），請將 'total_price' 改為該名稱。
-    // 如果還沒有金額欄位，請先保留為 0 以避免頁面報錯。
-    $totalIncome = 0; 
-    /* 如果您確定了欄位名稱，可以取消下方註解並修改欄位名：
-    $totalIncome = RequestList::where('user_id', $user->id)
-        ->where('status', 'arrivaled')
-        ->sum('budget'); // 假設欄位叫 budget
-    */
-    return view('agent.member', compact('finishedOrdersCount', 'totalIncome'));
-})->name('agent.member')->middleware(['auth', 'verified']);
+    Route::get('/agent/member', function (Request $request) {
+        $user = Auth::user();
+
+        $finishedOrdersCount = Order::where('seller_id', $user->id)
+            ->where('status', 'completed')
+            ->count();
+
+        $totalIncome = Order::where('seller_id', $user->id)
+            ->where('status', 'completed')
+            ->sum('total_amount');
+
+        $agentHistorySearch = trim($request->query('agent_history_search', ''));
+
+        $agentHistoryOrders = Order::with(['buyer', 'source'])
+            ->where('seller_id', $user->id)
+            ->where('status', 'completed')
+            ->when($agentHistorySearch, function ($query, $search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('order_no', 'like', "%{$search}%")
+                        ->orWhereHas('buyer', function ($query) use ($search) {
+                            $query->where('name', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('source', function ($query) use ($search) {
+                            $query->where('title', 'like', "%{$search}%");
+                        });
+                });
+            })
+            ->latest('updated_at')
+            ->get();
+
+        return view('agent.member', compact('finishedOrdersCount', 'totalIncome', 'agentHistoryOrders', 'agentHistorySearch'));
+    })->name('agent.member')->middleware(['auth', 'verified']);
 
      // 1. 申請頁面
     Route::get('/agent/apply', [AgentApplicationController::class, 'create'])->name('agent.apply');

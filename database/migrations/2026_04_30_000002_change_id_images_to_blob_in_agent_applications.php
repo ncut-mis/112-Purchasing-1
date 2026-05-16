@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -16,9 +17,9 @@ return new class extends Migration
         }
 
         Schema::table('agent_applications', function (Blueprint $table) {
-            // 將 id_image_front 和 id_image_back 從 string 改為 blob
-            $table->binary('id_image_front')->nullable()->change();
-            $table->binary('id_image_back')->nullable()->change();
+            // 將 id_image_front 和 id_image_back 從 string 改為 mediumblob
+            DB::statement('ALTER TABLE `agent_applications` MODIFY `id_image_front` MEDIUMBLOB NULL');
+            DB::statement('ALTER TABLE `agent_applications` MODIFY `id_image_back` MEDIUMBLOB NULL');
         });
     }
 
