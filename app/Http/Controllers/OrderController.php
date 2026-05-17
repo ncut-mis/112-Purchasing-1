@@ -116,6 +116,33 @@ class OrderController extends Controller
             ->route('dashboard', ['section' => 'follow-orders'])
             ->with('status', '跟單成功，已建立訂單並加入跟單紀錄。');
     }
+    public function cancel(Request $request, Order $order)
+    {
+        // 只有賣家（代購人）可以取消
+        if ((int) $order->seller_id !== (int) $request->user()->id) {
+            abort(403, '你沒有權限取消這筆跟單。');
+        }
+
+        // 只有未付款的訂單才能取消
+        if ($order->status !== 'pending_payment' || !is_null($order->paid_at)) {
+            return back()->with('error', '此訂單已付款或無法取消。');
+        }
+
+        DB::transaction(function () use ($order) {
+            // 把 sold_quantity 回補
+            foreach ($order->items as $item) {
+                if ($item->product_id) {
+                    \App\Models\PostProduct::where('id', $item->product_id)
+                        ->decrement('sold_quantity', $item->quantity);
+                }
+            }
+
+            $order->update(['status' => 'cancelled']);
+        });
+
+        return back()->with('status', '已成功取消該跟單。');
+    }
+
     public function complete(Request $request, Order $order)
     {
         if ((int) $order->buyer_id !== (int) $request->user()->id) {

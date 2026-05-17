@@ -139,6 +139,53 @@ class AgentPostController extends Controller
         return redirect()->route('agent.member')->with('status', '代購貼文已送出並上架！');
     }
 
+    // 出貨：將 orders 狀態改為 shipped
+    public function ship(AgentPost $agentPost)
+    {
+        abort_unless($agentPost->user_id === Auth::id(), 403);
+
+        \App\Models\Order::where('seller_id', Auth::id())
+            ->where('source_id', $agentPost->id)
+            ->where('source_type', \App\Models\AgentPost::class)
+            ->where('status', 'pending_payment')
+            ->update(['status' => 'shipped']);
+
+        return redirect()->route('agent.member')->with('status', '已標記為已出貨！');
+    }
+
+    // 代購人取消特定買家的訂單並回補數量
+    public function cancelBuyerOrder(\Illuminate\Http\Request $request, \App\Models\Order $order)
+    {
+        abort_unless($order->seller_id === Auth::id(), 403);
+        abort_if(!empty($order->paid_at), 403, '已付款訂單不可取消。');
+
+        $sourceId = $order->source_id;
+
+        // 從 order_items 計算數量
+        $returnQty = $order->items ? $order->items->sum('quantity') : 0;
+
+        // fallback：用金額反推
+        if ($returnQty <= 0) {
+            $product = \DB::table('post_products')->where('agent_post_id', $sourceId)->first();
+            if ($product && $product->price > 0) {
+                $returnQty = (int) round($order->total_amount / $product->price);
+            } else {
+                $returnQty = 1;
+            }
+        }
+
+        // 回補 sold_quantity
+        if ($returnQty > 0) {
+            \DB::table('post_products')
+                ->where('agent_post_id', $sourceId)
+                ->decrement('sold_quantity', $returnQty);
+        }
+
+        $order->update(['status' => 'cancelled']);
+
+        return back()->with('status', '已取消訂單，回補 ' . $returnQty . ' 個名額。');
+    }
+
     public function destroy(AgentPost $agentPost)
     {
         abort_unless($agentPost->user_id === Auth::id(), 403);

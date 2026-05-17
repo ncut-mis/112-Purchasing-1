@@ -174,7 +174,9 @@ Route::get('/', function () {
     Route::patch('/agent/posts/{agentPost}', [AgentPostController::class, 'update'])->name('agent.posts.update');
 
     Route::patch('/agent/posts/{agentPost}/submit', [AgentPostController::class, 'submit'])->name('agent.posts.submit');
+    Route::patch('/agent/posts/{agentPost}/ship', [AgentPostController::class, 'ship'])->name('agent.posts.ship');
     Route::delete('/agent/posts/{agentPost}', [AgentPostController::class, 'destroy'])->name('agent.posts.destroy');
+    Route::delete('/agent/orders/{order}/cancel', [AgentPostController::class, 'cancelBuyerOrder'])->name('agent.orders.cancel');
 
 });
 

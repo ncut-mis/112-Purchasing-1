@@ -1187,6 +1187,7 @@
                                         ->where('seller_id', Auth::id())
                                         ->where('source_type', \App\Models\AgentPost::class)
                                         ->whereIn('source_id', $managedPostIds)
+                                        ->whereNotIn('status', ['cancelled', 'refunded'])
                                         ->with([
                                             'buyer:id,name',
                                             'items:id,order_id,product_id,quantity',
@@ -1202,6 +1203,7 @@
                                                     'buyer_id' => (int) $order->buyer_id,
                                                     'buyer_name' => optional($order->buyer)->name ?? '未知會員',
                                                     'quantity' => (int) $item->quantity,
+                                                    'paid_at' => $order->paid_at,
                                                 ];
                                             });
                                         })
@@ -1222,8 +1224,10 @@
                                                 ->groupBy('buyer_id')
                                                 ->map(function ($buyerRows) {
                                                     return [
+                                                        'buyer_id'   => $buyerRows->first()['buyer_id'] ?? 0,
                                                         'buyer_name' => $buyerRows->first()['buyer_name'] ?? '未知會員',
                                                         'quantity' => (int) $buyerRows->sum('quantity'),
+                                                        'paid_at' => $buyerRows->first()['paid_at'],
                                                     ];
                                                 })
                                                 ->values();
@@ -1249,13 +1253,28 @@
                                                     代購期間：{{ optional(optional($post)->start_date)->format('Y/m/d') ?? '-' }} - {{ optional(optional($post)->end_date)->format('Y/m/d') ?? '-' }}
                                                 </div>
                                             </div>
-                                            <div class="flex items-center gap-2">
+                                            <div class="flex items-center gap-2 flex-wrap justify-end">
                                                 <span class="inline-flex text-[10px] font-bold px-2 py-0.5 rounded {{ $statusClasses }}">{{ $statusLabel }}</span>
                                                 <button type="button"
                                                     class="inline-flex items-center px-3 py-1.5 text-xs font-bold text-blue-600 bg-white border border-blue-200 rounded-lg hover:bg-blue-100 transition"
                                                     @click="showPostDetails = !showPostDetails"
                                                     x-text="showPostDetails ? '收合檢視' : '檢視貼文'">
                                                 </button>
+                                                <button type="button"
+                                                    class="inline-flex items-center px-3 py-1.5 text-xs font-bold text-amber-600 bg-white border border-amber-200 rounded-lg hover:bg-amber-50 transition"
+                                                    onclick="document.getElementById('manage-modal-{{ $post->id }}').classList.remove('hidden'); document.getElementById('manage-modal-{{ $post->id }}').classList.add('flex');">
+                                                    管理
+                                                </button>
+                                                @if($post->status === 'open')
+                                                <form method="POST" action="{{ route('agent.posts.ship', $post->id) }}" class="inline" onsubmit="return confirm('確定要將此貼文標記為已出貨？')">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button type="submit"
+                                                        class="inline-flex items-center px-3 py-1.5 text-xs font-bold text-white bg-emerald-500 border border-emerald-500 rounded-lg hover:bg-emerald-600 transition">
+                                                        出貨
+                                                    </button>
+                                                </form>
+                                                @endif
                                             </div>
                                         </div>
 
@@ -1286,20 +1305,30 @@
                                                                 $remainingQty = is_null($product->max_quantity)
                                                                     ? '無限制'
                                                                     : max(0, (int) $product->max_quantity - $orderedTotal);
+                                                                $followers = $productFollowers->get((int) $product->id, collect());
+                                                                $totalOrdered = $followers->sum(function($f) { return $f['quantity']; });
                                                             @endphp
                                                             <div class="text-xs text-gray-500 mt-1">
                                                                 單價：NT$ {{ number_format((float) $product->price, 0) }}
                                                                 ・ 上限：{{ $product->max_quantity ?? '無限制' }}
+                                                                ・ 目前跟單總數：<span class="text-indigo-600 font-bold">{{ $totalOrdered }}</span>
                                                                 ・ 剩餘可跟單：{{ $remainingQty }}
                                                             </div>
-                                                            @php
-                                                                $followers = $productFollowers->get((int) $product->id, collect());
-                                                            @endphp
                                                             <div class="mt-2 text-xs text-gray-600">
-                                                                <div class="font-semibold text-gray-700 mb-1">跟單紀錄：</div>
+                                                                <div class="font-semibold text-gray-700 mb-1">
+                                                                    跟單紀錄：
+                                                                    @if($followers->count() > 0)
+                                                                        <span class="ml-1 text-indigo-600 font-bold">共 {{ $followers->count() }} 人</span>
+                                                                    @endif
+                                                                </div>
                                                                 @forelse($followers as $follower)
-                                                                    <div class="mb-0.5">
-                                                                        {{ $follower['buyer_name'] }}：{{ $follower['quantity'] }} 件
+                                                                    <div class="mb-1 flex items-center gap-2">
+                                                                        <span>{{ $follower['buyer_name'] }}：{{ $follower['quantity'] }} 件</span>
+                                                                        @if(!empty($follower['paid_at']))
+                                                                            <span class="inline-flex items-center rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5 text-[10px] font-bold">已付款</span>
+                                                                        @else
+                                                                            <span class="inline-flex items-center rounded-full bg-red-50 text-red-500 px-2 py-0.5 text-[10px] font-bold">未付款</span>
+                                                                        @endif
                                                                     </div>
                                                                 @empty
                                                                     <div class="text-gray-400">目前尚無人跟單</div>
@@ -1308,6 +1337,63 @@
                                                         </div>
                                                     </div>
                                                 @endforeach
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {{-- 管理 Modal --}}
+                                    <div id="manage-modal-{{ $post->id }}" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 px-4"
+                                         onclick="if(event.target===this){this.classList.add('hidden');this.classList.remove('flex');}">
+                                        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl max-h-[88vh] overflow-y-auto">
+                                            <div class="flex items-center justify-between border-b px-6 py-4">
+                                                <h4 class="text-lg font-bold text-gray-800">管理跟單 - {{ $post->title }}</h4>
+                                                <button type="button" class="text-2xl text-gray-400 hover:text-gray-600"
+                                                    onclick="document.getElementById('manage-modal-{{ $post->id }}').classList.add('hidden');document.getElementById('manage-modal-{{ $post->id }}').classList.remove('flex');">&times;</button>
+                                            </div>
+                                            <div class="px-6 py-4 space-y-4">
+                                                @foreach($managedPostGroups->get($post->id ?? 0, collect()) as $product)
+                                                    @php $mFollowers = $productFollowers->get((int) $product->id, collect()); @endphp
+                                                    @if($mFollowers->count() > 0)
+                                                        <div class="rounded-xl border border-gray-100 p-4">
+                                                            <p class="font-bold text-gray-800 mb-3 text-sm">{{ $product->name }}</p>
+                                                            <div class="space-y-2">
+                                                                @foreach($mFollowers as $follower)
+                                                                    @php
+                                                                        $followerOrder = \App\Models\Order::where('seller_id', Auth::id())
+                                                                            ->where('source_id', $post->id)
+                                                                            ->where('buyer_id', $follower['buyer_id'] ?? 0)
+                                                                            ->where('status', 'pending_payment')
+                                                                            ->first();
+                                                                    @endphp
+                                                                    <div class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-2">
+                                                                        <div class="flex items-center gap-3">
+                                                                            <span class="text-sm text-gray-800">{{ $follower['buyer_name'] }}</span>
+                                                                            <span class="text-xs text-gray-500">{{ $follower['quantity'] }} 件</span>
+                                                                            @if(!empty($follower['paid_at']))
+                                                                                <span class="text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5">已付款</span>
+                                                                            @else
+                                                                                <span class="text-[10px] font-bold rounded-full bg-red-50 text-red-500 px-2 py-0.5">未付款</span>
+                                                                            @endif
+                                                                        </div>
+                                                                        @if($followerOrder && empty($follower['paid_at']))
+                                                                            <form method="POST" action="{{ route('agent.orders.cancel', $followerOrder->id) }}"
+                                                                                  onsubmit="return confirm('確定要取消 {{ $follower['buyer_name'] }} 的訂單？數量將會回補。')">
+                                                                                @csrf
+                                                                                @method('DELETE')
+                                                                                <button type="submit" class="text-xs text-red-500 hover:text-red-700 font-semibold">取消訂單</button>
+                                                                            </form>
+                                                                        @elseif(!empty($follower['paid_at']))
+                                                                            <span class="text-xs text-gray-400">已付款不可取消</span>
+                                                                        @endif
+                                                                    </div>
+                                                                @endforeach
+                                                            </div>
+                                                        </div>
+                                                    @endif
+                                                @endforeach
+                                                @if($managedPostGroups->get($post->id ?? 0, collect())->every(fn($p) => $productFollowers->get((int)$p->id, collect())->count() === 0))
+                                                    <p class="text-gray-400 text-sm text-center py-6">目前尚無人跟單。</p>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
