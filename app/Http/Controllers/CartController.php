@@ -63,40 +63,39 @@ class CartController extends Controller
     if ($baseOrder) {
         $sourceId = $baseOrder->source_id;
 
-        // 2. 🔍 撈出「這整組」相同貼文、同個買家、且都是待付款的所有訂單
-        $allOrdersInGroup = \App\Models\Order::where('buyer_id', $userId)
-                                ->where('source_id', $sourceId)
-                                ->where('status', 'pending_payment')
-                                ->get();
+        DB::transaction(function () use ($userId, $sourceId) {
+            // 2. 撈出同一貼文、同一請購人、待付款的全部跟單
+            $allOrdersInGroup = Order::where('buyer_id', $userId)
+                ->where('source_id', $sourceId)
+                ->where('status', 'pending_payment')
+                ->with('items')
+                ->get();
 
-        // 3. 計算這整組訂單的「總金額」是多少
-        $groupTotalAmount = $allOrdersInGroup->sum('total_amount');
+            // 3. 回補 sold_quantity（僅減少 sold_quantity，不變動 max_quantity）
+            foreach ($allOrdersInGroup as $order) {
+                foreach ($order->items as $item) {
+                    if (! $item->product_id || (int) $item->quantity <= 0) {
+                        continue;
+                    }
 
-        // 4. 去商品表撈出單價，用來反推「這整組總共買了幾件」
-        $product = \DB::table('post_products')
-                    ->where('agent_post_id', $sourceId)
-                    ->first();
+                    PostProduct::where('id', $item->product_id)
+                        ->decrement('sold_quantity', (int) $item->quantity);
 
-        // 預設退回筆數（如果沒撈到單價，就用訂單筆數當作件數）
-        $returnQty = $allOrdersInGroup->count(); 
+                    // 避免 sold_quantity 因舊資料異常而變負數
+                    PostProduct::where('id', $item->product_id)
+                        ->where('sold_quantity', '<', 0)
+                        ->update(['sold_quantity' => 0]);
+                }
+            }
 
-        if ($product && isset($product->price) && $product->price > 0) {
-            // 用「整組總金額 / 單價」精準推算這次要還回去的總數量！
-            $returnQty = (int) ($groupTotalAmount / $product->price);
-        }
+            // 4. 移除整組待付款跟單
+            Order::where('buyer_id', $userId)
+                ->where('source_id', $sourceId)
+                ->where('status', 'pending_payment')
+                ->delete();
+        });
 
-        // 5. 🛠️ 一口氣把所有名額全部加回 max_quantity
-        \DB::table('post_products')
-            ->where('agent_post_id', $sourceId)
-            ->increment('max_quantity', $returnQty);
-
-        // 6. ❌ 刪除「這整組」的所有訂單，不再留尾巴
-        \App\Models\Order::where('buyer_id', $userId)
-            ->where('source_id', $sourceId)
-            ->where('status', 'pending_payment')
-            ->delete();
-
-        return back()->with('success', "已成功移除該項目，並一次釋出全部共 {$returnQty} 個名額。");
+        return back()->with('success', '已成功移除該項目，並回補商品的已售數量。');
     }
 
     return back()->with('error', '找不到該項目。');

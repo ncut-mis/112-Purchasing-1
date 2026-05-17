@@ -37,19 +37,18 @@
     @forelse($favoriteAgentPosts as $favoriteAgentPost)
         <article class="favorite-post-item flex flex-col gap-2.5 rounded-[20px] border border-pink-100 bg-[#fff8fc] px-3.5 py-3 shadow-sm lg:flex-row lg:items-center" data-agent-post-id="{{ $favoriteAgentPost->id }}">
 @php
-                    $post = $favoriteAgentPost->favoriteable;
-                    $firstProduct = optional($post?->products)->first();
-                    $image = $firstProduct?->display_image_url ?? $post?->cover_image_url;
+                     $firstProduct = $favoriteAgentPost->products->first();
+                     $image = $firstProduct?->display_image_url ?? $favoriteAgentPost->cover_image_url;
                 @endphp
 
                 <div class="h-16 w-16 shrink-0 overflow-hidden rounded-[18px] bg-white shadow-sm">
                     @if($image)
-                        <img src="{{ $image }}" alt="{{ $post->title ?? '' }}" class="h-full w-full object-cover">
+                         <img src="{{ $image }}" alt="{{ $favoriteAgentPost->title }}" class="h-full w-full object-cover">
                     @else
                         <div class="flex h-full w-full items-center justify-center bg-white text-xl text-pink-300">♡</div>
                     @endif
                 </div>
-            </div>
+            
 
             <div class="min-w-0 flex-1">
                 <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
