@@ -109,20 +109,20 @@ class CartController extends Controller
 
         $userId = Auth::id();
 
-        DB::transaction(function () use ($userId) {
-            // 將「跟單」與「報價單」狀態轉為 completed
+         DB::transaction(function () use ($userId) {
+            // 將「跟單」狀態改為等待出貨（不直接進歷史紀錄）
             Order::where('buyer_id', $userId)
                 ->where('status', 'pending_payment')
-                ->update(['status' => 'completed']);
+                ->update(['status' => 'wait-for-ship']);
 
+            // 將「專屬代購報價單」請託清單狀態改為等待出貨
             DB::table('request_lists')
                 ->where('user_id', $userId)
                 ->where('status', 'matched')
-                ->update(['status' => 'completed']);
+                ->update(['status' => 'wait-for-ship']);
         });
 
-        // 💡 修正：為避免路由定義名稱衝突，統一改用安全的 back() 刷新或指定確切路徑
-        return back()->with('success', '結帳完成！訂單狀態已轉為已完成。');
+        return back()->with('success', '結帳完成！跟單與請託清單狀態已更新為等待出貨。');
     }
 
    public function addFollowOrder(Request $request)

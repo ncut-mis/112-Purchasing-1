@@ -339,6 +339,18 @@
                                                             <input type="number" min="1" step="1" name="products[{{ $pIndex }}][max_quantity]" value="{{ $product->max_quantity }}" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" placeholder="最高數量" required>
                                                         </div>
                                                         <div class="mt-3">
+                                                             <div class="mb-2 h-24 w-24 overflow-hidden rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center text-xs text-gray-400">
+                                                                @if($product->display_image_url)
+                                                                    <img
+                                                                        src="{{ $product->display_image_url }}"
+                                                                        alt="{{ $product->name }}"
+                                                                        class="edit-product-image-preview h-full w-full object-cover"
+                                                                        data-original-src="{{ $product->display_image_url }}"
+                                                                    >
+                                                                @else
+                                                                    <span class="edit-product-image-placeholder">尚無圖片</span>
+                                                                @endif
+                                                            </div>
                                                             <input type="file" accept="image/*" name="products[{{ $pIndex }}][image]" class="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-indigo-700 file:font-semibold hover:file:bg-indigo-50">
                                                         </div>
                                                     </div>
@@ -368,6 +380,9 @@
                                 <input type="number" min="1" step="1" name="products[__INDEX__][max_quantity]" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" placeholder="最高數量" required>
                             </div>
                             <div class="mt-3">
+                                 <div class="mb-2 h-24 w-24 overflow-hidden rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center text-xs text-gray-400">
+                                    <span class="edit-product-image-placeholder">尚無圖片</span>
+                                </div>
                                 <input type="file" accept="image/*" name="products[__INDEX__][image]" class="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-indigo-700 file:font-semibold hover:file:bg-indigo-50">
                             </div>
                         </div>
@@ -426,11 +441,56 @@
                                     });
                                 }
 
+                                function bindImagePreview(item) {
+                                    const fileInput = item.querySelector('input[type="file"][name*="[image]"]');
+                                    if (!fileInput || fileInput.dataset.previewBound === '1') return;
+
+                                    fileInput.dataset.previewBound = '1';
+                                    fileInput.addEventListener('change', function (event) {
+                                        const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
+                                        const wrapper = item.querySelector('.mb-2.h-24.w-24');
+                                        if (!wrapper) return;
+
+                                        if (!file) {
+                                            const preview = wrapper.querySelector('.edit-product-image-preview');
+                                            const originalSrc = preview?.dataset.originalSrc;
+                                            if (originalSrc) {
+                                                preview.src = originalSrc;
+                                                return;
+                                            }
+
+                                            if (preview) {
+                                                preview.remove();
+                                            }
+                                            if (!wrapper.querySelector('.edit-product-image-placeholder')) {
+                                                wrapper.insertAdjacentHTML('beforeend', '<span class="edit-product-image-placeholder">尚無圖片</span>');
+                                            }
+                                            return;
+                                        }
+
+                                        const oldPlaceholder = wrapper.querySelector('.edit-product-image-placeholder');
+                                        if (oldPlaceholder) oldPlaceholder.remove();
+
+                                        let preview = wrapper.querySelector('.edit-product-image-preview');
+                                        if (!preview) {
+                                            preview = document.createElement('img');
+                                            preview.className = 'edit-product-image-preview h-full w-full object-cover';
+                                            wrapper.appendChild(preview);
+                                        }
+
+                                        preview.src = URL.createObjectURL(file);
+                                    });
+                                }
+
                                 addBtn.addEventListener('click', function () {
                                     const count = container.querySelectorAll('.edit-product-item').length;
                                     if (count >= maxItems) return;
                                     const html = template.replaceAll('__INDEX__', String(nextIndex)).replaceAll('__NUMBER__', String(count + 1));
                                     container.insertAdjacentHTML('beforeend', html);
+                                     const appendedItem = container.querySelector('.edit-product-item:last-child');
+                                    if (appendedItem) {
+                                        bindImagePreview(appendedItem);
+                                    }
                                     nextIndex += 1;
                                     refresh();
                                 });
@@ -445,6 +505,9 @@
                                 });
 
                                 refresh();
+                                 container.querySelectorAll('.edit-product-item').forEach(function (item) {
+                                    bindImagePreview(item);
+                                });
                             });
                         });
                      </script>
