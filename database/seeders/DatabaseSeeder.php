@@ -14,6 +14,8 @@ class DatabaseSeeder extends Seeder
         RequestListSeeder::class,
         AgentApplicationSeeder::class,
         people::class,
+        AgentPostFavoriteSeeder::class,
+        AgentPostOrderSeeder::class,
     ]);
 }
 }

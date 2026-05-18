@@ -50,7 +50,7 @@
      【熱門代購團區塊】
      修改：圖片區改為 Bootstrap Carousel 滑動式顯示所有商品圖片
      ===================================================================== --}}
-<section class="py-5 bg-white" x-data="{ expanded: false }">
+<section class="py-5 bg-white">
     <div class="container">
         <div class="mb-5 text-center text-md-start">
             <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-2 mb-1">
@@ -62,7 +62,7 @@
         </div>
 
         <div class="row g-4">
-            @forelse($agentPosts->take(9) as $index => $popPost)
+            @forelse(($hotPosts ?? collect()) as $index => $popPost)
                 @php
                     // 取得該貼文所有商品的圖片 URL，過濾掉空值
                     $popImages = $popPost->products
@@ -71,11 +71,16 @@
                         ->values();
                 @endphp
 
-                <div class="col-md-6 col-lg-4"
-                     x-show="expanded || {{ $index }} < 3"
-                     x-transition:enter="transition ease-out duration-500"
-                     x-transition:enter-start="opacity-0 translate-y-4"
-                     x-transition:enter-end="opacity-100 translate-y-0">
+                @php
+                    $scoreBadgeColors = [
+                        0 => '#d4af37',
+                        1 => '#9ca3af',
+                        2 => '#b87333',
+                    ];
+                    $scoreBadgeColor = $scoreBadgeColors[$index] ?? '#ffffff';
+                    $scoreTextColor = $index < 3 ? '#1f2937' : '#374151';
+                @endphp
+                <div class="col-md-6 col-lg-4">
                     <div class="card h-100 border-0 shadow-lg rounded-4 overflow-hidden position-relative hover-lift transition">
 
                         {{-- 圖片區：改為 Carousel 滑動式 --}}
@@ -85,6 +90,13 @@
                             <div class="position-absolute top-0 start-0 m-3" style="z-index: 10;">
                                 <span class="badge bg-danger shadow-sm rounded-pill px-3 py-2">
                                     <i class="bi bi-fire me-1"></i> HOT
+                                </span>
+                            </div>
+
+                            <div class="position-absolute top-0 end-0 m-3" style="z-index: 10;">
+                                <span class="badge rounded-pill px-3 py-2 border shadow-sm"
+                                      style="background-color: {{ $scoreBadgeColor }}; color: {{ $scoreTextColor }};">
+                                    熱門分數:{{ (int) ($popPost->hot_score ?? 0) }}分
                                 </span>
                             </div>
 

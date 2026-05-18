@@ -23,6 +23,7 @@ class AgentPost extends Model
         'end_date',
         'estimated_shipping_date',
         'status',
+        'hot_score',
         'cover_image',
     ];
 
@@ -31,6 +32,7 @@ class AgentPost extends Model
         'start_date' => 'date',
         'end_date' => 'date',
         'estimated_shipping_date' => 'date',
+        'hot_score' => 'integer',
     ];
 
     // 關聯設定：這篇貼文屬於哪個使用者 (代購人)

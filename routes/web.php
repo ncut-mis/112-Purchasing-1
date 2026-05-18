@@ -82,6 +82,26 @@ Route::patch('/admin/reports/{report}/override', [AdminAuthController::class, 'o
 Route::middleware('auth')->get('/api/latest-orders', [DashboardController::class, 'getLatestOrders'])->name('api.orders.latest');
 
 Route::get('/', function () {
+
+ $totalOpenPosts = max(AgentPost::where('status', 'open')->count(), 1);
+
+    $hotPosts = AgentPost::with(['user', 'products'])
+        ->withCount(['favorites', 'orders'])
+        ->where('status', 'open')
+        ->get()
+        ->map(function (AgentPost $post) use ($totalOpenPosts) {
+            $favoriteRatio = min(($post->favorites_count / $totalOpenPosts) * 100, 100);
+            $orderRatio = min(($post->orders_count / $totalOpenPosts) * 100, 100);
+
+            $score = (int) round(($favoriteRatio * 0.55) + ($orderRatio * 0.45));
+            $post->hot_score = max(0, min(100, $score));
+
+            return $post;
+        })
+        ->sortByDesc('hot_score')
+        ->take(6)
+        ->values();
+
     $agentPosts = AgentPost::with(['user', 'products'])
         ->where('status', 'open')
         ->latest()
@@ -100,7 +120,7 @@ Route::get('/', function () {
         ? PurchasingRequest::all()
         : collect([]);
 
-    return view('home', compact('agentPosts', 'requests', 'favoritedAgentPostIds'));
+     return view('home', compact('agentPosts', 'hotPosts', 'requests', 'favoritedAgentPostIds'));
 })->name('home');
 
     Route::middleware(['auth', 'verified'])->group(function () {
