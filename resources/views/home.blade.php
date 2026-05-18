@@ -146,22 +146,13 @@
                             @endif
                         </div>
 
-                        <div class="card-body p-4">
-                            <h5 class="fw-bold mb-2 text-truncate">{{ $popPost->title }}</h5>
-                            <div class="d-flex align-items-center justify-content-between pt-3 border-top">
-                                <div class="d-flex align-items-center gap-2">
-                                    <img src="https://ui-avatars.com/api/?name={{ urlencode($popPost->user->name) }}&background=6366f1&color=fff" class="rounded-circle" width="28" height="28">
-                                    <span class="small fw-bold text-gray-700">{{ $popPost->user->nickname ?? $popPost->user->name }}</span>
-                                </div>
-                                <span class="text-danger fw-bold" style="font-size: 12px;">
-                                    <i class="bi bi-fire me-1"></i> 熱門代購團
-                                </span>
-                            </div>
+                        <div class="card-body p-4 d-flex flex-column">
+                            <h5 class="fw-bold mb-3 text-truncate">{{ $popPost->title }}</h5>
 
                             <button
                                 type="button"
-                                class="btn btn-light border rounded-pill d-inline-flex align-items-center justify-content-center gap-2 fw-semibold text-secondary agent-post-toggle-btn mt-4"
-                                style="min-width: 380px;"
+                                class="btn btn-light border rounded-pill d-inline-flex align-items-center justify-content-center gap-2 fw-semibold text-secondary agent-post-toggle-btn mb-4"
+                                style="min-width: 260px;"
                                 data-target="hot-post-details-{{ $popPost->id }}"
                                 aria-expanded="false"
                                 aria-controls="hot-post-details-{{ $popPost->id }}"
@@ -170,41 +161,49 @@
                                 <i class="bi bi-chevron-down transition-icon"></i>
                             </button>
 
-                            <div id="hot-post-details-{{ $popPost->id }}" class="agent-post-details d-none mt-4 pt-2">
-                                <div class="border-top pt-4">
-                                    <div class="mb-3">
-                                        <div class="small text-uppercase text-muted fw-bold mb-2">商品資訊（名稱 / 單價 / 目前可下單上限）</div>
-                                        <div class="d-flex flex-column gap-2">
-                                            @forelse($popPost->products as $product)
-                                                @php
-                                                    $maxQuantity = (int) ($product->max_quantity ?? 0);
-                                                    $soldQuantity = (int) ($product->sold_quantity ?? 0);
-                                                    $currentMaxQuantity = max($maxQuantity - $soldQuantity, 0);
-                                                @endphp
-                                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 rounded-3 border bg-white px-3 py-2">
-                                                    <span class="fw-semibold text-dark">{{ $product->name }}</span>
-                                                    <div class="d-flex align-items-center gap-2 small text-muted">
-                                                        <span class="badge rounded-pill text-bg-light border">單價：NT$ {{ number_format((float) ($product->price ?? 0), 0) }}</span>
-                                                        <span class="badge rounded-pill text-bg-light border">目前可下單上限：{{ $currentMaxQuantity }}</span>
-                                                    </div>
+                            <div id="hot-post-details-{{ $popPost->id }}" class="agent-post-details d-none mb-4">
+                                <div class="mb-3">
+                                    <div class="small text-uppercase text-muted fw-bold mb-2">商品資訊（名稱 / 單價 / 目前可下單上限）</div>
+                                    <div class="d-flex flex-column gap-2">
+                                        @forelse($popPost->products as $product)
+                                            @php
+                                                $maxQuantity = (int) ($product->max_quantity ?? 0);
+                                                $soldQuantity = (int) ($product->sold_quantity ?? 0);
+                                                $currentMaxQuantity = max($maxQuantity - $soldQuantity, 0);
+                                            @endphp
+                                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 rounded-3 border bg-white px-3 py-2">
+                                                <span class="fw-semibold text-dark">{{ $product->name }}</span>
+                                                <div class="d-flex align-items-center gap-2 small text-muted">
+                                                    <span class="badge rounded-pill text-bg-light border">單價：NT$ {{ number_format((float) ($product->price ?? 0), 0) }}</span>
+                                                    <span class="badge rounded-pill text-bg-light border">目前可下單上限：{{ $currentMaxQuantity }}</span>
                                                 </div>
-                                            @empty
-                                                <span class="badge rounded-pill border text-dark bg-white px-3 py-2 fw-semibold">尚未建立商品明細</span>
-                                            @endforelse
-                                        </div>
-                                    </div>
-
-                                    <p class="text-dark mb-4" style="font-size: 1rem; line-height: 1.75;">
-                                        {{ \Illuminate\Support\Str::limit($popPost->description ?: '代購人尚未填寫詳細說明。', 60) }}
-                                    </p>
-
-                                    <div class="rounded-4 bg-light px-4 py-3 mb-4 border" style="border-color: #eef1f4 !important;">
-                                        <div class="d-flex align-items-center text-secondary" style="font-size: 1rem;">
-                                            <i class="bi bi-calendar-event me-3"></i>
-                                            <span>代購期間：{{ optional($popPost->start_date)->format('Y/m/d') }} - {{ optional($popPost->end_date)->format('Y/m/d') }}</span>
-                                        </div>
+                                            </div>
+                                        @empty
+                                            <span class="badge rounded-pill border text-dark bg-white px-3 py-2 fw-semibold">尚未建立商品明細</span>
+                                        @endforelse
                                     </div>
                                 </div>
+
+                                <p class="text-dark mb-3 small" style="line-height: 1.6;">
+                                    已是模擬系統自動產生的專業代購貼文內容。
+                                </p>
+
+                                <div class="rounded-3 bg-light px-3 py-2 border" style="border-color: #eef1f4 !important;">
+                                    <div class="d-flex align-items-center text-secondary small">
+                                        <i class="bi bi-calendar-event me-2"></i>
+                                        <span>代購期間：{{ optional($popPost->start_date)->format('Y/m/d') }} - {{ optional($popPost->end_date)->format('Y/m/d') }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-auto d-flex align-items-center justify-content-between pt-3 border-top">
+                                <div class="d-flex align-items-center gap-2">
+                                    <img src="https://ui-avatars.com/api/?name={{ urlencode($popPost->user->name) }}&background=6366f1&color=fff" class="rounded-circle" width="28" height="28">
+                                    <span class="small fw-bold text-gray-700">{{ $popPost->user->nickname ?? $popPost->user->name }}</span>
+                                </div>
+                                <span class="text-danger fw-bold" style="font-size: 12px;">
+                                    <i class="bi bi-fire me-1"></i> 熱門代購團
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -390,7 +389,7 @@
                             {{-- 展開詳細資訊按鈕 --}}
                             <button
                                 type="button"
-                                class="btn btn-light border rounded-pill d-inline-flex align-items-center justify-content-center gap-2 fw-semibold text-secondary agent-post-toggle-btn"
+                                class="btn btn-light border rounded-pill d-inline-flex align-items-center justify-content-center gap-2 fw-semibold text-secondary agent-post-toggle-btn mb-4"
                                 data-target="agent-post-details-{{ $agentPost->id }}"
                                 aria-expanded="false"
                                 aria-controls="agent-post-details-{{ $agentPost->id }}"
@@ -399,62 +398,60 @@
                                 <i class="bi bi-chevron-down transition-icon"></i>
                             </button>
 
-                            <div id="agent-post-details-{{ $agentPost->id }}" class="agent-post-details d-none mt-4 pt-2">
-                                <div class="border-top pt-4">
-                                    <div class="mb-3">
-                                        <div class="small text-uppercase text-muted fw-bold mb-2">商品資訊（名稱 / 單價 / 目前可下單上限）</div>
-                                        <div class="d-flex flex-column gap-2">
-                                            @forelse($agentPost->products as $product)
-                                                @php
-                                                    $maxQuantity = (int) ($product->max_quantity ?? 0);
-                                                    $soldQuantity = (int) ($product->sold_quantity ?? 0);
-                                                    $currentMaxQuantity = max($maxQuantity - $soldQuantity, 0);
-                                                @endphp
-                                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 rounded-3 border bg-white px-3 py-2">
-                                                    <span class="fw-semibold text-dark">{{ $product->name }}</span>
-                                                    <div class="d-flex align-items-center gap-2 small text-muted">
-                                                        <span class="badge rounded-pill text-bg-light border">單價：NT$ {{ number_format((float) ($product->price ?? 0), 0) }}</span>
-                                                        <span class="badge rounded-pill text-bg-light border">目前可下單上限：{{ $currentMaxQuantity }}</span>
-                                                    </div>
+                            <div id="agent-post-details-{{ $agentPost->id }}" class="agent-post-details d-none mb-4">
+                                <div class="mb-3">
+                                    <div class="small text-uppercase text-muted fw-bold mb-2">商品資訊（名稱 / 單價 / 目前可下單上限）</div>
+                                    <div class="d-flex flex-column gap-2">
+                                        @forelse($agentPost->products as $product)
+                                            @php
+                                                $maxQuantity = (int) ($product->max_quantity ?? 0);
+                                                $soldQuantity = (int) ($product->sold_quantity ?? 0);
+                                                $currentMaxQuantity = max($maxQuantity - $soldQuantity, 0);
+                                            @endphp
+                                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 rounded-3 border bg-white px-3 py-2">
+                                                <span class="fw-semibold text-dark">{{ $product->name }}</span>
+                                                <div class="d-flex align-items-center gap-2 small text-muted">
+                                                    <span class="badge rounded-pill text-bg-light border">單價：NT$ {{ number_format((float) ($product->price ?? 0), 0) }}</span>
+                                                    <span class="badge rounded-pill text-bg-light border">目前可下單上限：{{ $currentMaxQuantity }}</span>
                                                 </div>
-                                            @empty
-                                                <span class="badge rounded-pill border text-dark bg-white px-3 py-2 fw-semibold">尚未建立商品明細</span>
-                                            @endforelse
-                                        </div>
-                                    </div>
-
-                                    <p class="text-dark mb-4" style="font-size: 1rem; line-height: 1.75;">
-                                        {{ \Illuminate\Support\Str::limit($agentPost->description ?: '代購人尚未填寫詳細說明。', 60) }}
-                                    </p>
-
-                                    <div class="rounded-4 bg-light px-4 py-3 mb-4 border" style="border-color: #eef1f4 !important;">
-                                        <div class="d-flex align-items-center text-secondary" style="font-size: 1rem;">
-                                            <i class="bi bi-calendar-event me-3"></i>
-                                            <span>代購期間：{{ optional($agentPost->start_date)->format('Y/m/d') }} - {{ optional($agentPost->end_date)->format('Y/m/d') }}</span>
-                                        </div>
-                                    </div>
-
-                                    <div class="mt-auto d-flex justify-content-between align-items-center pt-3 border-top">
-                                        <div class="d-flex align-items-center">
-                                            <img src="https://ui-avatars.com/api/?name={{ urlencode(optional($agentPost->user)->name ?? 'Agent') }}&background=random" class="rounded-circle me-2" width="32" height="32" alt="Avatar">
-                                            <div>
-                                                <div class="small fw-semibold text-dark">{{ optional($agentPost->user)->name ?? '匿名代購人' }}</div>
-                                                <div class="small text-muted">已建立於 {{ optional($agentPost->created_at)->format('Y/m/d') }}</div>
                                             </div>
-                                        </div>
-                                        @auth
-                                            @if((int) auth()->id() === (int) $agentPost->user_id)
-                                                <button class="btn btn-sm rounded-pill px-3 btn-secondary disabled">無法跟單</button>
-                                            @else
-                                                <button type="button" class="btn btn-sm btn-primary-custom rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#followOrderModal-{{ $agentPost->id }}">我要跟單</button>
-                                            @endif
-                                        @else
-                                            <a href="{{ route('login') }}" class="btn btn-sm btn-primary-custom rounded-pill px-3">
-                                                我要跟單
-                                            </a>
-                                        @endauth
+                                        @empty
+                                            <span class="badge rounded-pill border text-dark bg-white px-3 py-2 fw-semibold">尚未建立商品明細</span>
+                                        @endforelse
                                     </div>
                                 </div>
+
+                                <p class="text-dark mb-3 small" style="line-height: 1.6;">
+                                    {{ \Illuminate\Support\Str::limit($agentPost->description ?: '代購人尚未填寫詳細說明。', 80) }}
+                                </p>
+
+                                <div class="rounded-3 bg-light px-3 py-2 border" style="border-color: #eef1f4 !important;">
+                                    <div class="d-flex align-items-center text-secondary small">
+                                        <i class="bi bi-calendar-event me-2"></i>
+                                        <span>代購期間：{{ optional($agentPost->start_date)->format('Y/m/d') }} - {{ optional($agentPost->end_date)->format('Y/m/d') }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-auto d-flex justify-content-between align-items-center pt-3 border-top">
+                                <div class="d-flex align-items-center">
+                                    <img src="https://ui-avatars.com/api/?name={{ urlencode(optional($agentPost->user)->name ?? 'Agent') }}&background=random" class="rounded-circle me-2" width="32" height="32" alt="Avatar">
+                                    <div>
+                                        <div class="small fw-semibold text-dark">{{ optional($agentPost->user)->name ?? '匿名代購人' }}</div>
+                                        <div class="small text-muted">已建立於 {{ optional($agentPost->created_at)->format('Y/m/d') }}</div>
+                                    </div>
+                                </div>
+                                @auth
+                                    @if((int) auth()->id() === (int) $agentPost->user_id)
+                                        <button class="btn btn-sm rounded-pill px-3 btn-secondary disabled">無法跟單</button>
+                                    @else
+                                        <button type="button" class="btn btn-sm btn-primary-custom rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#followOrderModal-{{ $agentPost->id }}">我要跟單</button>
+                                    @endif
+                                @else
+                                    <a href="{{ route('login') }}" class="btn btn-sm btn-primary-custom rounded-pill px-3">
+                                        我要跟單
+                                    </a>
+                                @endauth
                             </div>
                         </div>
                     </div>

@@ -214,7 +214,9 @@
                                     <i class="bi bi-bag-heart-fill text-xl"></i>
                                 </div>
                                 <div class="min-w-0">
-                                    <h4 class="font-bold text-gray-800 group-hover:text-indigo-600 transition truncate">{{ $title }}</h4>
+                                    <h4 class="font-bold text-gray-800 group-hover:text-indigo-600 transition scrollable-title" title="{{ $title }}">
+                                        <span>{{ \Illuminate\Support\Str::limit($title, 12, '...') }}</span>
+                                    </h4>
                                     <div class="flex items-center gap-2 mt-1 flex-wrap">
                                         <span class="text-[10px] px-2 py-0.5 bg-gray-100 text-gray-500 rounded-md font-bold">{{ $countryTag }}</span>
                                         <span class="text-[10px] px-2 py-0.5 bg-gray-100 text-gray-500 rounded-md font-bold">截止：{{ $orderData['deadline'] }}</span>
