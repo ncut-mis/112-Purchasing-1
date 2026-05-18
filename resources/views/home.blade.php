@@ -7,9 +7,6 @@
     <div class="container">
         <div class="row align-items-center">
            <div class="col-lg-6">
-                <span class="badge bg-white text-success shadow-sm px-3 py-2 rounded-pill mb-3">
-                    <i class="bi bi-star-fill me-1"></i> 全球連線中
-                </span>
                 <h1 class="display-4 fw-bold mb-3" style="color: #2c3e50;">
                     發現世界各地<br>
                     <span style="color: var(--primary-color);">獨一無二</span> 的好物
