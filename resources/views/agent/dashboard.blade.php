@@ -45,23 +45,13 @@
 
     <!-- Alpine.js 狀態中心 -->
 
-    <div x-data="{ 
-        showDetailModal: false, 
+    <div x-data="{
+        showDetailModal: false,
         showPriceModal: false,
         selectedRequest: null,
-        agentQuoteTotal: '',
         availableTime: '',
+        quoteRemarks: '',
         loading: false,
-
-<div x-data="{ 
-    showDetailModal: false, 
-    showPriceModal: false,
-    selectedRequest: null,
-    agentQuoteTotal: '',
-    availableTime: '',
-    quoteRemarks: '',
-    loading: false,
-
 
         get totalQuote() {
             if (!this.selectedRequest || !this.selectedRequest.items) return 0;
@@ -73,122 +63,56 @@
         },
 
         openDetail(data) {
-            console.log('原始收到的資料:', data);
-            const rawData = JSON.parse(JSON.stringify(data));
+            const itemsWithPrivateFields = data.items.map(item => ({
+                ...item,
+                agent_quote: ''
+            }));
 
-            // 1. 加工資料：幫每個商品(item) 建立一個專屬於它的報價欄位
-            const itemsWithPrivateFields = data.items.map(item => {
-                return {
-                    ...item,            // 保留原本的 id, name, quantity 等
-                    agent_quote: '',    // ✅ 新增屬性：這就是該商品的「獨立報價大腦」
-                };
-            });
-
-            // 2. 將整包資料（含加工後的 items）存入 Alpine.js 的變數中
             this.selectedRequest = {
-                ...data,                // 保留原本的 request_list 資訊 (id, title 等)
-                items: itemsWithPrivateFields // 替換成我們加工過的 items
+                ...data,
+                items: itemsWithPrivateFields
             };
 
-
-            // 3. UI 控制：開啟彈窗並禁止背景滾動
             this.showDetailModal = true;
             document.body.style.overflow = 'hidden';
-
-    // 2. 將整包資料（含加工後的 items）存入 Alpine.js 的變數中
-    this.selectedRequest = {
-        ...data,                // 保留原本的 request_list 資訊 (id, title 等)
-        items: itemsWithPrivateFields // 替換成我們加工過的 items
-    };
-
-    // 3. UI 控制：開啟彈窗並禁止背景滾動
-    this.showDetailModal = true;
-    document.body.style.overflow = 'hidden';
-},
-    
-    goToQuote() {
-        this.showDetailModal = false;
-        setTimeout(() => { this.showPriceModal = true; }, 150);
-    },
-    closeAll() {
-        this.showDetailModal = false;
-        this.showPriceModal = false;
-        document.body.style.overflow = 'auto';
-        this.agentQuoteTotal = '';
-        this.availableTime = '';
-        this.quoteRemarks = '';
-    },
-submitQuote() {
-    // 1. 計算總額
-    const total = this.selectedRequest.items.reduce((sum, item) => {
-        const unitPrice = parseFloat(item.agent_quote) || 0;
-        const quantity = parseInt(item.quantity, 10) || 0;
-        return sum + (unitPrice * quantity);
-    }, 0);
-    
-    if (total <= 0 || !this.availableTime.trim()) {
-        alert('請針對商品填寫報價與可代購時段');
-        return;
-    }
-    
-    // 2. 準備 Payload (確保欄位名稱與 QuoteController 一致)
-    const payload = {
-        request_list_id: this.selectedRequest.id, // 修改這裡：改名為 request_list_id 比較標準
-        agent_quote_total: total,
-        estimated_date: this.availableTime.trim(),
-        comment: this.quoteRemarks.trim() || null,
-        items: this.selectedRequest.items.map(item => ({
-            id: item.id,
-            agent_quote: item.agent_quote
-        }))
-    };
-    
-    // 3. 執行 Fetch (修改 URL)
-    fetch('/quotes', { // <--- 確保這路徑對應到 QuoteController@store
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Accept': 'application/json'
->>>>>>> 24ce2e880a266def2493597fab1288e889c8bf87
         },
-        
+
         goToQuote() {
             this.showDetailModal = false;
             setTimeout(() => { this.showPriceModal = true; }, 150);
         },
+
         closeAll() {
             this.showDetailModal = false;
             this.showPriceModal = false;
             document.body.style.overflow = 'auto';
-            this.agentQuoteTotal = '';
             this.availableTime = '';
+            this.quoteRemarks = '';
         },
+
         submitQuote() {
-            // 1. 計算總額
             const total = this.selectedRequest.items.reduce((sum, item) => {
                 const unitPrice = parseFloat(item.agent_quote) || 0;
                 const quantity = parseInt(item.quantity, 10) || 0;
                 return sum + (unitPrice * quantity);
             }, 0);
-            
+
             if (total <= 0 || !this.availableTime.trim()) {
                 alert('請針對商品填寫報價與可代購時段');
                 return;
             }
-            
-            // 2. 準備 Payload
+
             const payload = {
                 request_list_id: this.selectedRequest.id,
                 agent_quote_total: total,
                 time: this.availableTime.trim(),
+                comment: this.quoteRemarks.trim() || null,
                 items: this.selectedRequest.items.map(item => ({
                     id: item.id,
                     agent_quote: item.agent_quote
                 }))
             };
-            
-            // 3. 執行 Fetch
+
             fetch('/quotes', {
                 method: 'POST',
                 headers: {
@@ -196,14 +120,14 @@ submitQuote() {
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
                     'Accept': 'application/json'
                 },
-                body: JSON.stringify(payload) 
+                body: JSON.stringify(payload)
             })
             .then(async response => {
                 const data = await response.json();
                 if (response.ok) {
                     alert('報價送出成功！');
                     this.closeAll();
-                    window.location.reload(); 
+                    window.location.reload();
                 } else {
                     throw new Error(data.message || '送出失敗');
                 }
@@ -253,77 +177,6 @@ submitQuote() {
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-lg font-bold text-gray-800">最新請託需求</h3>
                 <span class="text-sm text-gray-400">找到 {{ $requestLists->total() }} 個符合條件的請託</span>
-
-                <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-lg font-bold text-gray-800">最新請託需求</h3>
-                    <span class="text-sm text-gray-400">找到 {{ $requestLists->total() }} 個符合條件的請託</span>
-                </div>
-
-                <!-- 請託單列表：保留您原本的卡片架構 -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-    @forelse($requestLists as $requestList)
-        @php
-            // 1. 整理基礎資料
-            $countryCode = $requestList->country;
-            $countryTag = $countryLabels[$countryCode] ?? $countryCode;
-            $firstItem = $requestList->items->first();
-            $title = $requestList->title ?: ($firstItem->name ?? '未命名請託');
-
-            // 2. 權限與狀態判定
-            $isOwner = auth()->check() && (int) $requestList->user_id === (int) auth()->id();
-            $isFavorited = in_array((int) $requestList->id, $favoritedRequestListIds ?? [], true);
-            
-            // 3. 準備傳給 Alpine.js 的 JSON 資料 (包含圖片與 ID)
-            $orderData = [
-                'id' => $requestList->id,
-                'title' => $title,
-                'store_name' => $requestList->store_name ?: '未提供',
-                'address' => $requestList->detail_address ?: '未填寫',
-                'deadline' => optional($requestList->deadline)->format('Y-m-d') ?: '不限時',
-                'note' => $requestList->note ?: '-',
-                'items' => $requestList->items->map(fn($i) => [
-                    'id' => $i->id,
-                    'name' => $i->name, 
-                    'quantity' => $i->quantity,
-                    'image' => $i->reference_image ? route('request-item.image', ['requestItem' => $i->id, 'v' => $i->updated_at?->timestamp ?? now()->timestamp]) : null
-                ])
-            ];
-        @endphp
-
-        <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:border-indigo-200 hover:shadow-md transition group flex flex-col h-full">
-            
-            <div class="flex justify-between items-start mb-4 gap-3">
-                <div class="flex items-start gap-3">
-                    <div class="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-inner shrink-0">
-                        <i class="bi bi-bag-heart-fill text-xl"></i>
-                    </div>
-                    <div class="min-w-0">
-                        <h4 class="font-bold text-gray-800 group-hover:text-indigo-600 transition truncate">{{ $title }}</h4>
-                        <div class="flex items-center gap-2 mt-1 flex-wrap">
-                            <span class="text-[10px] px-2 py-0.5 bg-gray-100 text-gray-500 rounded-md font-bold">{{ $countryTag }}</span>
-                            <span class="text-[10px] px-2 py-0.5 bg-gray-100 text-gray-500 rounded-md font-bold">截止：{{ $orderData['deadline'] }}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex gap-2">
-                    <button type="button" 
-                        class="request-list-report-btn w-9 h-9 rounded-full transition flex items-center justify-center bg-gray-100 hover:bg-red-50 {{ $isOwner ? 'opacity-50 cursor-not-allowed' : '' }}"
-                        data-request-list-id="{{ $requestList->id }}"
-                        title="{{ $isOwner ? '無法檢舉自己的請託單' : '檢舉請託單' }}"
-                        @if($isOwner) disabled aria-disabled="true" @endif>
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#ef4444" class="w-5 h-5" style="filter: drop-shadow(0 0 1px rgba(0,0,0,0.1));">
-                            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
-                        </svg>
-                    </button>
-                    <button type="button" 
-                        class="favorite-toggle w-9 h-9 rounded-full transition flex items-center justify-center {{ $isFavorited ? 'bg-pink-50 text-pink-500' : 'bg-gray-100 text-gray-400 hover:bg-pink-50 hover:text-pink-400' }}"
-                        data-request-list-id="{{ $requestList->id }}"
-                        @if($isOwner) disabled title="不能收藏自己的請託單" style="opacity: 0.5; cursor: not-allowed;" @endif>
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M12.001 4.529c2.349-2.532 6.15-2.533 8.498-.001 2.41 2.6 2.41 6.815 0 9.416l-7.66 8.266a1.14 1.14 0 0 1-1.677 0l-7.66-8.266c-2.41-2.601-2.41-6.817 0-9.416 2.348-2.532 6.149-2.531 8.499.001Z"/></svg>
-                    </button>
-                </div>
-
             </div>
 
             <!-- 請託單列表 -->
