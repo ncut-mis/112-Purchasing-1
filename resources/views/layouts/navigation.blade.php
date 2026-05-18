@@ -41,6 +41,14 @@
                         <x-nav-link :href="route('home')">
                             <i class="bi bi-arrow-left-circle me-1"></i> {{ __('返回買家模式') }}
                         </x-nav-link>
+                        <button
+                            type="button"
+                            class="inline-flex items-center px-2 pt-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition duration-150 ease-in-out"
+                            onclick="openNotificationModal()"
+                        >
+                            <i class="bi bi-bell-fill text-lg"></i>
+                        </button>
+
                     @else
                         <!-- 【買家模式導覽列】 -->
                         <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
