@@ -36,9 +36,13 @@ return new class extends Migration
             // pending: 等待接單
             // offered: 有人報價了
             // matched: 已確認代購人 (進入訂單流程)
+            // wait-for-ship: 已確認代購人，等待出貨
+            // shipped: 已出貨
+            // arrivaled: 已到貨
+            // expired: 已過期
             // completed: 已完成
             // cancelled: 已取消
-            $table->enum('status', ['pending', 'offered', 'matched', 'completed', 'cancelled'])->default('pending');
+            $table->enum('status', ['editing', 'pending', 'offered', 'matched', 'wait-for-ship', 'shipped', 'arrivaled', 'expired', 'completed', 'cancelled'])->default('pending');
 
             // 備註說明
             $table->text('note')->nullable();

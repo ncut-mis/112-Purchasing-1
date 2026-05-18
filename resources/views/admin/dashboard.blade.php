@@ -546,15 +546,6 @@
                                                                     style="width: 56px; height: 56px; object-fit: cover;"
                                                                 >
                                                             </a>
-                                                        @elseif($product->image_path)
-                                                            <a href="{{ asset('storage/' . ltrim($product->image_path, '/')) }}" target="_blank" rel="noopener noreferrer">
-                                                                <img
-                                                                    src="{{ asset('storage/' . ltrim($product->image_path, '/')) }}"
-                                                                    alt="商品圖片"
-                                                                    class="rounded border"
-                                                                    style="width: 56px; height: 56px; object-fit: cover;"
-                                                                >
-                                                            </a>
                                                         @else
                                                             <span class="text-muted">無圖片</span>
                                                         @endif

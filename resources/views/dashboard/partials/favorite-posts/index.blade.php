@@ -36,39 +36,19 @@
                             <div class="space-y-2.5" id="favorite-post-list">
     @forelse($favoriteAgentPosts as $favoriteAgentPost)
         <article class="favorite-post-item flex flex-col gap-2.5 rounded-[20px] border border-pink-100 bg-[#fff8fc] px-3.5 py-3 shadow-sm lg:flex-row lg:items-center" data-agent-post-id="{{ $favoriteAgentPost->id }}">
-            <div class="h-16 w-16 shrink-0 overflow-hidden rounded-[18px] bg-white shadow-sm">
-                @php
-                    $favoriteFirstProduct = $favoriteAgentPost->products->first();
-                    $favoriteImage = optional($favoriteFirstProduct)->display_image_url;
+@php
+                     $firstProduct = $favoriteAgentPost->products->first();
+                     $image = $firstProduct?->display_image_url ?? $favoriteAgentPost->cover_image_url;
                 @endphp
-               @if(isset($favoriteAgentPosts))
-                    @foreach($favoriteAgentPosts as $favorite)
-                        @php
-                            // 2. 關鍵：把「收藏紀錄」轉回「代購貼文」
-                            $post = $favorite->favoriteable;
-                            
-                            // 3. 安全取產品與圖片 (使用 optional 避免 null)
-                            $firstProduct = optional($post?->products)->first();
-                            $image = $firstProduct?->display_image_url ?? ($post?->cover_image ? asset('storage/' . $post->cover_image) : null);
-                        @endphp
 
-                        <article class="favorite-post-item ... " data-agent-post-id="{{ $post->id ?? '' }}">
-                            <div class="h-16 w-16 shrink-0 overflow-hidden rounded-[18px] bg-white shadow-sm">
-                                @if($image)
-                                    <img src="{{ $image }}" alt="{{ $post->title ?? '' }}" class="h-full w-full object-cover">
-                                @else
-                                    <div class="flex h-full w-full items-center justify-center bg-white text-xl text-pink-300">♡</div>
-                                @endif
-                            </div>
-                            
-                            {{-- 其他貼文內容... --}}
-                            <div class="flex-1">
-                                <h4 class="font-bold text-gray-800">{{ $post->title ?? '未命名貼文' }}</h4>
-                            </div>
-                        </article>
-                    @endforeach
-                @endif
-            </div>
+                <div class="h-16 w-16 shrink-0 overflow-hidden rounded-[18px] bg-white shadow-sm">
+                    @if($image)
+                         <img src="{{ $image }}" alt="{{ $favoriteAgentPost->title }}" class="h-full w-full object-cover">
+                    @else
+                        <div class="flex h-full w-full items-center justify-center bg-white text-xl text-pink-300">♡</div>
+                    @endif
+                </div>
+            
 
             <div class="min-w-0 flex-1">
                 <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">

@@ -80,35 +80,9 @@
     <!-- Footer -->
     <footer class="footer-section">
         <div class="container relative">
-            <div class="sofa-img">
-                <img src="{{ asset('images/sofa.png') }}" alt="Image" class="img-fluid">
-            </div>
+            
 
-            <div class="row">
-                <div class="col-lg-8">
-                    <div class="subscription-form">
-                        <h3 class="d-flex align-items-center">
-                            <span class="me-1">
-                                <img src="{{ asset('images/envelope-outline.svg') }}" alt="Image" class="img-fluid">
-                            </span>
-                            <span>訂閱電子報</span>
-                        </h3>
-                        <form action="#" class="row g-3">
-                            <div class="col-auto">
-                                <input type="text" class="form-control" placeholder="姓名">
-                            </div>
-                            <div class="col-auto">
-                                <input type="email" class="form-control" placeholder="電子郵件">
-                            </div>
-                            <div class="col-auto">
-                                <button class="btn btn-primary">
-                                    <span class="fa fa-paper-plane"></span>
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
+            
 
             <div class="row g-5 mb-5">
                 <div class="col-lg-4">
@@ -116,12 +90,7 @@
                         <a href="{{ route('home') }}" class="footer-logo">GlobalBuy<span>.</span></a>
                     </div>
                     <p class="mb-4">{{ config('app.description', '連結全球好物，讓購物沒有國界。') }}</p>
-                    <ul class="list-unstyled custom-social">
-                        <li><a href="#"><span class="fa fa-brands fa-facebook-f"></span></a></li>
-                        <li><a href="#"><span class="fa fa-brands fa-twitter"></span></a></li>
-                        <li><a href="#"><span class="fa fa-brands fa-instagram"></span></a></li>
-                        <li><a href="#"><span class="fa fa-brands fa-line"></span></a></li>
-                    </ul>
+                    
                 </div>
             </div>
 

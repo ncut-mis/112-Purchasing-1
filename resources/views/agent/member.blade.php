@@ -14,7 +14,7 @@
     </x-slot>
 
     <!-- 使用 Alpine.js 控制分頁，預設顯示 'posts' -->
-    <div x-data="{ activeTab: 'posts' }" class="py-12 bg-gray-50 min-h-screen">
+    <div x-data="{ activeTab: {{ json_encode(request()->query('tab', 'posts')) }} }" class="py-12 bg-gray-50 min-h-screen">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             
             <!-- 數據統計區 (始終顯示) -->
@@ -25,7 +25,7 @@
                     </div>
                     <div>
                         <p class="text-sm text-gray-400">累計代購收入</p>
-                        <h4 class="text-2xl font-bold text-gray-800">$128,450</h4>
+                        <h4 class="text-2xl font-bold text-gray-800">${{ number_format((float)$totalIncome, 0) }}</h4>
                     </div>
                 </div>
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
@@ -34,7 +34,7 @@
                     </div>
                     <div>
                         <p class="text-sm text-gray-400">已完成訂單</p>
-                        <h4 class="text-2xl font-bold text-gray-800">86 筆</h4>
+                        <h4 class="text-2xl font-bold text-gray-800">{{ $finishedOrdersCount }} 筆</h4>
                     </div>
                 </div>
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
@@ -89,11 +89,11 @@
                                 <span>收藏請託單</span>
                             </a>
                             <!-- 7. 歷史紀錄 -->
-                            <a href="#" @click.prevent="activeTab = 'history-records'" :class="activeTab === 'history-records' ? 'bg-amber-50 text-amber-600 font-bold' : 'text-gray-600 hover:bg-gray-50'" 
-                            class="flex items-center gap-3 p-3 rounded-xl transition group">                               
-                                <!-- 使用時鐘歷史圖標，並根據選中狀態切換顏色 -->
-                                <i class="bi bi-clock-history text-lg" 
-                                :class="activeTab === 'history-records' ? 'text-amber-500' : 'text-amber-400'"></i>                                
+                            <a href="{{ route('agent.member', ['tab' => 'agent-history']) }}"
+                               @click.prevent="activeTab = 'agent-history'"
+                               :class="activeTab === 'agent-history' ? 'bg-amber-50 text-amber-600 font-bold' : 'text-gray-600'"
+                               class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition">
+                                <i class="bi bi-clock-history text-lg text-amber-400"></i>
                                 <span>歷史紀錄</span>
                             </a>
                             <!-- 8. 物流設定 -->
@@ -204,8 +204,8 @@
                             @forelse($myAgentPosts as $post)
                                 <div class="p-4 border border-gray-100 rounded-2xl flex gap-4 hover:border-indigo-200 transition">
                                     <div class="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-gray-300 overflow-hidden">
-                                        @if($post->cover_image)
-                                            <img src="{{ asset('storage/'.$post->cover_image) }}" alt="{{ $post->title }}" class="w-full h-full object-cover">
+                                        @if($post->cover_image_url)
+                                            <img src="{{ $post->cover_image_url }}" alt="{{ $post->title }}" class="w-full h-full object-cover">
                                         @else
                                             <i class="bi bi-image text-xl"></i>
                                         @endif
@@ -333,13 +333,24 @@
                                                             <button type="button" class="edit-remove-product-btn text-sm text-rose-600 hover:text-rose-700 font-semibold">刪除</button>
                                                         </div>
                                                         <input type="hidden" name="products[{{ $pIndex }}][id]" value="{{ $product->id }}">
-                                                        <input type="hidden" name="products[{{ $pIndex }}][existing_image]" value="{{ $product->image_path }}">
                                                         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                                                             <input type="text" name="products[{{ $pIndex }}][name]" value="{{ $product->name }}" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" placeholder="商品名稱" required>
                                                             <input type="number" min="0" step="0.01" name="products[{{ $pIndex }}][price]" value="{{ $product->price }}" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" placeholder="單價" required>
                                                             <input type="number" min="1" step="1" name="products[{{ $pIndex }}][max_quantity]" value="{{ $product->max_quantity }}" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" placeholder="最高數量" required>
                                                         </div>
                                                         <div class="mt-3">
+                                                             <div class="mb-2 h-24 w-24 overflow-hidden rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center text-xs text-gray-400">
+                                                                @if($product->display_image_url)
+                                                                    <img
+                                                                        src="{{ $product->display_image_url }}"
+                                                                        alt="{{ $product->name }}"
+                                                                        class="edit-product-image-preview h-full w-full object-cover"
+                                                                        data-original-src="{{ $product->display_image_url }}"
+                                                                    >
+                                                                @else
+                                                                    <span class="edit-product-image-placeholder">尚無圖片</span>
+                                                                @endif
+                                                            </div>
                                                             <input type="file" accept="image/*" name="products[{{ $pIndex }}][image]" class="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-indigo-700 file:font-semibold hover:file:bg-indigo-50">
                                                         </div>
                                                     </div>
@@ -369,6 +380,9 @@
                                 <input type="number" min="1" step="1" name="products[__INDEX__][max_quantity]" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" placeholder="最高數量" required>
                             </div>
                             <div class="mt-3">
+                                 <div class="mb-2 h-24 w-24 overflow-hidden rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center text-xs text-gray-400">
+                                    <span class="edit-product-image-placeholder">尚無圖片</span>
+                                </div>
                                 <input type="file" accept="image/*" name="products[__INDEX__][image]" class="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-indigo-700 file:font-semibold hover:file:bg-indigo-50">
                             </div>
                         </div>
@@ -427,11 +441,56 @@
                                     });
                                 }
 
+                                function bindImagePreview(item) {
+                                    const fileInput = item.querySelector('input[type="file"][name*="[image]"]');
+                                    if (!fileInput || fileInput.dataset.previewBound === '1') return;
+
+                                    fileInput.dataset.previewBound = '1';
+                                    fileInput.addEventListener('change', function (event) {
+                                        const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
+                                        const wrapper = item.querySelector('.mb-2.h-24.w-24');
+                                        if (!wrapper) return;
+
+                                        if (!file) {
+                                            const preview = wrapper.querySelector('.edit-product-image-preview');
+                                            const originalSrc = preview?.dataset.originalSrc;
+                                            if (originalSrc) {
+                                                preview.src = originalSrc;
+                                                return;
+                                            }
+
+                                            if (preview) {
+                                                preview.remove();
+                                            }
+                                            if (!wrapper.querySelector('.edit-product-image-placeholder')) {
+                                                wrapper.insertAdjacentHTML('beforeend', '<span class="edit-product-image-placeholder">尚無圖片</span>');
+                                            }
+                                            return;
+                                        }
+
+                                        const oldPlaceholder = wrapper.querySelector('.edit-product-image-placeholder');
+                                        if (oldPlaceholder) oldPlaceholder.remove();
+
+                                        let preview = wrapper.querySelector('.edit-product-image-preview');
+                                        if (!preview) {
+                                            preview = document.createElement('img');
+                                            preview.className = 'edit-product-image-preview h-full w-full object-cover';
+                                            wrapper.appendChild(preview);
+                                        }
+
+                                        preview.src = URL.createObjectURL(file);
+                                    });
+                                }
+
                                 addBtn.addEventListener('click', function () {
                                     const count = container.querySelectorAll('.edit-product-item').length;
                                     if (count >= maxItems) return;
                                     const html = template.replaceAll('__INDEX__', String(nextIndex)).replaceAll('__NUMBER__', String(count + 1));
                                     container.insertAdjacentHTML('beforeend', html);
+                                     const appendedItem = container.querySelector('.edit-product-item:last-child');
+                                    if (appendedItem) {
+                                        bindImagePreview(appendedItem);
+                                    }
                                     nextIndex += 1;
                                     refresh();
                                 });
@@ -446,6 +505,9 @@
                                 });
 
                                 refresh();
+                                 container.querySelectorAll('.edit-product-item').forEach(function (item) {
+                                    bindImagePreview(item);
+                                });
                             });
                         });
                      </script>
@@ -605,7 +667,7 @@
                                                         <div class="rounded-xl border border-gray-100 p-3 flex gap-3">
                                                             <div class="w-20 h-20 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
                                                                 @if($item->reference_image)
-                                                                    <img src="{{ route('request-item.image', $item) }}" alt="{{ $item->name }}" class="w-full h-full object-cover">
+                                                                    <img src="{{ route('request-item.image', ['requestItem' => $item->id, 'v' => $item->updated_at?->timestamp ?? now()->timestamp]) }}" alt="{{ $item->name }}" class="w-full h-full object-cover">
                                                                 @else
                                                                     <i class="bi bi-image text-2xl text-gray-300"></i>
                                                                 @endif
@@ -633,14 +695,15 @@
                                     </div>
 
                                     @php
+                                        $myAgentId = Auth::id();
                                         $agentChatMessages = \App\Models\Message::query()
                                             ->where('request_list_id', $requestList->id)
-                                            ->where(function ($query) use ($requestList) {
-                                                $query->where(function ($inner) use ($requestList) {
+                                            ->where(function ($query) use ($requestList, $myAgentId) {
+                                                $query->where(function ($inner) use ($requestList, $myAgentId) {
                                                     $inner->where('sender_id', $requestList->user_id)
-                                                        ->where('receiver_id', $requestList->people);
-                                                })->orWhere(function ($inner) use ($requestList) {
-                                                    $inner->where('sender_id', $requestList->people)
+                                                        ->where('receiver_id', $myAgentId);
+                                                })->orWhere(function ($inner) use ($requestList, $myAgentId) {
+                                                    $inner->where('sender_id', $myAgentId)
                                                         ->where('receiver_id', $requestList->user_id);
                                                 });
                                             })
@@ -684,6 +747,7 @@
                                                   class="agent-request-chat-form flex items-center gap-2 border-t border-gray-200 px-4 py-3"
                                                   data-request-list-id="{{ $requestList->id }}">
                                                 @csrf
+                                                <input type="hidden" name="receiver_id" value="{{ $requestList->user_id }}">
                                                 <input type="text" name="body" class="w-full rounded-full border-gray-300 px-4 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="輸入訊息..." maxlength="2000" required>
                                                 <button type="submit" class="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">送出</button>
                                             </form>
@@ -767,7 +831,7 @@
                                                         @foreach($requestList->items as $item)
                                                             <div class="rounded-xl border border-gray-100 p-3 flex gap-4 items-start">
                                                                 @if($item->reference_image)
-                                                                    <img src="{{ route('request-item.image', $item) }}" alt="{{ $item->name }}" class="w-20 h-20 rounded-lg object-cover border border-gray-100 flex-shrink-0">
+                                                                    <img src="{{ route('request-item.image', ['requestItem' => $item->id, 'v' => $item->updated_at?->timestamp ?? now()->timestamp]) }}" alt="{{ $item->name }}" class="w-20 h-20 rounded-lg object-cover border border-gray-100 flex-shrink-0">
                                                                 @else
                                                                     <div class="w-20 h-20 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300 flex-shrink-0"><i class="bi bi-image text-2xl"></i></div>
                                                                 @endif
@@ -784,6 +848,59 @@
                                                 </div>
 
                                             </div>
+                                        </div>
+                                    </div>
+                                    @php
+                                        $myAgentId = Auth::id();
+                                        $agentChatMessages = \App\Models\Message::query()
+                                            ->where('request_list_id', $requestList->id)
+                                            ->where(function ($query) use ($requestList, $myAgentId) {
+                                                $query->where(function ($inner) use ($requestList, $myAgentId) {
+                                                    $inner->where('sender_id', $requestList->user_id)
+                                                        ->where('receiver_id', $myAgentId);
+                                                })->orWhere(function ($inner) use ($requestList, $myAgentId) {
+                                                    $inner->where('sender_id', $myAgentId)
+                                                        ->where('receiver_id', $requestList->user_id);
+                                                });
+                                            })
+                                            ->with(['sender:id,name'])
+                                            ->orderBy('created_at')
+                                            ->get();
+                                    @endphp
+                                    <div id="agent-request-chat-modal-{{ $requestList->id }}" class="agent-request-chat-modal fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4" onclick="handleAgentRequestChatBackdrop(event, {{ $requestList->id }})">
+                                        <div class="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+                                            <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+                                                <div>
+                                                    <p class="text-xs text-gray-500">請託單【{{ $requestList->title}}】</p>
+                                                    <h4 class="text-lg font-bold text-gray-800">請託人{{ $requestList->user->name ?? '使用者' }}</h4>
+                                                </div>
+                                                <button type="button" class="text-2xl text-gray-500 hover:text-gray-700" onclick="closeAgentRequestChatModal({{ $requestList->id }})" aria-label="關閉聊天室">✕</button>
+                                            </div>
+                                            <div id="agent-request-chat-messages-{{ $requestList->id }}" class="max-h-[55vh] overflow-y-auto bg-gray-50 px-5 py-4">
+                                                @forelse($agentChatMessages as $message)
+                                                    @php $isMine = (int) $message->sender_id === (int) auth()->id(); @endphp
+                                                    <div class="mb-3 flex {{ $isMine ? 'justify-end' : 'justify-start' }}">
+                                                        <div class="max-w-[75%]">
+                                                            <div class="rounded-xl border px-3 py-2 {{ $isMine ? 'bg-indigo-100 border-indigo-200' : 'bg-white border-gray-200' }}">
+                                                                <p class="text-xs text-gray-500">{{ $message->sender->name ?? '使用者' }}</p>
+                                                                <p class="mt-1 text-sm text-gray-800 break-words">{{ $message->body }}</p>
+                                                            </div>
+                                                            <p class="mt-1 text-xs text-gray-500 {{ $isMine ? 'text-right' : 'text-left' }}">{{ optional($message->created_at)->format('Y-m-d H:i') }}</p>
+                                                        </div>
+                                                    </div>
+                                                @empty
+                                                    <p class="agent-request-chat-empty py-12 text-center text-sm text-gray-400">目前尚無訊息，開始第一句對話吧。</p>
+                                                @endforelse
+                                            </div>
+                                            <form method="POST"
+                                                  action="{{ route('request-list.chat.send', $requestList) }}"
+                                                  class="agent-request-chat-form flex items-center gap-2 border-t border-gray-200 px-4 py-3"
+                                                  data-request-list-id="{{ $requestList->id }}">
+                                                @csrf
+                                                <input type="hidden" name="receiver_id" value="{{ $requestList->user_id }}">
+                                                <input type="text" name="body" class="w-full rounded-full border-gray-300 px-4 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="輸入訊息..." maxlength="2000" required>
+                                                <button type="submit" class="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">送出</button>
+                                            </form>
                                         </div>
                                     </div>
                                 @empty
@@ -866,7 +983,7 @@
                                                         @foreach($requestList->items as $item)
                                                             <div class="rounded-xl border border-gray-100 p-3 flex gap-4 items-start">
                                                                 @if($item->reference_image)
-                                                                    <img src="{{ route('request-item.image', $item) }}" alt="{{ $item->name }}" class="w-20 h-20 rounded-lg object-cover border border-gray-100 flex-shrink-0">
+                                                                    <img src="{{ route('request-item.image', ['requestItem' => $item->id, 'v' => $item->updated_at?->timestamp ?? now()->timestamp]) }}" alt="{{ $item->name }}" class="w-20 h-20 rounded-lg object-cover border border-gray-100 flex-shrink-0">
                                                                 @else
                                                                     <div class="w-20 h-20 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300 flex-shrink-0"><i class="bi bi-image text-2xl"></i></div>
                                                                 @endif
@@ -894,6 +1011,147 @@
 
                         </section>
                     </div>
+
+                    <!-- 分頁三：歷史紀錄 -->
+                   <div x-show="activeTab === 'agent-history'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4">
+    <section id="agent-history" class="bg-white rounded-2xl shadow-sm border border-amber-100 p-6" x-data="{ subTab: 'lists' }">
+        
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <div>
+                <h3 class="text-lg font-bold text-amber-600">代購歷史紀錄</h3>
+                <p class="text-sm text-gray-500">查看您已完成的代購貼文團務與請購清單紀錄。</p>
+            </div>
+            
+            <form method="GET" action="{{ route('agent.member') }}" class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <input type="hidden" name="tab" value="agent-history">
+                <input type="text" name="agent_history_search" value="{{ $agentHistorySearch ?? '' }}" placeholder="搜尋清單編號 / 貼文標題 / 買家"
+                    class="w-full sm:w-72 rounded-xl border border-gray-200 px-4 py-2 text-sm text-gray-700 focus:border-amber-300 focus:ring-amber-200 focus:outline-none">
+                <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-amber-500 text-white px-4 py-2 text-sm font-semibold hover:bg-amber-600 transition">
+                    搜尋
+                </button>
+            </form>
+        </div>
+
+        <div class="flex border-b border-gray-100 mb-6 gap-2">
+            <button @click="subTab = 'lists'" 
+                :class="subTab === 'lists' ? 'border-amber-500 text-amber-600 font-bold' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                class="pb-3 px-4 text-sm border-b-2 font-medium transition focus:outline-none">
+                已接請購清單 ({{ $agentHistoryOrders->count() }})
+            </button>
+            <button @click="subTab = 'posts'" 
+                :class="subTab === 'posts' ? 'border-amber-500 text-amber-600 font-bold' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                class="pb-3 px-4 text-sm border-b-2 font-medium transition focus:outline-none">
+                已完成代購貼文 ({{ $completedPosts->count() }})
+            </button>
+        </div>
+
+        <div x-show="subTab === 'lists'" x-transition>
+    @if($agentHistoryOrders->isEmpty())
+        <div class="rounded-2xl border border-dashed border-amber-200 bg-amber-50/30 p-12 text-center">
+            <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white text-amber-400 shadow-sm">
+                <i class="bi bi-journal-x text-2xl"></i>
+            </div>
+            <p class="text-sm text-amber-700 font-semibold">尚未有完成的請購清單紀錄。</p>
+            <p class="mt-1 text-xs text-amber-500">當您承接的請購清單順利結案後，相關明細將會呈現在這裡。</p>
+        </div>
+    @else
+        <div class="grid gap-4">
+            @foreach($agentHistoryOrders as $list)
+                <article class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm hover:border-amber-200 transition">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div class="min-w-0">
+                            <h4 class="text-base font-bold text-gray-800 truncate">{{ $list->title }}</h4>
+                            <p class="text-xs text-gray-500 mt-1">
+                                委託買家：{{ $list->user->name ?? '未知買家' }} ・ 結案日期：{{ $list->updated_at->format('Y-m-d') }}
+                            </p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                                {{ $list->status === 'completed' ? '已結案' : '處理中' }}
+                            </span>
+                            <span class="text-sm font-bold text-gray-700">NT$ {{ number_format((float)$list->agent_quote_total, 0) }}</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-gray-600">
+                        <div class="rounded-2xl bg-gray-50 p-3">
+                            <p class="text-[11px] text-gray-400">代購目的地</p>
+                            <p class="font-semibold text-gray-800 truncate mt-0.5">
+                                {{ $list->country }}{{ $list->city ? ' - '.$list->city : '' }}
+                            </p>
+                        </div>
+                        <div class="rounded-2xl bg-gray-50 p-3">
+                            <p class="text-[11px] text-gray-400">委託商品筆數</p>
+                            <p class="font-semibold text-gray-800 mt-0.5">
+                                {{ $list->items ? $list->items->count() : 0 }} 件商品
+                            </p>
+                        </div>
+                        <div class="rounded-2xl bg-gray-50 p-3">
+                            <p class="text-[11px] text-gray-400">主要購買店家</p>
+                            <p class="font-semibold text-gray-800 mt-0.5 truncate">
+                                {{ $list->store_name ?? '未指定店家' }}
+                            </p>
+                        </div>
+                    </div>
+                </article>
+            @endforeach
+        </div>
+    @endif
+</div>
+
+        <div x-show="subTab === 'posts'" x-transition>
+            @if($completedPosts->isEmpty())
+                <div class="rounded-2xl border border-dashed border-amber-200 bg-amber-50/30 p-12 text-center">
+                    <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white text-amber-400 shadow-sm">
+                        <i class="bi bi-collection text-2xl"></i>
+                    </div>
+                    <p class="text-sm text-amber-700 font-semibold">尚未有已完成的代購貼文開團紀錄。</p>
+                    <p class="mt-1 text-xs text-amber-500">當您自己發布的代購貼文結束或結案後，紀錄將會顯示於此。</p>
+                </div>
+            @else
+                <div class="grid gap-4">
+                    @foreach($completedPosts as $post)
+                        <article class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm hover:border-amber-200 transition">
+                            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                <div class="min-w-0">
+                                    <h4 class="text-base font-bold text-gray-800 truncate">{{ $post->title }}</h4>
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        開團日期：{{ $post->created_at->format('Y-m-d') }} ・ 結束結案：{{ $post->updated_at->format('Y-m-d') }}
+                                    </p>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-3">
+                                    <span class="rounded-full bg-purple-50 px-3 py-1 text-xs font-bold text-purple-700">開團已結束</span>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-gray-600">
+                                <div class="rounded-2xl bg-gray-50 p-3">
+                                    <p class="text-[11px] text-gray-400">包含商品品項</p>
+                                    <p class="font-semibold text-gray-800 mt-0.5">
+                                        {{ $post->postProducts ? $post->postProducts->count() : 0 }} 個商品
+                                    </p>
+                                </div>
+                                <div class="rounded-2xl bg-gray-50 p-3">
+                                    <p class="text-[11px] text-gray-400">總收單筆數</p>
+                                    <p class="font-semibold text-gray-800 mt-0.5">
+                                        {{ $post->requestLists ? $post->requestLists->count() : 0 }} 筆請購委託
+                                    </p>
+                                </div>
+                                <div class="rounded-2xl bg-gray-50 p-3">
+                                    <p class="text-[11px] text-gray-400">國家/來源</p>
+                                    <p class="font-semibold text-gray-800 mt-0.5">
+                                        {{ $post->country ?? '未標記區域' }}
+                                    </p>
+                                </div>
+                            </div>
+                        </article>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+
+    </section>
+</div>
 
                     <!-- 分頁三：代購商品管理 -->
                     <div x-show="activeTab === 'product-management'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4">
@@ -929,6 +1187,7 @@
                                         ->where('seller_id', Auth::id())
                                         ->where('source_type', \App\Models\AgentPost::class)
                                         ->whereIn('source_id', $managedPostIds)
+                                        ->whereNotIn('status', ['cancelled', 'refunded'])
                                         ->with([
                                             'buyer:id,name',
                                             'items:id,order_id,product_id,quantity',
@@ -944,6 +1203,7 @@
                                                     'buyer_id' => (int) $order->buyer_id,
                                                     'buyer_name' => optional($order->buyer)->name ?? '未知會員',
                                                     'quantity' => (int) $item->quantity,
+                                                    'paid_at' => $order->paid_at,
                                                 ];
                                             });
                                         })
@@ -964,8 +1224,10 @@
                                                 ->groupBy('buyer_id')
                                                 ->map(function ($buyerRows) {
                                                     return [
+                                                        'buyer_id'   => $buyerRows->first()['buyer_id'] ?? 0,
                                                         'buyer_name' => $buyerRows->first()['buyer_name'] ?? '未知會員',
                                                         'quantity' => (int) $buyerRows->sum('quantity'),
+                                                        'paid_at' => $buyerRows->first()['paid_at'],
                                                     ];
                                                 })
                                                 ->values();
@@ -991,13 +1253,28 @@
                                                     代購期間：{{ optional(optional($post)->start_date)->format('Y/m/d') ?? '-' }} - {{ optional(optional($post)->end_date)->format('Y/m/d') ?? '-' }}
                                                 </div>
                                             </div>
-                                            <div class="flex items-center gap-2">
+                                            <div class="flex items-center gap-2 flex-wrap justify-end">
                                                 <span class="inline-flex text-[10px] font-bold px-2 py-0.5 rounded {{ $statusClasses }}">{{ $statusLabel }}</span>
                                                 <button type="button"
                                                     class="inline-flex items-center px-3 py-1.5 text-xs font-bold text-blue-600 bg-white border border-blue-200 rounded-lg hover:bg-blue-100 transition"
                                                     @click="showPostDetails = !showPostDetails"
                                                     x-text="showPostDetails ? '收合檢視' : '檢視貼文'">
                                                 </button>
+                                                <button type="button"
+                                                    class="inline-flex items-center px-3 py-1.5 text-xs font-bold text-amber-600 bg-white border border-amber-200 rounded-lg hover:bg-amber-50 transition"
+                                                    onclick="document.getElementById('manage-modal-{{ $post->id }}').classList.remove('hidden'); document.getElementById('manage-modal-{{ $post->id }}').classList.add('flex');">
+                                                    管理
+                                                </button>
+                                                @if($post->status === 'open')
+                                                <form method="POST" action="{{ route('agent.posts.ship', $post->id) }}" class="inline" onsubmit="return confirm('確定要將此貼文標記為已出貨？')">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button type="submit"
+                                                        class="inline-flex items-center px-3 py-1.5 text-xs font-bold text-white bg-emerald-500 border border-emerald-500 rounded-lg hover:bg-emerald-600 transition">
+                                                        出貨
+                                                    </button>
+                                                </form>
+                                                @endif
                                             </div>
                                         </div>
 
@@ -1028,20 +1305,30 @@
                                                                 $remainingQty = is_null($product->max_quantity)
                                                                     ? '無限制'
                                                                     : max(0, (int) $product->max_quantity - $orderedTotal);
+                                                                $followers = $productFollowers->get((int) $product->id, collect());
+                                                                $totalOrdered = $followers->sum(function($f) { return $f['quantity']; });
                                                             @endphp
                                                             <div class="text-xs text-gray-500 mt-1">
                                                                 單價：NT$ {{ number_format((float) $product->price, 0) }}
                                                                 ・ 上限：{{ $product->max_quantity ?? '無限制' }}
+                                                                ・ 目前跟單總數：<span class="text-indigo-600 font-bold">{{ $totalOrdered }}</span>
                                                                 ・ 剩餘可跟單：{{ $remainingQty }}
                                                             </div>
-                                                            @php
-                                                                $followers = $productFollowers->get((int) $product->id, collect());
-                                                            @endphp
                                                             <div class="mt-2 text-xs text-gray-600">
-                                                                <div class="font-semibold text-gray-700 mb-1">跟單紀錄：</div>
+                                                                <div class="font-semibold text-gray-700 mb-1">
+                                                                    跟單紀錄：
+                                                                    @if($followers->count() > 0)
+                                                                        <span class="ml-1 text-indigo-600 font-bold">共 {{ $followers->count() }} 人</span>
+                                                                    @endif
+                                                                </div>
                                                                 @forelse($followers as $follower)
-                                                                    <div class="mb-0.5">
-                                                                        {{ $follower['buyer_name'] }}：{{ $follower['quantity'] }} 件
+                                                                    <div class="mb-1 flex items-center gap-2">
+                                                                        <span>{{ $follower['buyer_name'] }}：{{ $follower['quantity'] }} 件</span>
+                                                                        @if(!empty($follower['paid_at']))
+                                                                            <span class="inline-flex items-center rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5 text-[10px] font-bold">已付款</span>
+                                                                        @else
+                                                                            <span class="inline-flex items-center rounded-full bg-red-50 text-red-500 px-2 py-0.5 text-[10px] font-bold">未付款</span>
+                                                                        @endif
                                                                     </div>
                                                                 @empty
                                                                     <div class="text-gray-400">目前尚無人跟單</div>
@@ -1050,6 +1337,63 @@
                                                         </div>
                                                     </div>
                                                 @endforeach
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {{-- 管理 Modal --}}
+                                    <div id="manage-modal-{{ $post->id }}" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 px-4"
+                                         onclick="if(event.target===this){this.classList.add('hidden');this.classList.remove('flex');}">
+                                        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl max-h-[88vh] overflow-y-auto">
+                                            <div class="flex items-center justify-between border-b px-6 py-4">
+                                                <h4 class="text-lg font-bold text-gray-800">管理跟單 - {{ $post->title }}</h4>
+                                                <button type="button" class="text-2xl text-gray-400 hover:text-gray-600"
+                                                    onclick="document.getElementById('manage-modal-{{ $post->id }}').classList.add('hidden');document.getElementById('manage-modal-{{ $post->id }}').classList.remove('flex');">&times;</button>
+                                            </div>
+                                            <div class="px-6 py-4 space-y-4">
+                                                @foreach($managedPostGroups->get($post->id ?? 0, collect()) as $product)
+                                                    @php $mFollowers = $productFollowers->get((int) $product->id, collect()); @endphp
+                                                    @if($mFollowers->count() > 0)
+                                                        <div class="rounded-xl border border-gray-100 p-4">
+                                                            <p class="font-bold text-gray-800 mb-3 text-sm">{{ $product->name }}</p>
+                                                            <div class="space-y-2">
+                                                                @foreach($mFollowers as $follower)
+                                                                    @php
+                                                                        $followerOrder = \App\Models\Order::where('seller_id', Auth::id())
+                                                                            ->where('source_id', $post->id)
+                                                                            ->where('buyer_id', $follower['buyer_id'] ?? 0)
+                                                                            ->where('status', 'pending_payment')
+                                                                            ->first();
+                                                                    @endphp
+                                                                    <div class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-2">
+                                                                        <div class="flex items-center gap-3">
+                                                                            <span class="text-sm text-gray-800">{{ $follower['buyer_name'] }}</span>
+                                                                            <span class="text-xs text-gray-500">{{ $follower['quantity'] }} 件</span>
+                                                                            @if(!empty($follower['paid_at']))
+                                                                                <span class="text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5">已付款</span>
+                                                                            @else
+                                                                                <span class="text-[10px] font-bold rounded-full bg-red-50 text-red-500 px-2 py-0.5">未付款</span>
+                                                                            @endif
+                                                                        </div>
+                                                                        @if($followerOrder && empty($follower['paid_at']))
+                                                                            <form method="POST" action="{{ route('agent.orders.cancel', $followerOrder->id) }}"
+                                                                                  onsubmit="return confirm('確定要取消 {{ $follower['buyer_name'] }} 的訂單？數量將會回補。')">
+                                                                                @csrf
+                                                                                @method('DELETE')
+                                                                                <button type="submit" class="text-xs text-red-500 hover:text-red-700 font-semibold">取消訂單</button>
+                                                                            </form>
+                                                                        @elseif(!empty($follower['paid_at']))
+                                                                            <span class="text-xs text-gray-400">已付款不可取消</span>
+                                                                        @endif
+                                                                    </div>
+                                                                @endforeach
+                                                            </div>
+                                                        </div>
+                                                    @endif
+                                                @endforeach
+                                                @if($managedPostGroups->get($post->id ?? 0, collect())->every(fn($p) => $productFollowers->get((int)$p->id, collect())->count() === 0))
+                                                    <p class="text-gray-400 text-sm text-center py-6">目前尚無人跟單。</p>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>

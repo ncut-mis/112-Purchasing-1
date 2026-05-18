@@ -40,7 +40,8 @@ class RequestListChatController extends Controller
  
         // 只有請託人或承接代購人才能進入
         $isBuyer = (int) $requestList->user_id === $user->id;
-        $isAgent = !is_null($agentId) && $agentId === (int) $user->id;
+        $eligibleAgentIds = $this->resolveEligibleAgentIds($requestList);
+        $isAgent = in_array((int) $user->id, $eligibleAgentIds, true);
  
         if (!$isBuyer && !$isAgent) {
             abort(403, '您沒有權限查看此聊天室。');
@@ -84,7 +85,8 @@ class RequestListChatController extends Controller
         $agentId = $this->resolveAgentId($requestList);
  
         $isBuyer = (int) $requestList->user_id === $user->id;
-        $isAgent = !is_null($agentId) && $agentId === (int) $user->id;
+        $eligibleAgentIds = $this->resolveEligibleAgentIds($requestList);
+        $isAgent = in_array((int) $user->id, $eligibleAgentIds, true);
  
         if (!$isBuyer && !$isAgent) {
             abort(403);
@@ -95,7 +97,6 @@ class RequestListChatController extends Controller
         $receiverId = null;
         if ($isBuyer) {
             $requestedReceiverId = (int) $request->input('receiver_id', 0);
-            $eligibleAgentIds = $this->resolveEligibleAgentIds($requestList);
             $receiverId = in_array($requestedReceiverId, $eligibleAgentIds, true)
                 ? $requestedReceiverId
                 : $agentId;

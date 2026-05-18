@@ -28,7 +28,7 @@
                             截止：{{ optional($requestList->deadline)->format('Y/m/d') ?? '-' }}
                             &nbsp;·&nbsp;
                             <span class="badge bg-{{ $requestList->status === 'matched' ? 'success' : 'warning text-dark' }} rounded-pill">
-                                {{ ['pending' => '待接單', 'offered' => '已報價', 'matched' => '已確認', 'completed' => '已完成'][$requestList->status] ?? $requestList->status }}
+                                 {{ ['pending' => '待接單', 'offered' => '已報價', 'matched' => '已確認', 'wait-for-ship' => '等待出貨', 'shipped' => '已出貨', 'arrivaled' => '已到貨', 'expired' => '已過期'][$requestList->status] ?? $requestList->status }}
                             </span>
                         </div>
                     </div>

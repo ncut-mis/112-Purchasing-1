@@ -2,7 +2,7 @@
 
 @section('content')
 
-<!-- Hero Header (參考 Tiya 的 Hero Section) -->
+<!-- Hero Header -->
 <section class="hero-section position-relative d-flex align-items-center" style="min-height: 500px; background: linear-gradient(135deg, #e0f7fa 0%, #f3f7f5 100%);">
     <div class="container">
         <div class="row align-items-center">
@@ -16,11 +16,11 @@
                 </p>
                 <div class="flex gap-3">
                     <form action="{{ route('agent.posts.search') }}" method="GET" class="d-flex gap-3 align-items-end">
-                        <input type="text" 
-                            name="search" 
-                            class="form-control shadow-sm" 
-                            placeholder="輸入代購關鍵字（如 iPhone）" 
-                            value="{{ request('q') }}" 
+                        <input type="text"
+                            name="search"
+                            class="form-control shadow-sm"
+                            placeholder="輸入代購關鍵字（如 iPhone）"
+                            value="{{ request('q') }}"
                             style="width: 300px;">
                             <select name="country" class="form-select shadow-sm" style="width: 150px;">
                             <option value="">所有國家</option>
@@ -37,15 +37,17 @@
                 </div>
             </div>
             <div class="col-lg-6 text-center d-none d-lg-block">
-                <!-- 這裡使用假圖，實際上可以放一張漂亮的插畫 -->
                 <img src="https://images.unsplash.com/photo-1483985988355-763728e1935b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Shopping" class="img-fluid rounded-4 shadow-lg" style="transform: rotate(-3deg);">
             </div>
         </div>
     </div>
 </section>
 
-<!-- 【熱門代購團區塊】：加入 Alpine.js 控制延伸 -->
-<section class="py-5 bg-white" x-data="{ expanded: false }">
+{{-- =====================================================================
+     【熱門代購團區塊】
+     修改：圖片區改為 Bootstrap Carousel 滑動式顯示所有商品圖片
+     ===================================================================== --}}
+<section class="py-5 bg-white">
     <div class="container">
         <div class="mb-5 text-center text-md-start">
             <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-2 mb-1">
@@ -57,28 +59,93 @@
         </div>
 
         <div class="row g-4">
-            {{-- 預設抓取前 9 筆，利用 Alpine.js 控制顯示數量 --}}
-            @forelse($agentPosts->take(9) as $index => $popPost)
-                <div class="col-md-6 col-lg-4" 
-                     x-show="expanded || {{ $index }} < 3" 
-                     x-transition:enter="transition ease-out duration-500"
-                     x-transition:enter-start="opacity-0 translate-y-4"
-                     x-transition:enter-end="opacity-100 translate-y-0">
+            @forelse(($hotPosts ?? collect()) as $index => $popPost)
+                @php
+                    // 取得該貼文所有商品的圖片 URL，過濾掉空值
+                    $popImages = $popPost->products
+                        ->map(fn($p) => $p->display_image_url)
+                        ->filter()
+                        ->values();
+                @endphp
+
+                @php
+                    $scoreBadgeColors = [
+                        0 => '#d4af37',
+                        1 => '#9ca3af',
+                        2 => '#b87333',
+                    ];
+                    $scoreBadgeColor = $scoreBadgeColors[$index] ?? '#ffffff';
+                    $scoreTextColor = $index < 3 ? '#1f2937' : '#374151';
+                @endphp
+                <div class="col-md-6 col-lg-4">
                     <div class="card h-100 border-0 shadow-lg rounded-4 overflow-hidden position-relative hover-lift transition">
+
+                        {{-- 圖片區：改為 Carousel 滑動式 --}}
                         <div class="position-relative" style="height: 240px;">
-                            @php
-                                $firstPopImg = $popPost->products->first()?->display_image_url;
-                            @endphp
-                            <img src="{{ $firstPopImg ?? ($popPost->cover_image ? asset('storage/' . $popPost->cover_image) : 'https://via.placeholder.com/400x240?text=GlobalBuy') }}" class="w-100 h-100 object-fit-cover">
-                            <div class="position-absolute top-0 start-0 m-3">
+
+                            {{-- HOT 徽章 --}}
+                            <div class="position-absolute top-0 start-0 m-3" style="z-index: 10;">
                                 <span class="badge bg-danger shadow-sm rounded-pill px-3 py-2">
                                     <i class="bi bi-fire me-1"></i> HOT
                                 </span>
                             </div>
-                            <span class="position-absolute bottom-0 start-0 m-3 badge bg-white/90 backdrop-blur-sm text-dark shadow-sm rounded-pill px-3">
+
+                            <div class="position-absolute top-0 end-0 m-3" style="z-index: 10;">
+                                <span class="badge rounded-pill px-3 py-2 border shadow-sm"
+                                      style="background-color: {{ $scoreBadgeColor }}; color: {{ $scoreTextColor }};">
+                                    熱門分數:{{ (int) ($popPost->hot_score ?? 0) }}分
+                                </span>
+                            </div>
+
+                            {{-- 國家徽章 --}}
+                            <span class="position-absolute bottom-0 start-0 m-3 badge bg-white text-dark shadow-sm rounded-pill px-3" style="z-index: 10;">
                                 {{ $popPost->country }}
                             </span>
+
+                            @if($popImages->isNotEmpty())
+                                <div id="carouselHot{{ $popPost->id }}" class="carousel slide h-100" data-bs-ride="carousel">
+                                    <div class="carousel-inner h-100">
+                                        @foreach($popImages as $imgUrl)
+                                            <div class="carousel-item h-100 {{ $loop->first ? 'active' : '' }}">
+                                                <img src="{{ $imgUrl }}"
+                                                     class="w-100 h-100 object-fit-cover"
+                                                     alt="{{ $popPost->title }} 商品圖片 {{ $loop->index + 1 }}">
+                                            </div>
+                                        @endforeach
+                                    </div>
+
+                                    @if($popImages->count() > 1)
+                                        {{-- 指示點 --}}
+                                        <div class="carousel-indicators mb-1">
+                                            @foreach($popImages as $i => $url)
+                                                <button type="button"
+                                                        data-bs-target="#carouselHot{{ $popPost->id }}"
+                                                        data-bs-slide-to="{{ $i }}"
+                                                        class="{{ $i === 0 ? 'active' : '' }}"
+                                                        aria-label="圖片 {{ $i + 1 }}"></button>
+                                            @endforeach
+                                        </div>
+                                        {{-- 左右箭頭 --}}
+                                        <button class="carousel-control-prev" type="button"
+                                                data-bs-target="#carouselHot{{ $popPost->id }}" data-bs-slide="prev">
+                                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                            <span class="visually-hidden">Previous</span>
+                                        </button>
+                                        <button class="carousel-control-next" type="button"
+                                                data-bs-target="#carouselHot{{ $popPost->id }}" data-bs-slide="next">
+                                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                            <span class="visually-hidden">Next</span>
+                                        </button>
+                                    @endif
+                                </div>
+                            @else
+                                {{-- 無圖片佔位符 --}}
+                                <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-light text-secondary">
+                                    <i class="bi bi-image fs-1"></i>
+                                </div>
+                            @endif
                         </div>
+
                         <div class="card-body p-4">
                             <h5 class="fw-bold mb-2 text-truncate">{{ $popPost->title }}</h5>
                             <p class="text-muted small mb-4 line-clamp-2">
@@ -102,11 +169,14 @@
                 </div>
             @endforelse
         </div>
+    </div>
+</section>
 
 
-
-
-<!-- Agent Posts Section (最新代購團) -->
+{{-- =====================================================================
+     【最新代購團區塊】
+     修改：圖片區改為 Bootstrap Carousel 滑動式顯示所有商品圖片
+     ===================================================================== --}}
 <section class="py-5">
     <div class="container">
         @if(session('status'))
@@ -120,24 +190,22 @@
                 {{ $errors->first('follow_order') }}
             </div>
         @endif
+
         @if(request()->filled('search') || request()->filled('country'))
             <div class="alert alert-info rounded-4 mb-4 border-0 shadow-sm">
                 <div class="d-flex align-items-center flex-wrap gap-2">
-                    {{-- 商品搜尋標籤 --}}
                     @if(request()->filled('search'))
                     <span class="badge bg-primary rounded-pill px-3 py-2">
                         <i class="bi bi-search me-1"></i>{{ request('search') }}
                     </span>
                     @endif
-                    
-                    {{-- 國家篩選標籤 --}}
+
                     @if(request()->filled('country'))
                     <span class="badge bg-success rounded-pill px-3 py-2">
                         <i class="bi bi-geo-alt me-1"></i>{{ request('country') }}
                     </span>
                     @endif
-                    
-                    {{-- 清除按鈕 --}}
+
                     <div class="ms-auto">
                         <a href="{{ route('agent.posts.search') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
                             <i class="bi bi-x-circle me-1"></i>清除
@@ -146,54 +214,102 @@
                 </div>
             </div>
         @else
-            {{-- 原本的最新代購標題 --}}
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h6 class="text-success fw-bold text-uppercase mb-1">Agent Posts</h6>
                     <h2 class="fw-bold">最新代購團</h2>
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    {{-- 連結名稱改為「查看全部代購人」會更精準 --}}
-                    <a href="{{ route('store.index') }}" class="text-decoration-none text-muted">
-                        查看全部 <i class="bi bi-arrow-right"></i>
-                    </a>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <a href="{{ route('store.index') }}" class="text-decoration-none text-muted">
+                            查看全部 <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
                 </div>
+            </div>
         @endif
 
-
         <div class="row g-4">
-             @forelse($agentPosts as $agentPost)
+            @forelse($agentPosts as $agentPost)
+                @php
+                    // 取得該貼文所有商品的圖片 URL，過濾掉空值
+                    $latestImages = $agentPost->products
+                        ->map(fn($p) => $p->display_image_url)
+                        ->filter()
+                        ->values();
+
+                    $isFavorited = in_array((int) $agentPost->id, $favoritedAgentPostIds ?? [], true);
+                    $isOwner = auth()->check() && (int) auth()->id() === (int) $agentPost->user_id;
+                @endphp
+
                 <div class="col-md-6 col-lg-4">
-                      <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+
+                        {{-- 圖片區：改為 Carousel 滑動式 --}}
                         <div class="position-relative" style="height: 210px;">
-                            @php
-                               $firstProduct = $agentPost->products->first();
-                                $firstProductImageUrl = optional($firstProduct)->display_image_url;
-                            @endphp
-                            @if($firstProductImageUrl)
-                                <img src="{{ $firstProductImageUrl }}" alt="{{ $agentPost->title }} 商品圖片" class="w-100 h-100 object-fit-cover">
+
+                            {{-- 地區徽章 --}}
+                            <span class="position-absolute top-0 start-0 m-3 badge rounded-pill bg-dark-subtle text-dark" style="z-index: 10;">
+                                {{ $agentPost->country }}{{ $agentPost->city ? '・' . $agentPost->city : '' }}
+                            </span>
+
+                            {{-- 狀態徽章 --}}
+                            <span class="position-absolute top-0 end-0 m-3 badge rounded-pill bg-success" style="z-index: 10;">
+                                {{ $agentPost->status === 'open' ? '接單中' : $agentPost->status }}
+                            </span>
+
+                            @if($latestImages->isNotEmpty())
+                                <div id="carouselLatest{{ $agentPost->id }}" class="carousel slide h-100" data-bs-ride="carousel">
+                                    <div class="carousel-inner h-100">
+                                        @foreach($latestImages as $imgUrl)
+                                            <div class="carousel-item h-100 {{ $loop->first ? 'active' : '' }}">
+                                                <img src="{{ $imgUrl }}"
+                                                     class="w-100 h-100 object-fit-cover"
+                                                     alt="{{ $agentPost->title }} 商品圖片 {{ $loop->index + 1 }}">
+                                            </div>
+                                        @endforeach
+                                    </div>
+
+                                    @if($latestImages->count() > 1)
+                                        {{-- 指示點 --}}
+                                        <div class="carousel-indicators mb-1">
+                                            @foreach($latestImages as $i => $url)
+                                                <button type="button"
+                                                        data-bs-target="#carouselLatest{{ $agentPost->id }}"
+                                                        data-bs-slide-to="{{ $i }}"
+                                                        class="{{ $i === 0 ? 'active' : '' }}"
+                                                        aria-label="圖片 {{ $i + 1 }}"></button>
+                                            @endforeach
+                                        </div>
+                                        {{-- 左右箭頭 --}}
+                                        <button class="carousel-control-prev" type="button"
+                                                data-bs-target="#carouselLatest{{ $agentPost->id }}" data-bs-slide="prev">
+                                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                            <span class="visually-hidden">Previous</span>
+                                        </button>
+                                        <button class="carousel-control-next" type="button"
+                                                data-bs-target="#carouselLatest{{ $agentPost->id }}" data-bs-slide="next">
+                                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                            <span class="visually-hidden">Next</span>
+                                        </button>
+                                    @endif
+                                </div>
                             @elseif($agentPost->cover_image)
-                                <img src="{{ asset('storage/' . $agentPost->cover_image) }}" alt="{{ $agentPost->title }}" class="w-100 h-100 object-fit-cover">
+                                {{-- fallback：貼文封面圖 --}}
+                                <img src="{{ asset('storage/' . $agentPost->cover_image) }}"
+                                     alt="{{ $agentPost->title }}"
+                                     class="w-100 h-100 object-fit-cover">
                             @else
+                                {{-- 無圖片佔位符 --}}
                                 <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-light text-secondary">
                                     <i class="bi bi-image fs-1"></i>
                                 </div>
                             @endif
-                            <span class="position-absolute top-0 start-0 m-3 badge rounded-pill bg-dark-subtle text-dark">
-                                {{ $agentPost->country }}{{ $agentPost->city ? '・' . $agentPost->city : '' }}
-                            </span>
-                            <span class="position-absolute top-0 end-0 m-3 badge rounded-pill bg-success">
-                                {{ $agentPost->status === 'open' ? '接單中' : $agentPost->status }}
-                            </span>
                         </div>
 
                         <div class="card-body p-4 d-flex flex-column">
-                             <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                            <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
                                 <h5 class="card-title fw-bold mb-0 flex-grow-1">{{ $agentPost->title }}</h5>
-                                @php
-                                    $isFavorited = in_array((int) $agentPost->id, $favoritedAgentPostIds ?? [], true);
-                                    $isOwner = auth()->check() && (int) auth()->id() === (int) $agentPost->user_id;
-                                @endphp
                                 <div class="d-flex gap-2">
+                                    {{-- 檢舉按鈕 --}}
                                     <button
                                         type="button"
                                         class="agent-post-report-btn rounded-circle d-inline-flex align-items-center justify-content-center border-0 shadow-sm flex-shrink-0"
@@ -203,10 +319,11 @@
                                         @disabled($isOwner)
                                         title="{{ $isOwner ? '不能檢舉自己的代購團' : '檢舉代購團' }}"
                                     >
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#ef4444" class="w-5 h-5" style="width: 1.2rem; height: 1.2rem; filter: drop-shadow(0 0 1px rgba(0,0,0,0.1));">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#ef4444" style="width: 1.2rem; height: 1.2rem; filter: drop-shadow(0 0 1px rgba(0,0,0,0.1));">
                                             <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
                                         </svg>
                                     </button>
+                                    {{-- 收藏按鈕 --}}
                                     <button
                                         type="button"
                                         class="favorite-toggle rounded-circle d-inline-flex align-items-center justify-content-center border-0 shadow-sm flex-shrink-0"
@@ -217,13 +334,14 @@
                                         @disabled($isOwner)
                                         title="{{ $isOwner ? '不能收藏自己的代購團' : '收藏代購團' }}"
                                     >
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5" style="width: 1.1rem; height: 1.1rem;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 1.1rem; height: 1.1rem;">
                                             <path d="M12.001 4.529c2.349-2.532 6.15-2.533 8.498-.001 2.41 2.6 2.41 6.815 0 9.416l-7.66 8.266a1.14 1.14 0 0 1-1.677 0l-7.66-8.266c-2.41-2.601-2.41-6.817 0-9.416 2.348-2.532 6.149-2.531 8.499.001Z"/>
                                         </svg>
                                     </button>
                                 </div>
                             </div>
 
+                            {{-- 展開詳細資訊按鈕 --}}
                             <button
                                 type="button"
                                 class="btn btn-light border rounded-pill d-inline-flex align-items-center justify-content-center gap-2 fw-semibold text-secondary agent-post-toggle-btn"
@@ -237,7 +355,7 @@
 
                             <div id="agent-post-details-{{ $agentPost->id }}" class="agent-post-details d-none mt-4 pt-2">
                                 <div class="border-top pt-4">
-                                     <div class="mb-3">
+                                    <div class="mb-3">
                                         <div class="small text-uppercase text-muted fw-bold mb-2">商品資訊（名稱 / 單價 / 目前可下單上限）</div>
                                         <div class="d-flex flex-column gap-2">
                                             @forelse($agentPost->products as $product)
@@ -271,14 +389,13 @@
                                     </div>
 
                                     <div class="mt-auto d-flex justify-content-between align-items-center pt-3 border-top">
-                                    <div class="d-flex align-items-center">
-                                        <img src="https://ui-avatars.com/api/?name={{ urlencode(optional($agentPost->user)->name ?? 'Agent') }}&background=random" class="rounded-circle me-2" width="32" height="32" alt="Avatar">
-                                        <div>
-                                            <div class="small fw-semibold text-dark">{{ optional($agentPost->user)->name ?? '匿名代購人' }}</div>
-                                            <div class="small text-muted">已建立於 {{ optional($agentPost->created_at)->format('Y/m/d') }}</div>
+                                        <div class="d-flex align-items-center">
+                                            <img src="https://ui-avatars.com/api/?name={{ urlencode(optional($agentPost->user)->name ?? 'Agent') }}&background=random" class="rounded-circle me-2" width="32" height="32" alt="Avatar">
+                                            <div>
+                                                <div class="small fw-semibold text-dark">{{ optional($agentPost->user)->name ?? '匿名代購人' }}</div>
+                                                <div class="small text-muted">已建立於 {{ optional($agentPost->created_at)->format('Y/m/d') }}</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                      {{-- 判斷登入狀態與身份 --}}
                                         @auth
                                             @if((int) auth()->id() === (int) $agentPost->user_id)
                                                 <button class="btn btn-sm rounded-pill px-3 btn-secondary disabled">無法跟單</button>
@@ -286,26 +403,26 @@
                                                 <button type="button" class="btn btn-sm btn-primary-custom rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#followOrderModal-{{ $agentPost->id }}">我要跟單</button>
                                             @endif
                                         @else
-                                            {{-- 未登入時：改為超連結跳轉 --}}
                                             <a href="{{ route('login') }}" class="btn btn-sm btn-primary-custom rounded-pill px-3">
                                                 我要跟單
                                             </a>
                                         @endauth
-                                </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-<div class="modal fade" id="followOrderModal-{{ $agentPost->id }}" tabindex="-1" aria-hidden="true">
+                {{-- 跟單 Modal --}}
+                <div class="modal fade" id="followOrderModal-{{ $agentPost->id }}" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog modal-lg modal-dialog-centered">
                         <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
                             <div class="modal-header border-0 bg-light py-3 px-4">
                                 <h5 class="modal-title fw-bold text-dark"><i class="bi bi-cart-plus me-2 text-primary"></i>確認跟單商品</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
-                            
+
                             <form action="{{ route('orders.store', $agentPost) }}" method="POST" class="follow-order-form">
                                 @csrf
                                 <div class="modal-body p-4">
@@ -330,64 +447,63 @@
 
                                     <div class="table-responsive">
                                         <table class="table align-middle">
-    <thead class="bg-light">
-        <tr class="small text-muted border-0">
-            <th class="border-0 ps-0" style="width: 70px;">圖片</th>
-            <th class="border-0">商品名稱</th>
-            <th class="border-0 text-center">可下單數量</th> 
-            <th class="border-0 text-center">單價</th>
-            <th class="border-0 text-center" style="width: 140px;">數量</th>
-            <th class="border-0 text-end pe-0">小計</th>
-        </tr>
-    </thead>
-   <tbody>
-    @foreach($agentPost->products as $product)
-        @php
-            // 計算真正的剩餘數量：最大數量 - 已售數量
-            $max = $product->max_quantity ?? 0;
-            $sold = $product->sold_quantity ?? 0;
-            $remaining = $max - $sold; 
-        @endphp
-        <tr class="product-row" data-price="{{ $product->price }}">
-            <td class="ps-0">
-                <img src="{{ $product->display_image_url ?? 'https://via.placeholder.com/60' }}" 
-                     class="rounded-3 object-fit-cover shadow-sm" width="55" height="55">
-            </td>
-            <td>
-                <div class="fw-bold text-dark mb-0">{{ $product->name }}</div>
-            </td>
-            <td class="text-center">
-                <span class="badge {{ $remaining > 0 ? 'bg-info-subtle text-info' : 'bg-danger-subtle text-danger' }} rounded-pill">
-                    {{ $remaining > 0 ? '還有 ' . $remaining : '已售罄' }}
-                </span>
-            </td>
-            <td class="text-center fw-semibold text-muted">
-                ${{ number_format($product->price) }}
-            </td>
-            <td>
-                <div class="input-group input-group-sm border rounded-pill overflow-hidden bg-white mx-auto" style="max-width: 110px;">
-                    <button class="btn btn-link text-decoration-none border-0 px-2 qty-minus" type="button" {{ $remaining <= 0 ? 'disabled' : '' }}>
-                        <i class="bi bi-dash-lg"></i>
-                    </button>
-                    <input type="number" name="products[{{ $product->id }}][quantity]" 
-                           class="form-control border-0 text-center bg-transparent qty-input" 
-                           value="0" 
-                           min="0" 
-                           max="{{ $remaining }}" 
-                           {{ $remaining <= 0 ? 'disabled' : '' }}
-                           style="box-shadow: none;">
-                    <button class="btn btn-link text-decoration-none border-0 px-2 qty-plus" type="button" {{ $remaining <= 0 ? 'disabled' : '' }}>
-                        <i class="bi bi-plus-lg"></i>
-                    </button>
-                </div>
-            </td>
-            <td class="text-end pe-0 fw-bold text-primary subtotal">
-                $0
-            </td>
-        </tr>
-    @endforeach
-</tbody>
-</table>
+                                            <thead class="bg-light">
+                                                <tr class="small text-muted border-0">
+                                                    <th class="border-0 ps-0" style="width: 70px;">圖片</th>
+                                                    <th class="border-0">商品名稱</th>
+                                                    <th class="border-0 text-center">可下單數量</th>
+                                                    <th class="border-0 text-center">單價</th>
+                                                    <th class="border-0 text-center" style="width: 140px;">數量</th>
+                                                    <th class="border-0 text-end pe-0">小計</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($agentPost->products as $product)
+                                                    @php
+                                                        $max = $product->max_quantity ?? 0;
+                                                        $sold = $product->sold_quantity ?? 0;
+                                                        $remaining = $max - $sold;
+                                                    @endphp
+                                                    <tr class="product-row" data-price="{{ $product->price }}">
+                                                        <td class="ps-0">
+                                                            <img src="{{ $product->display_image_url ?? 'https://via.placeholder.com/60' }}"
+                                                                 class="rounded-3 object-fit-cover shadow-sm" width="55" height="55">
+                                                        </td>
+                                                        <td>
+                                                            <div class="fw-bold text-dark mb-0">{{ $product->name }}</div>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <span class="badge {{ $remaining > 0 ? 'bg-info-subtle text-info' : 'bg-danger-subtle text-danger' }} rounded-pill">
+                                                                {{ $remaining > 0 ? '還有 ' . $remaining : '已售罄' }}
+                                                            </span>
+                                                        </td>
+                                                        <td class="text-center fw-semibold text-muted">
+                                                            ${{ number_format($product->price) }}
+                                                        </td>
+                                                        <td>
+                                                            <div class="input-group input-group-sm border rounded-pill overflow-hidden bg-white mx-auto" style="max-width: 110px;">
+                                                                <button class="btn btn-link text-decoration-none border-0 px-2 qty-minus" type="button" {{ $remaining <= 0 ? 'disabled' : '' }}>
+                                                                    <i class="bi bi-dash-lg"></i>
+                                                                </button>
+                                                                <input type="number" name="products[{{ $product->id }}][quantity]"
+                                                                       class="form-control border-0 text-center bg-transparent qty-input"
+                                                                       value="0"
+                                                                       min="0"
+                                                                       max="{{ $remaining }}"
+                                                                       {{ $remaining <= 0 ? 'disabled' : '' }}
+                                                                       style="box-shadow: none;">
+                                                                <button class="btn btn-link text-decoration-none border-0 px-2 qty-plus" type="button" {{ $remaining <= 0 ? 'disabled' : '' }}>
+                                                                    <i class="bi bi-plus-lg"></i>
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                        <td class="text-end pe-0 fw-bold text-primary subtotal">
+                                                            $0
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
 
@@ -406,7 +522,7 @@
                     </div>
                 </div>
 
-                <!-- 檢舉貼文 Modal -->
+                {{-- 檢舉貼文 Modal --}}
                 <div class="modal fade" id="reportAgentPostModal-{{ $agentPost->id }}" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
@@ -414,13 +530,10 @@
                                 <h5 class="modal-title fw-bold text-dark"><i class="bi bi-exclamation-triangle me-2 text-danger"></i>檢舉代購團</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
-                            
-                           <form class="report-form" data-target-type="agent_post" data-target-id="{{ $agentPost->id }}">
+
+                            <form class="report-form" data-target-type="agent_post" data-target-id="{{ $agentPost->id }}">
                                 @csrf
                                 <div class="modal-body p-4">
-
-                                    
-                                    <!-- 檢舉違規類型 -->
                                     <div class="mb-4">
                                         <label for="reportType-{{ $agentPost->id }}" class="form-label fw-bold text-dark mb-2">
                                             <i class="bi bi-list-check text-danger me-2"></i>檢舉違規類型 <span class="text-danger">*</span>
@@ -437,16 +550,15 @@
                                         </select>
                                     </div>
 
-                                    <!-- 檢舉原因 -->
                                     <div class="mb-3">
                                         <label for="reportReason-{{ $agentPost->id }}" class="form-label fw-bold text-dark mb-2">
                                             <i class="bi bi-chat-dots text-danger me-2"></i>檢舉原因 <span class="text-danger">*</span>
                                         </label>
-                                        <textarea 
-                                            class="form-control rounded-3 border shadow-sm" 
-                                            id="reportReason-{{ $agentPost->id }}" 
-                                            name="reason" 
-                                            rows="4" 
+                                        <textarea
+                                            class="form-control rounded-3 border shadow-sm"
+                                            id="reportReason-{{ $agentPost->id }}"
+                                            name="reason"
+                                            rows="4"
                                             placeholder="請詳細描述檢舉原因（最多500字）"
                                             maxlength="500"
                                             required
@@ -456,7 +568,6 @@
                                         </div>
                                     </div>
 
-                                    <!-- 提示信息 -->
                                     <div class="alert alert-info border-0 rounded-3 mb-0" role="alert">
                                         <i class="bi bi-info-circle me-2"></i>
                                         <small>感謝您的檢舉，我們會認真審查您提供的信息，維護平台安全。</small>
@@ -474,10 +585,10 @@
                     </div>
                 </div>
 
-           @empty
+            @empty
                 @if(request()->has('search'))
                     <div class="col-12">
-                        <div class="text-center py-12 bg-light rounded-4 border-dashed border-2 border-warning">
+                        <div class="text-center py-12 bg-light rounded-4">
                             <i class="bi bi-search display-1 text-muted mb-4 opacity-50"></i>
                             <h3 class="text-muted mb-3">沒有找到符合條件的代購團</h3>
                             <p class="text-muted mb-4">請嘗試：</p>
@@ -501,41 +612,49 @@
 </section>
 
 
-
 <!-- Newsletter / CTA Section -->
-    <section class="py-5">
-        <div class="container">
-            <!-- 漸層色設定 -->
-            <div class="p-5 rounded-4 text-white text-center shadow-lg" style="background: linear-gradient(45deg, #5A9E8E, #3b7d6e);">
-                <div class="row justify-content-center">
-                    <div class="col-lg-8">
-                        <h2 class="fw-black mb-3">準備好開始代購了嗎？</h2>
-                        <p class="lead mb-4 opacity-75">無論您是想買東西，還是即將出國想順便賺旅費，這裡都是您的最佳選擇。</p>
-                        
-                        <!-- 【核心修改】：註冊按鈕連結至 /register -->
-                        <a href="{{ route('register') }}" class="btn btn-light text-success btn-lg rounded-pill px-5 fw-bold shadow-sm transition hover-scale">
-                            免費註冊會員
-                        </a>
-                    </div>
+<section class="py-5">
+    <div class="container">
+        <div class="p-5 rounded-4 text-white text-center shadow-lg" style="background: linear-gradient(45deg, #5A9E8E, #3b7d6e);">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <h2 class="fw-black mb-3">準備好開始代購了嗎？</h2>
+                    <p class="lead mb-4 opacity-75">無論您是想買東西，還是即將出國想順便賺旅費，這裡都是您的最佳選擇。</p>
+                    <a href="{{ route('register') }}" class="btn btn-light text-success btn-lg rounded-pill px-5 fw-bold shadow-sm transition hover-scale">
+                        免費註冊會員
+                    </a>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <style>
-        .fw-black { font-weight: 900; }
-        .hover-shadow:hover { transform: translateY(-5px); box-shadow: 0 1rem 3rem rgba(0,0,0,.1) !important; }
-        .transition { transition: all 0.3s ease; }
-        .hover-scale:hover { transform: scale(1.05); }
-        .line-clamp-2 {
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-    </style>
+<style>
+    .fw-black { font-weight: 900; }
+    .hover-shadow:hover { transform: translateY(-5px); box-shadow: 0 1rem 3rem rgba(0,0,0,.1) !important; }
+    .transition { transition: all 0.3s ease; }
+    .hover-scale:hover { transform: scale(1.05); }
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    /* Carousel 箭頭陰影加強，在淺色圖片上更清楚 */
+    .carousel-control-prev-icon,
+    .carousel-control-next-icon {
+        filter: drop-shadow(0 0 3px rgba(0,0,0,0.7));
+    }
+    /* 指示點縮小以配合卡片高度 */
+    .carousel-indicators [data-bs-slide-to] {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+    }
+</style>
 
 @endsection
+
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -554,7 +673,7 @@
 
                 const isHidden = details.classList.contains('d-none');
                 details.classList.toggle('d-none', !isHidden);
-                
+
                 const label = button.querySelector('span');
                 const icon = button.querySelector('.transition-icon');
                 if (label) label.textContent = isHidden ? '收起詳細資訊' : '展開詳細資訊';
@@ -580,52 +699,40 @@
                         body: JSON.stringify({ type: 'agent_post', id: agentPostId }),
                     });
                     const data = await response.json();
-                     if (!response.ok) {
-                        throw new Error(data.message || '收藏失敗');
-                    }
+                    if (!response.ok) throw new Error(data.message || '收藏失敗');
                     const isAdded = data.status === 'added';
                     button.style.background = isAdded ? '#fce7f3' : '#f3f4f6';
                     button.style.color = isAdded ? '#ec4899' : '#9ca3af';
                 } catch (error) {
-                     alert(error.message || '操作失敗，請稍後再試。');
+                    alert(error.message || '操作失敗，請稍後再試。');
                 } finally {
                     button.disabled = false;
                 }
             });
         });
 
-        // 檢舉按鈕邏輯
+        // 3. 檢舉按鈕邏輯
         document.querySelectorAll('.agent-post-report-btn').forEach(function (button) {
             button.addEventListener('click', function () {
-                if (button.disabled) return; // 禁用狀態下不執行
-                
+                if (button.disabled) return;
                 const agentPostId = button.dataset.agentPostId;
-                if (!isAuthenticated) {
-                    window.location.href = loginUrl;
-                    return;
-                }
+                if (!isAuthenticated) { window.location.href = loginUrl; return; }
                 const modalElement = document.getElementById('reportAgentPostModal-' + agentPostId);
-                if (modalElement) {
-                    const modal = new bootstrap.Modal(modalElement);
-                    modal.show();
-                }
+                if (modalElement) new bootstrap.Modal(modalElement).show();
             });
         });
 
-        // 檢舉原因字符計數
+        // 4. 檢舉原因字符計數
         document.querySelectorAll('textarea[name="reason"]').forEach(function (textarea) {
             textarea.addEventListener('input', function () {
-                const charCount = this.value.length;
-                const charCountSpan = this.parentElement.querySelector('.char-count');
-                if (charCountSpan) {
-                    charCountSpan.textContent = charCount;
-                }
+                const span = this.parentElement.querySelector('.char-count');
+                if (span) span.textContent = this.value.length;
             });
         });
 
-        // 檢舉表單提交
+        // 5. 檢舉表單提交
         document.querySelectorAll('.report-form').forEach(function (form) {
-             form.addEventListener('submit', async function (e) {
+            form.addEventListener('submit', async function (e) {
                 e.preventDefault();
                 const reportType = form.querySelector('select[name="report_type"]').value;
                 const reason = form.querySelector('textarea[name="reason"]').value;
@@ -633,45 +740,23 @@
                 const targetId = form.dataset.targetId;
                 const submitBtn = form.querySelector('.report-submit-btn');
 
-                if (!reportType) {
-                    alert('請選擇違規類型');
-                    return;
-                }
-                if (!reason.trim()) {
-                    alert('請輸入檢舉原因');
-                    return;
-                }
+                if (!reportType) { alert('請選擇違規類型'); return; }
+                if (!reason.trim()) { alert('請輸入檢舉原因'); return; }
 
                 submitBtn.disabled = true;
                 try {
                     const response = await fetch(reportStoreUrl, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': csrfToken,
-                        },
-                        body: JSON.stringify({
-                            target_type: targetType,
-                            target_id: targetId,
-                            report_type: reportType,
-                            reason: reason.trim(),
-                        }),
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                        body: JSON.stringify({ target_type: targetType, target_id: targetId, report_type: reportType, reason: reason.trim() }),
                     });
-
-
-                const data = await response.json();
-                    if (!response.ok) {
-                        throw new Error(data.message || '檢舉提交失敗');
-                    }
-
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.message || '檢舉提交失敗');
                     alert(data.message || '感謝您的檢舉！我們會盡快審查您的報告。');
                     const modal = bootstrap.Modal.getInstance(form.closest('.modal'));
                     if (modal) modal.hide();
                     form.reset();
-                    form.querySelectorAll('.char-count').forEach(el => {
-                        el.textContent = '0';
-                    });
+                    form.querySelectorAll('.char-count').forEach(el => el.textContent = '0');
                 } catch (error) {
                     alert(error.message || '檢舉提交失敗');
                 } finally {
@@ -680,89 +765,66 @@
             });
         });
 
-        // 3. Modal 數量與金額即時計算 (優化邏輯)
+        // 6. Modal 數量與金額即時計算
         document.querySelectorAll('[id^="followOrderModal-"]').forEach(modal => {
             const form = modal.querySelector('.follow-order-form');
             const submitBtn = modal.querySelector('.follow-order-submit-btn');
             const totalAmountNode = modal.querySelector('.total-amount');
 
-            if (!form || !submitBtn || !totalAmountNode) {
-                return;
-            }
+            if (!form || !submitBtn || !totalAmountNode) return;
 
             const updateTotals = () => {
                 let grandTotal = 0;
                 let totalQuantity = 0;
                 modal.querySelectorAll('.product-row').forEach(row => {
                     const price = parseFloat(row.dataset.price) || 0;
-                    const qtyInput = row.querySelector('.qty-input');
-                    const qty = parseInt(qtyInput.value) || 0;
+                    const qty = parseInt(row.querySelector('.qty-input').value) || 0;
                     const subtotal = price * qty;
                     row.querySelector('.subtotal').textContent = '$' + subtotal.toLocaleString();
                     grandTotal += subtotal;
                     totalQuantity += qty;
                 });
                 totalAmountNode.textContent = grandTotal.toLocaleString();
-                if (submitBtn) {
-                    submitBtn.disabled = totalQuantity < 1;
-                }
+                submitBtn.disabled = totalQuantity < 1;
             };
 
-    modal.addEventListener('click', (e) => {
-    const plusBtn = e.target.closest('.qty-plus');
-    const minusBtn = e.target.closest('.qty-minus');
-    
-    if (plusBtn) {
-        const input = plusBtn.closest('.input-group').querySelector('.qty-input');
-        const currentVal = parseInt(input.value) || 0;
-        const maxVal = parseInt(input.getAttribute('max')) || 0;
+            modal.addEventListener('click', (e) => {
+                const plusBtn = e.target.closest('.qty-plus');
+                const minusBtn = e.target.closest('.qty-minus');
 
-        // 檢查是否超過最大可下單數量
-        if (currentVal < maxVal) {
-            input.value = currentVal + 1;
-            updateTotals();
-        } else {
-            alert('已達該商品最大可下單數量！');
-        }
-    }
-    
-    if (minusBtn) {
-        const input = minusBtn.closest('.input-group').querySelector('.qty-input');
-        if (parseInt(input.value) > 0) {
-            input.value = parseInt(input.value) - 1;
-            updateTotals();
-        }
-    }
-});
+                if (plusBtn) {
+                    const input = plusBtn.closest('.input-group').querySelector('.qty-input');
+                    const currentVal = parseInt(input.value) || 0;
+                    const maxVal = parseInt(input.getAttribute('max')) || 0;
+                    if (currentVal < maxVal) { input.value = currentVal + 1; updateTotals(); }
+                    else alert('已達該商品最大可下單數量！');
+                }
+                if (minusBtn) {
+                    const input = minusBtn.closest('.input-group').querySelector('.qty-input');
+                    if (parseInt(input.value) > 0) { input.value = parseInt(input.value) - 1; updateTotals(); }
+                }
+            });
 
             modal.querySelectorAll('.qty-input').forEach(input => {
-    input.addEventListener('change', () => {
-        const maxVal = parseInt(input.getAttribute('max')) || 0;
-        let currentVal = parseInt(input.value) || 0;
+                input.addEventListener('change', () => {
+                    const maxVal = parseInt(input.getAttribute('max')) || 0;
+                    let val = parseInt(input.value) || 0;
+                    if (val > maxVal) { alert('不能超過可下單數量：' + maxVal); input.value = maxVal; }
+                    if (val < 0) input.value = 0;
+                    updateTotals();
+                });
+            });
 
-        if (currentVal > maxVal) {
-            alert('不能超過可下單數量：' + maxVal);
-            input.value = maxVal;
-        }
-        if (currentVal < 0) input.value = 0;
-        updateTotals();
-    });
-});
-
-            form?.addEventListener('submit', (event) => {
+            form.addEventListener('submit', (event) => {
                 const totalQuantity = Array.from(modal.querySelectorAll('.qty-input'))
                     .reduce((sum, input) => sum + (parseInt(input.value) || 0), 0);
-
                 if (totalQuantity < 1) {
                     event.preventDefault();
                     alert('請至少選擇一項商品數量後再確認結帳。');
                     return;
                 }
-
-                if (submitBtn) {
-                    submitBtn.disabled = true;
-                    submitBtn.textContent = '建立訂單中...';
-                }
+                submitBtn.disabled = true;
+                submitBtn.textContent = '建立訂單中...';
             });
 
             updateTotals();
@@ -771,27 +833,10 @@
 </script>
 
 <style>
-    /* 全域按鈕與表單樣式優化 */
-    .btn-primary-custom {
-        background-color: #5A9E8E;
-        border-color: #5A9E8E;
-        color: white;
-    }
-    .btn-primary-custom:hover {
-        background-color: #4a8376;
-        color: white;
-    }
-    input::-webkit-outer-spin-button,
-    input::-webkit-inner-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-    }
-    input[type=number] {
-        -moz-appearance: textfield;
-    }
-    .bg-light-subtle {
-        background-color: #f8fafc !important;
-    }
-    .ls-1 { letter-spacing: 1px; }
+    .btn-primary-custom { background-color: #5A9E8E; border-color: #5A9E8E; color: white; }
+    .btn-primary-custom:hover { background-color: #4a8376; color: white; }
+    input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+    .bg-light-subtle { background-color: #f8fafc !important; }
 </style>
 @endpush

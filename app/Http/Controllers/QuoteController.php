@@ -16,7 +16,8 @@ class QuoteController extends Controller
         $validated = $request->validate([
             'request_list_id' => 'required|exists:request_lists,id',
             'agent_quote_total' => 'required|numeric|min:0.01',
-            'time' => 'required|string|max:500',
+            'estimated_date' => 'required|date',
+            'comment' => 'nullable|string|max:1000',
             'items' => 'required|array|min:1',
             'items.*.id' => 'required|exists:request_items,id',
             'items.*.agent_quote' => 'required|numeric|min:0'
@@ -37,7 +38,8 @@ class QuoteController extends Controller
             'request_list_id' => $requestList->id,
             'user_id'         => auth()->id(),
             'price'           => $validated['agent_quote_total'],
-            'comment'         => $validated['time'],
+            'estimated_date'  => $validated['estimated_date'],
+            'comment'         => $validated['comment'] ?? null,
             'status'          => 'pending',
         ]);
 
@@ -114,15 +116,12 @@ class QuoteController extends Controller
         }
 
         DB::transaction(function () use ($quote, $requestList) {
-    // 拒絕後直接移除該代購人的報價資料與明細
-            if (Schema::hasTable('quote_items')) {
-                QuoteItem::where('quote_id', $quote->id)->delete();
-            }
-            $quote->delete();
+            // 保留被拒絕的報價與明細，只更新狀態
+            $quote->update(['status' => 'rejected']);
 
-            // 檢查是否還有「有效中的報價」(pending / accepted)
+            // 檢查是否還有「有效中的報價」(pending / accepted / returned)
             $hasActiveQuotes = Quote::where('request_list_id', $requestList->id)
-                ->whereIn('status', ['pending', 'accepted'])
+                ->whereIn('status', ['pending', 'accepted', 'returned'])
                 ->exists();
 
             // 若已無有效報價，請託單狀態恢復為等待報價，並清空已配對資料
@@ -136,5 +135,15 @@ class QuoteController extends Controller
         });
 
         return back()->with('success', '已拒絕該代購人的報價。');
+    }
+    
+        public function return(Quote $quote) {
+        // 更新報價單狀態，讓代購人知道需要修改
+        $quote->update(['status' => 'returned']); 
+
+        // 也可以同時把請託單狀態改回開放中，視你的業務邏輯而定
+        // $quote->requestList->update(['status' => 'pending']);
+
+        return back()->with('success', '報價已退回給代購人修改。');
     }
 }

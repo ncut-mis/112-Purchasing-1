@@ -12,6 +12,8 @@ use App\Http\Controllers\ShopController;
 use App\Models\AgentPost;
 use App\Models\PurchasingRequest;
 use App\Models\RequestList;
+use App\Models\Order;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use Illuminate\Http\Request;
@@ -23,6 +25,8 @@ use App\Http\Controllers\ContentReportController;
 use App\Http\Controllers\QuoteController;
 use App\Events\MessageSent;
 use App\Http\Controllers\FollowController; 
+use App\Http\Controllers\FollowOrderController; 
+use App\Http\Controllers\HistoryController;
 
 Route::get('/agent/dashboard', [AgentDashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
@@ -39,9 +43,11 @@ Route::get('/store/{id}', [ShopController::class, 'show'])->name('shop.show');
 Route::middleware(['auth'])->group(function () {
     Route::post('/follow/toggle', [FollowController::class, 'toggle'])->name('follow.toggle');
     Route::get('/follows', [FollowController::class, 'index'])->name('follows.index');
+    Route::post('/follow-orders', [FollowOrderController::class, 'store'])->name('follow-orders.store');
 });
 
 Route::get('/post-product-image/{postProduct}', [AgentPostController::class, 'image'])->name('post-product.image');
+Route::get('/agent-post-cover-image/{agentPost}', [AgentPostController::class, 'coverImage'])->name('agent-post.cover-image');
 
 
 Route::middleware(['auth'])->group(function () {
@@ -76,6 +82,26 @@ Route::patch('/admin/reports/{report}/override', [AdminAuthController::class, 'o
 Route::middleware('auth')->get('/api/latest-orders', [DashboardController::class, 'getLatestOrders'])->name('api.orders.latest');
 
 Route::get('/', function () {
+
+ $totalOpenPosts = max(AgentPost::where('status', 'open')->count(), 1);
+
+    $hotPosts = AgentPost::with(['user', 'products'])
+        ->withCount(['favorites', 'orders'])
+        ->where('status', 'open')
+        ->get()
+        ->map(function (AgentPost $post) use ($totalOpenPosts) {
+            $favoriteRatio = min(($post->favorites_count / $totalOpenPosts) * 100, 100);
+            $orderRatio = min(($post->orders_count / $totalOpenPosts) * 100, 100);
+
+            $score = (int) round(($favoriteRatio * 0.55) + ($orderRatio * 0.45));
+            $post->hot_score = max(0, min(100, $score));
+
+            return $post;
+        })
+        ->sortByDesc('hot_score')
+        ->take(6)
+        ->values();
+
     $agentPosts = AgentPost::with(['user', 'products'])
         ->where('status', 'open')
         ->latest()
@@ -94,31 +120,45 @@ Route::get('/', function () {
         ? PurchasingRequest::all()
         : collect([]);
 
-    return view('home', compact('agentPosts', 'requests', 'favoritedAgentPostIds'));
+     return view('home', compact('agentPosts', 'hotPosts', 'requests', 'favoritedAgentPostIds'));
 })->name('home');
 
     Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // 代購人會員專區
-    Route::get('/agent/member', function () {
-    $user = Auth::user();
-    // 1. 取得該代購人處理中的訂單數
-    $finishedOrdersCount = RequestList::where('user_id', $user->id) 
-        ->where('status', 'completed')
-        ->count();
-    // 2. 修正點：暫時將累計收入設為 0
-    // 錯誤原因：您的資料表中沒有 total_price 欄位。
-    // 如果您有其他代表金額的欄位（例如 budget），請將 'total_price' 改為該名稱。
-    // 如果還沒有金額欄位，請先保留為 0 以避免頁面報錯。
-    $totalIncome = 0; 
-    /* 如果您確定了欄位名稱，可以取消下方註解並修改欄位名：
-    $totalIncome = RequestList::where('user_id', $user->id)
-        ->where('status', 'completed')
-        ->sum('budget'); // 假設欄位叫 budget
-    */
-    return view('agent.member', compact('finishedOrdersCount', 'totalIncome'));
-})->name('agent.member')->middleware(['auth', 'verified']);
+    Route::get('/agent/member', function (Request $request) {
+        $user = Auth::user();
+
+        $finishedOrdersCount = Order::where('seller_id', $user->id)
+            ->where('status', 'completed')
+            ->count();
+
+        $totalIncome = Order::where('seller_id', $user->id)
+            ->where('status', 'completed')
+            ->sum('total_amount');
+
+        $agentHistorySearch = trim($request->query('agent_history_search', ''));
+
+        $agentHistoryOrders = Order::with(['buyer', 'source'])
+            ->where('seller_id', $user->id)
+            ->where('status', 'completed')
+            ->when($agentHistorySearch, function ($query, $search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('order_no', 'like', "%{$search}%")
+                        ->orWhereHas('buyer', function ($query) use ($search) {
+                            $query->where('name', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('source', function ($query) use ($search) {
+                            $query->where('title', 'like', "%{$search}%");
+                        });
+                });
+            })
+            ->latest('updated_at')
+            ->get();
+
+        return view('agent.member', compact('finishedOrdersCount', 'totalIncome', 'agentHistoryOrders', 'agentHistorySearch'));
+    })->name('agent.member')->middleware(['auth', 'verified']);
 
      // 1. 申請頁面
     Route::get('/agent/apply', [AgentApplicationController::class, 'create'])->name('agent.apply');
@@ -154,7 +194,9 @@ Route::get('/', function () {
     Route::patch('/agent/posts/{agentPost}', [AgentPostController::class, 'update'])->name('agent.posts.update');
 
     Route::patch('/agent/posts/{agentPost}/submit', [AgentPostController::class, 'submit'])->name('agent.posts.submit');
+    Route::patch('/agent/posts/{agentPost}/ship', [AgentPostController::class, 'ship'])->name('agent.posts.ship');
     Route::delete('/agent/posts/{agentPost}', [AgentPostController::class, 'destroy'])->name('agent.posts.destroy');
+    Route::delete('/agent/orders/{order}/cancel', [AgentPostController::class, 'cancelBuyerOrder'])->name('agent.orders.cancel');
 
 });
 
@@ -238,14 +280,7 @@ Route::middleware(['auth'])->prefix('dashboard/settings')->group(function () {
 
 //導入結帳功能
 
-Route::get('/shopping-cart', function () {
-    // 使用 collect() 將空陣列轉換為 Laravel 集合物件
-    $cartItems = collect([]); 
-
-    return view('shop.shoppingcart', [
-        'cartItems' => $cartItems
-    ]); 
-})->name('shopping.cart');
+Route::get('/shopping-cart', [CartController::class, 'index'])->name('shopping.cart');
 
 require __DIR__.'/auth.php';
 
@@ -271,6 +306,21 @@ Route::middleware(['auth'])->group(function () {
     
     // 拒絕報價
     Route::post('/quotes/{quote}/reject', [QuoteController::class, 'reject'])->name('quotes.reject');
+    // 修改報價
+    Route::post('/quotes/{quote}/return', [QuoteController::class, 'return'])->name('quotes.return');
+
 });
 //展開貼文
 Route::get('/store', [AgentPostController::class, 'index'])->name('store.index');
+//退回跟單
+Route::delete('/order/cancel/{id}', [App\Http\Controllers\CartController::class, 'cancelOrder'])->name('order.cancel');
+// 處理結帳提交
+Route::post('/checkout/process', [App\Http\Controllers\CartController::class, 'processCheckout'])->name('checkout.process');
+//結帳確認
+// 確保這裡的 'processCheckout' 跟 Controller 裡寫的一模一樣
+Route::post('/checkout/process', [App\Http\Controllers\CartController::class, 'processCheckout'])->name('checkout.process');
+
+Route::middleware(['auth'])->group(function () {
+    // 代購人歷史紀錄主路由
+    Route::get('/agent/member', [HistoryController::class, 'agentHistory'])->name('agent.member');
+});

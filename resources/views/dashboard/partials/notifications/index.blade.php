@@ -122,7 +122,7 @@
                                    class="bg-gray-100 text-gray-600 py-3 rounded-2xl text-xs font-bold hover:bg-gray-100 transition border border-gray-100 flex items-center justify-center gap-1">
                                     <i class="bi bi-person-badge"></i> 檔案
                                 </button>
-                                <a href="{{ route('agent.chat', ['user_id' => $agent->id]) }}" 
+                                <a href="{{ route('messages.index', ['partner' => $agent->id]) }}" 
                                    class="bg-amber-500 text-white py-3 rounded-2xl text-xs font-bold hover:bg-amber-600 shadow-lg shadow-amber-100 transition flex items-center justify-center gap-1">
                                     <i class="bi bi-chat-dots-fill"></i> 聊聊
                                 </a>
@@ -201,7 +201,7 @@
                                     <i class="bi bi-person-check-fill"></i>
                                     <span>已追蹤</span>
                                 </button>
-                                <a :href="'/agent/chat?user_id=' + selectedAgent.id" class="bg-white text-emerald-800 px-8 py-3 rounded-2xl font-black shadow-lg hover:bg-emerald-50 transition flex items-center gap-2">
+                                <a :href="'/messages?partner=' + selectedAgent.id" class="bg-white text-emerald-800 px-8 py-3 rounded-2xl font-black shadow-lg hover:bg-emerald-50 transition flex items-center gap-2">
                                     <i class="bi bi-chat-heart-fill"></i> 立即聊一聊
                                 </a>
                             </div>
@@ -239,7 +239,7 @@
                                         <div @click="goToPostSearch(post.title, post.id)"
                                              class="group flex gap-5 p-5 rounded-[2rem] border border-gray-100 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all duration-300 cursor-pointer">
                                             <div class="w-24 h-24 bg-gray-100 rounded-2xl flex-shrink-0 overflow-hidden relative shadow-sm">
-                                                <img :src="post.cover_image ? '/storage/' + post.cover_image : 'https://placehold.co/200x200?text=No+Image'" class="w-full h-full object-cover">
+                                                <img :src="post.cover_image_url || 'https://placehold.co/200x200?text=No+Image'" class="w-full h-full object-cover">
                                             </div>
                                             <div class="flex-1 min-w-0">
                                                 <div class="flex justify-between items-start mb-1">

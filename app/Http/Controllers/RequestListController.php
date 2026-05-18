@@ -55,16 +55,16 @@ class RequestListController extends Controller
 
 
         foreach ($validated['items'] as $index => $item) {
-            $imagePath = null;
+            $imageData = null;
             if ($request->hasFile("items.$index.item_image")) {
-                $imagePath = $request->file("items.$index.item_image")->store('request-items', 'public');
+                $imageData = file_get_contents($request->file("items.$index.item_image")->getRealPath());
             }
 
             RequestItem::create([
                 'request_list_id' => $requestList->id,
                 'name' => $item['item_name'],
                 'quantity' => $item['quantity'],
-                'reference_image' => $imagePath,
+                'reference_image' => $imageData,
                 'reference_url' => null,
                 'expected_price' => null,
                 'specification' => null,
@@ -130,26 +130,24 @@ class RequestListController extends Controller
 
             if (!empty($itemData['remove'])) {
                 if ($item?->reference_image) {
-                    Storage::disk('public')->delete($item->reference_image);
+                    $this->deleteStorageFileIfExists($item->reference_image);
                 }
 
                 $item?->delete();
                 continue;
             }
 
-            $imagePath = $item?->reference_image;
+            $imageData = $item?->reference_image;
             if ($request->hasFile("items.$index.item_image")) {
-                if ($imagePath) {
-                    Storage::disk('public')->delete($imagePath);
-                }
-                $imagePath = $request->file("items.$index.item_image")->store('request-items', 'public');
+                $this->deleteStorageFileIfExists($item?->reference_image);
+                $imageData = file_get_contents($request->file("items.$index.item_image")->getRealPath());
             }
 
             if ($item) {
                 $item->update([
                     'name' => $itemData['item_name'],
                     'quantity' => $itemData['quantity'],
-                    'reference_image' => $imagePath,
+                    'reference_image' => $imageData,
                 ]);
                 continue;
             }
@@ -158,7 +156,7 @@ class RequestListController extends Controller
                 'request_list_id' => $requestList->id,
                 'name' => $itemData['item_name'],
                 'quantity' => $itemData['quantity'],
-                'reference_image' => $imagePath,
+                'reference_image' => $imageData,
                 'reference_url' => null,
                 'expected_price' => null,
                 'specification' => null,
@@ -188,11 +186,11 @@ class RequestListController extends Controller
     {
         abort_unless($requestList->user_id === Auth::id(), 403);
 
-        if (in_array($requestList->status, ['completed', 'cancelled'], true)) {
+        if (in_array($requestList->status, ['arrivaled', 'shipped'], true)) {
             return redirect()->route('dashboard')->with('status', '此請購清單已是結案狀態。');
         }
 
-        $requestList->update(['status' => 'completed']);
+        $requestList->update(['status' => 'arrivaled']);
 
         return redirect()->route('dashboard', ['section' => 'request-lists'])->with('status', '請購清單已標記完成，已移至歷史紀錄。');
     }
@@ -207,7 +205,7 @@ class RequestListController extends Controller
 
         foreach ($requestList->items as $item) {
             if ($item->reference_image) {
-                Storage::disk('public')->delete($item->reference_image);
+                $this->deleteStorageFileIfExists($item->reference_image);
             }
         }
 
@@ -224,13 +222,77 @@ class RequestListController extends Controller
             abort(403);
         }
 
-        if (! $requestItem->reference_image || ! Storage::disk('public')->exists($requestItem->reference_image)) {
-            abort(404);
+        $imageData = $requestItem->reference_image;
+
+        $headers = [
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ];
+
+        if ($imageData && ! $this->isBinaryImageData($imageData)) {
+            $normalized = $this->normalizeStoragePath($imageData);
+            if ($normalized && Storage::disk('public')->exists($normalized)) {
+                return response()->file(Storage::disk('public')->path($normalized), $headers);
+            }
         }
 
-        return response()->file(Storage::disk('public')->path($requestItem->reference_image));
+        if ($imageData && $this->isBinaryImageData($imageData)) {
+            $mime = $this->detectImageMime($imageData) ?? 'image/jpeg';
+            return response($imageData, 200, array_merge($headers, [
+                'Content-Type' => $mime,
+            ]));
+        }
+
+        abort(404);
     }
-            
-   
-        
+
+    private function isBinaryImageData(?string $value): bool
+    {
+        if (! is_string($value) || $value === '') {
+            return false;
+        }
+
+        if (strlen($value) > 255) {
+            return true;
+        }
+
+        return preg_match('/[\x00-\x08\x0E-\x1F]/', substr($value, 0, 100)) === 1;
+    }
+
+    private function normalizeStoragePath(?string $path): ?string
+    {
+        if (! $path || $this->isBinaryImageData($path)) {
+            return null;
+        }
+
+        $normalized = ltrim($path, '/');
+        $normalized = preg_replace('#^storage/#', '', $normalized);
+        $normalized = preg_replace('#^public/#', '', $normalized);
+
+        return $normalized;
+    }
+
+    private function deleteStorageFileIfExists(?string $path): void
+    {
+        $normalized = $this->normalizeStoragePath($path);
+
+        if ($normalized && Storage::disk('public')->exists($normalized)) {
+            Storage::disk('public')->delete($normalized);
+        }
+    }
+
+    private function detectImageMime(string $imageData): ?string
+    {
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+
+        if (! $finfo) {
+            return null;
+        }
+
+        $mime = finfo_buffer($finfo, $imageData);
+        finfo_close($finfo);
+
+        return $mime ?: null;
+    }
 }

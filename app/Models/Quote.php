@@ -17,6 +17,7 @@ class Quote extends Model
         'request_list_id',
         'user_id',
         'price',
+        'estimated_date',
         'comment',
         'status',
         'items_details',

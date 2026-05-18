@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
+use Illuminate\Database\Eloquent\Relations\HasMany;
 class AgentPost extends Model
 {
     use HasFactory, SoftDeletes;
@@ -23,6 +23,7 @@ class AgentPost extends Model
         'end_date',
         'estimated_shipping_date',
         'status',
+        'hot_score',
         'cover_image',
     ];
 
@@ -31,6 +32,7 @@ class AgentPost extends Model
         'start_date' => 'date',
         'end_date' => 'date',
         'estimated_shipping_date' => 'date',
+        'hot_score' => 'integer',
     ];
 
     // 關聯設定：這篇貼文屬於哪個使用者 (代購人)
@@ -46,6 +48,10 @@ class AgentPost extends Model
         return $this->hasMany(PostProduct::class);
     }
 
+    protected $appends = [
+        'cover_image_url',
+    ];
+
     public function favorites()
     {
         return $this->morphMany(Favorite::class, 'favoriteable');
@@ -59,5 +65,21 @@ class AgentPost extends Model
     public function reports()
     {
         return $this->morphMany(ContentReport::class, 'reportable');
+    }
+
+    public function getCoverImageUrlAttribute(): ?string
+    {
+        if (! $this->cover_image) {
+            return null;
+        }
+
+        return route('agent-post.cover-image', [
+            'agentPost' => $this->id,
+            'v' => $this->updated_at?->timestamp ?? now()->timestamp,
+        ]);
+    }
+    public function postProducts(): HasMany
+    {
+        return $this->hasMany(PostProduct::class, 'agent_post_id');
     }
 }

@@ -40,13 +40,59 @@ class AgentPostController extends Controller
 
     public function image(PostProduct $postProduct)
     {
-        $resolvedPath = $postProduct->resolveStoredImagePath();
+        $imageData = $postProduct->image_path;
 
-        if (! $resolvedPath) {
-            abort(404);
+        $headers = [
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ];
+
+        if ($imageData && ! $this->isBinaryImageData($imageData)) {
+            $resolvedPath = $postProduct->resolveStoredImagePath();
+
+            if ($resolvedPath) {
+                return response()->file(Storage::disk('public')->path($resolvedPath), $headers);
+            }
         }
 
-        return response()->file(Storage::disk('public')->path($resolvedPath));
+        if ($imageData && $this->isBinaryImageData($imageData)) {
+            $mime = $this->detectImageMime($imageData) ?? 'image/jpeg';
+
+            return response($imageData, 200, array_merge($headers, [
+                'Content-Type' => $mime,
+            ]));
+        }
+
+        abort(404);
+    }
+
+    public function coverImage(AgentPost $agentPost)
+    {
+        $imageData = $agentPost->cover_image;
+
+        $headers = [
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ];
+
+        if ($imageData && ! $this->isBinaryImageData($imageData)) {
+            $normalized = $this->normalizeStoragePath($imageData);
+            if ($normalized && Storage::disk('public')->exists($normalized)) {
+                return response()->file(Storage::disk('public')->path($normalized), $headers);
+            }
+        }
+
+        if ($imageData && $this->isBinaryImageData($imageData)) {
+            $mime = $this->detectImageMime($imageData) ?? 'image/jpeg';
+
+            return response($imageData, 200, array_merge($headers, [
+                'Content-Type' => $mime,
+            ]));
+        }
+
+        abort(404);
     }
 
     public function update(Request $request, AgentPost $agentPost)
@@ -93,6 +139,53 @@ class AgentPostController extends Controller
         return redirect()->route('agent.member')->with('status', '代購貼文已送出並上架！');
     }
 
+    // 出貨：將 orders 狀態改為 shipped
+    public function ship(AgentPost $agentPost)
+    {
+        abort_unless($agentPost->user_id === Auth::id(), 403);
+
+        \App\Models\Order::where('seller_id', Auth::id())
+            ->where('source_id', $agentPost->id)
+            ->where('source_type', \App\Models\AgentPost::class)
+            ->where('status', 'pending_payment')
+            ->update(['status' => 'shipped']);
+
+        return redirect()->route('agent.member')->with('status', '已標記為已出貨！');
+    }
+
+    // 代購人取消特定買家的訂單並回補數量
+    public function cancelBuyerOrder(\Illuminate\Http\Request $request, \App\Models\Order $order)
+    {
+        abort_unless($order->seller_id === Auth::id(), 403);
+        abort_if(!empty($order->paid_at), 403, '已付款訂單不可取消。');
+
+        $sourceId = $order->source_id;
+
+        // 從 order_items 計算數量
+        $returnQty = $order->items ? $order->items->sum('quantity') : 0;
+
+        // fallback：用金額反推
+        if ($returnQty <= 0) {
+            $product = \DB::table('post_products')->where('agent_post_id', $sourceId)->first();
+            if ($product && $product->price > 0) {
+                $returnQty = (int) round($order->total_amount / $product->price);
+            } else {
+                $returnQty = 1;
+            }
+        }
+
+        // 回補 sold_quantity
+        if ($returnQty > 0) {
+            \DB::table('post_products')
+                ->where('agent_post_id', $sourceId)
+                ->decrement('sold_quantity', $returnQty);
+        }
+
+        $order->update(['status' => 'cancelled']);
+
+        return back()->with('status', '已取消訂單，回補 ' . $returnQty . ' 個名額。');
+    }
+
     public function destroy(AgentPost $agentPost)
     {
         abort_unless($agentPost->user_id === Auth::id(), 403);
@@ -104,13 +197,13 @@ class AgentPostController extends Controller
         DB::transaction(function () use ($agentPost) {
             foreach ($agentPost->products as $product) {
                 if ($product->image_path) {
-                    Storage::disk('public')->delete($product->image_path);
+                    $this->deleteStorageFileIfExists($product->image_path);
                 }
                 $product->delete();
             }
 
             if ($agentPost->cover_image) {
-                Storage::disk('public')->delete($agentPost->cover_image);
+                $this->deleteStorageFileIfExists($agentPost->cover_image);
             }
 
             $agentPost->delete();
@@ -156,6 +249,79 @@ class AgentPostController extends Controller
         ]);
     }
 
+    private function isBinaryImageData(?string $value): bool
+    {
+        if (! is_string($value) || $value === '') {
+            return false;
+        }
+
+        if (strlen($value) > 255) {
+            return true;
+        }
+
+        return preg_match('/[\x00-\x08\x0E-\x1F]/', substr($value, 0, 100)) === 1;
+    }
+
+    private function normalizeStoragePath(?string $path): ?string
+    {
+        if (! $path || $this->isBinaryImageData($path)) {
+            return null;
+        }
+
+        $normalized = ltrim($path, '/');
+        $normalized = preg_replace('#^storage/#', '', $normalized);
+        $normalized = preg_replace('#^public/#', '', $normalized);
+
+        return $normalized;
+    }
+
+    private function deleteStorageFileIfExists(?string $path): void
+    {
+        $normalized = $this->normalizeStoragePath($path);
+
+        if ($normalized && Storage::disk('public')->exists($normalized)) {
+            Storage::disk('public')->delete($normalized);
+        }
+    }
+
+    private function resolveProductImageData(Request $request, array $product, ?PostProduct $model, int $index): ?string
+    {
+        if ($request->hasFile("products.$index.image")) {
+            return file_get_contents($request->file("products.$index.image")->getRealPath());
+        }
+
+        $existingValue = $model?->image_path ?? ($product['existing_image'] ?? null);
+
+        if (! $existingValue) {
+            return null;
+        }
+
+        if ($this->isBinaryImageData($existingValue)) {
+            return $existingValue;
+        }
+
+        $storagePath = $this->normalizeStoragePath($existingValue);
+        if ($storagePath && Storage::disk('public')->exists($storagePath)) {
+            return file_get_contents(Storage::disk('public')->path($storagePath));
+        }
+
+        return $existingValue;
+    }
+
+    private function detectImageMime(string $imageData): ?string
+    {
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+
+        if (! $finfo) {
+            return null;
+        }
+
+        $mime = finfo_buffer($finfo, $imageData);
+        finfo_close($finfo);
+
+        return $mime ?: null;
+    }
+
     private function syncProducts(Request $request, AgentPost $agentPost, array $products, bool $updating = false): void
     {
         $existingProducts = $updating ? $agentPost->products()->get()->keyBy('id') : collect();
@@ -165,13 +331,10 @@ class AgentPostController extends Controller
             $productId = $updating && isset($product['id']) ? (int) $product['id'] : null;
             $model = $productId ? $existingProducts->get($productId) : null;
 
-            $imagePath = $model?->image_path ?? ($product['existing_image'] ?? null);
+            $imageData = $this->resolveProductImageData($request, $product, $model, $index);
 
             if ($request->hasFile("products.$index.image")) {
-                if ($model?->image_path) {
-                    Storage::disk('public')->delete($model->image_path);
-                }
-                $imagePath = $request->file("products.$index.image")->store('agent-post-products', 'public');
+                $this->deleteStorageFileIfExists($model?->image_path);
             }
 
             if ($model) {
@@ -179,7 +342,7 @@ class AgentPostController extends Controller
                     'name' => $product['name'],
                     'price' => $product['price'],
                     'max_quantity' => $product['max_quantity'],
-                    'image_path' => $imagePath,
+                    'image_path' => $imageData,
                 ]);
                 $keptIds[] = $model->id;
                 continue;
@@ -189,7 +352,7 @@ class AgentPostController extends Controller
                 'name' => $product['name'],
                 'price' => $product['price'],
                 'max_quantity' => $product['max_quantity'],
-                'image_path' => $imagePath,
+                'image_path' => $imageData,
                 'currency' => 'TWD',
                 'is_active' => true,
             ]);
@@ -203,9 +366,7 @@ class AgentPostController extends Controller
         $toDelete = $existingProducts->keys()->diff($keptIds);
         foreach ($toDelete as $deleteId) {
             $product = $existingProducts->get($deleteId);
-            if ($product?->image_path) {
-                Storage::disk('public')->delete($product->image_path);
-            }
+            $this->deleteStorageFileIfExists($product?->image_path);
             $product?->delete();
         }
     }
