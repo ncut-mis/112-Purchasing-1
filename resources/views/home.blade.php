@@ -78,7 +78,7 @@
                     $scoreTextColor = $index < 3 ? '#1f2937' : '#374151';
                 @endphp
                 <div class="col-md-6 col-lg-4">
-                    <div class="card h-100 border-0 shadow-lg rounded-4 overflow-hidden position-relative hover-lift transition">
+                    <div class="card border-0 shadow-lg rounded-4 overflow-hidden position-relative hover-lift transition">
 
                         {{-- 圖片區：改為 Carousel 滑動式 --}}
                         <div class="position-relative" style="height: 240px;">
@@ -148,17 +148,63 @@
 
                         <div class="card-body p-4">
                             <h5 class="fw-bold mb-2 text-truncate">{{ $popPost->title }}</h5>
-                            <p class="text-muted small mb-4 line-clamp-2">
-                                {{ $popPost->description }}
-                            </p>
                             <div class="d-flex align-items-center justify-content-between pt-3 border-top">
                                 <div class="d-flex align-items-center gap-2">
                                     <img src="https://ui-avatars.com/api/?name={{ urlencode($popPost->user->name) }}&background=6366f1&color=fff" class="rounded-circle" width="28" height="28">
                                     <span class="small fw-bold text-gray-700">{{ $popPost->user->nickname ?? $popPost->user->name }}</span>
                                 </div>
                                 <span class="text-danger fw-bold" style="font-size: 12px;">
-                                    <i class="bi bi-heart-fill"></i> 熱門收藏
+                                    <i class="bi bi-fire me-1"></i> 熱門代購團
                                 </span>
+                            </div>
+
+                            <button
+                                type="button"
+                                class="btn btn-light border rounded-pill d-inline-flex align-items-center justify-content-center gap-2 fw-semibold text-secondary agent-post-toggle-btn mt-4"
+                                style="min-width: 380px;"
+                                data-target="hot-post-details-{{ $popPost->id }}"
+                                aria-expanded="false"
+                                aria-controls="hot-post-details-{{ $popPost->id }}"
+                            >
+                                <span>展開詳細資訊</span>
+                                <i class="bi bi-chevron-down transition-icon"></i>
+                            </button>
+
+                            <div id="hot-post-details-{{ $popPost->id }}" class="agent-post-details d-none mt-4 pt-2">
+                                <div class="border-top pt-4">
+                                    <div class="mb-3">
+                                        <div class="small text-uppercase text-muted fw-bold mb-2">商品資訊（名稱 / 單價 / 目前可下單上限）</div>
+                                        <div class="d-flex flex-column gap-2">
+                                            @forelse($popPost->products as $product)
+                                                @php
+                                                    $maxQuantity = (int) ($product->max_quantity ?? 0);
+                                                    $soldQuantity = (int) ($product->sold_quantity ?? 0);
+                                                    $currentMaxQuantity = max($maxQuantity - $soldQuantity, 0);
+                                                @endphp
+                                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 rounded-3 border bg-white px-3 py-2">
+                                                    <span class="fw-semibold text-dark">{{ $product->name }}</span>
+                                                    <div class="d-flex align-items-center gap-2 small text-muted">
+                                                        <span class="badge rounded-pill text-bg-light border">單價：NT$ {{ number_format((float) ($product->price ?? 0), 0) }}</span>
+                                                        <span class="badge rounded-pill text-bg-light border">目前可下單上限：{{ $currentMaxQuantity }}</span>
+                                                    </div>
+                                                </div>
+                                            @empty
+                                                <span class="badge rounded-pill border text-dark bg-white px-3 py-2 fw-semibold">尚未建立商品明細</span>
+                                            @endforelse
+                                        </div>
+                                    </div>
+
+                                    <p class="text-dark mb-4" style="font-size: 1rem; line-height: 1.75;">
+                                        {{ \Illuminate\Support\Str::limit($popPost->description ?: '代購人尚未填寫詳細說明。', 60) }}
+                                    </p>
+
+                                    <div class="rounded-4 bg-light px-4 py-3 mb-4 border" style="border-color: #eef1f4 !important;">
+                                        <div class="d-flex align-items-center text-secondary" style="font-size: 1rem;">
+                                            <i class="bi bi-calendar-event me-3"></i>
+                                            <span>代購期間：{{ optional($popPost->start_date)->format('Y/m/d') }} - {{ optional($popPost->end_date)->format('Y/m/d') }}</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -667,12 +713,13 @@
         // 1. 展開/收起詳細資訊
         document.querySelectorAll('.agent-post-toggle-btn').forEach(function (button) {
             button.addEventListener('click', function () {
-                const targetId = button.dataset.target;
-                const details = document.getElementById(targetId);
+                const card = button.closest('.card');
+                const details = card ? card.querySelector('.agent-post-details') : null;
                 if (!details) return;
 
                 const isHidden = details.classList.contains('d-none');
                 details.classList.toggle('d-none', !isHidden);
+                button.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
 
                 const label = button.querySelector('span');
                 const icon = button.querySelector('.transition-icon');

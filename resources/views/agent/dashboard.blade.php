@@ -105,7 +105,7 @@
             const payload = {
                 request_list_id: this.selectedRequest.id,
                 agent_quote_total: total,
-                time: this.availableTime.trim(),
+                estimated_date: this.availableTime.trim(),
                 comment: this.quoteRemarks.trim() || null,
                 items: this.selectedRequest.items.map(item => ({
                     id: item.id,
