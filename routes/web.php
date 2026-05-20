@@ -306,8 +306,17 @@ Route::middleware(['auth'])->group(function () {
     
     // 拒絕報價
     Route::post('/quotes/{quote}/reject', [QuoteController::class, 'reject'])->name('quotes.reject');
-    // 修改報價
+    // 退回報價
     Route::post('/quotes/{quote}/return', [QuoteController::class, 'return'])->name('quotes.return');
+
+    // 代購人修改已退回的報價
+    Route::patch('/quotes/{quote}', [QuoteController::class, 'update'])->name('quotes.update');
+
+    // 出貨
+    Route::patch('/quotes/{quote}/ship', [QuoteController::class, 'ship'])->name('quotes.ship');
+
+    // 完成
+    Route::patch('/quotes/{quote}/complete', [QuoteController::class, 'complete'])->name('quotes.complete');
 
 });
 //展開貼文

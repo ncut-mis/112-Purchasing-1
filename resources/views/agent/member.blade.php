@@ -545,13 +545,19 @@
                                     class="px-4 py-1.5 rounded-full border text-xs transition">
                                     已拒絕
                                 </button>
+                                <button type="button"
+                                    @click="orderTab = 'shipped'"
+                                    :class="orderTab === 'shipped' ? 'bg-blue-50 text-blue-700 border-blue-300 font-bold' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'"
+                                    class="px-4 py-1.5 rounded-full border text-xs transition">
+                                    已出貨
+                                </button>
                             </div>
 
                             @php
-                                // 確認中：quote status = pending
+                                // 確認中：quote status = pending 或 returned
                                 $pendingQuotes = \App\Models\Quote::with(['requestList.user:id,name', 'requestList.items:id,request_list_id,name,quantity'])
                                     ->where('user_id', Auth::id())
-                                    ->where('status', 'pending')
+                                    ->whereIn('status', ['pending', 'returned'])
                                     ->latest('updated_at')
                                     ->get();
 
@@ -571,10 +577,18 @@
 
                                 $myQuotes = $pendingQuotes; // 保留相容性
 
+                                // 已出貨：quote status = shipped
+                                $shippedQuotes = \App\Models\Quote::with(['requestList.user:id,name', 'requestList.items:id,request_list_id,name,quantity'])
+                                    ->where('user_id', Auth::id())
+                                    ->where('status', 'shipped')
+                                    ->latest('updated_at')
+                                    ->get();
+
                                 $statusLabelMap = [
                                     'pending'   => '請託人確認中...',
                                     'accepted'  => '已接單',
                                     'rejected'  => '已拒絕',
+                                    'shipped'   => '已出貨',
                                     'matched'   => '已配對成功',
                                     'completed' => '已完成',
                                 ];
@@ -583,6 +597,7 @@
                                     'pending'   => 'bg-red-50 text-red-700 border-red-200',
                                     'accepted'  => 'bg-emerald-50 text-emerald-700 border-emerald-200',
                                     'rejected'  => 'bg-gray-100 text-gray-600 border-gray-200',
+                                    'shipped'   => 'bg-blue-50 text-blue-700 border-blue-200',
                                     'matched'   => 'bg-emerald-50 text-emerald-700 border-emerald-200',
                                     'completed' => 'bg-slate-100 text-slate-700 border-slate-200',
                                 ];
@@ -590,20 +605,34 @@
 
                             {{-- 確認中 --}}
                             <div x-show="orderTab === 'pending'" class="space-y-4">
-                                @forelse($pendingQuotes as $quote)
+                                @php
+                                    // returned 優先排在前面
+                                    $sortedPendingQuotes = $pendingQuotes->sortByDesc(fn($q) => $q->status === 'returned' ? 1 : 0)->values();
+                                @endphp
+                                @forelse($sortedPendingQuotes as $quote)
                                     @php
                                         $requestList = $quote->requestList;
                                         if (!$requestList) continue;
-                                        // 顯示報價狀態（pending=請託人確認中）或請購單狀態
-                                        $displayStatus = $quote->status === 'pending' ? 'pending' : ($requestList->status ?? 'matched');
-                                        $statusLabel = $statusLabelMap[$displayStatus] ?? $displayStatus;
-                                        $statusClass = $statusClassMap[$displayStatus] ?? 'bg-slate-100 text-slate-700 border-slate-200';
                                         $firstItem = $requestList->items->first();
+                                        $isReturned = $quote->status === 'returned';
+                                        // 狀態標籤
+                                        if ($isReturned) {
+                                            $pendingLabel = '已退回';
+                                            $pendingBadgeClass = 'bg-orange-50 text-orange-600 border-orange-200';
+                                            $cardBorderClass = 'border-orange-100 bg-orange-50/30';
+                                        } else {
+                                            $pendingLabel = '未接受';
+                                            $pendingBadgeClass = 'bg-indigo-50 text-indigo-600 border-indigo-200';
+                                            $cardBorderClass = 'border-indigo-100 bg-indigo-50/40';
+                                        }
                                     @endphp
-                                    <div class="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4">
+                                    <div class="rounded-xl border {{ $cardBorderClass }} p-4">
                                         <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                                             <div class="min-w-0">
-                                                <h4 class="text-base font-bold text-gray-800 truncate">{{ $requestList->title }}</h4>
+                                                <div class="flex items-center gap-2 flex-wrap">
+                                                    <h4 class="text-base font-bold text-gray-800 truncate">{{ $requestList->title }}</h4>
+                                                    <span class="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold {{ $pendingBadgeClass }}">{{ $pendingLabel }}</span>
+                                                </div>
                                                 <p class="mt-1 text-xs text-gray-500">
                                                     請託人：{{ $requestList->user->name ?? '未知會員' }} ・
                                                     截止日：{{ optional($requestList->deadline)->format('Y-m-d') ?? '-' }}
@@ -616,7 +645,6 @@
                                                         @endif
                                                     </p>
                                                 @endif
-                                                
                                             </div>
                                             <div class="flex items-center gap-2 shrink-0">
                                                 <button type="button"
@@ -629,7 +657,68 @@
                                                    class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700 transition">
                                                     聊天
                                                 </button>
+                                                @if($isReturned)
+                                                    <button type="button"
+                                                        onclick="document.getElementById('edit-quote-modal-{{ $quote->id }}').classList.remove('hidden');document.getElementById('edit-quote-modal-{{ $quote->id }}').classList.add('flex');"
+                                                        class="inline-flex items-center rounded-lg bg-orange-500 px-3 py-2 text-xs font-bold text-white hover:bg-orange-600 transition">
+                                                        修改
+                                                    </button>
+                                                @else
+                                                    <button type="button" disabled
+                                                        class="inline-flex items-center rounded-lg bg-gray-200 px-3 py-2 text-xs font-bold text-gray-400 cursor-not-allowed">
+                                                        修改
+                                                    </button>
+                                                @endif
                                             </div>
+                                        </div>
+                                    </div>
+
+                                    {{-- 修改報價 Modal（只有 returned 時才有意義） --}}
+                                    <div id="edit-quote-modal-{{ $quote->id }}" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 px-4"
+                                         onclick="if(event.target===this){this.classList.add('hidden');this.classList.remove('flex');}">
+                                        <div class="bg-white w-full max-w-md rounded-2xl shadow-xl p-6">
+                                            <div class="flex items-center justify-between mb-4">
+                                                <h4 class="text-lg font-bold text-gray-800">修改報價</h4>
+                                                <button type="button" class="text-2xl text-gray-400 hover:text-gray-600"
+                                                    onclick="document.getElementById('edit-quote-modal-{{ $quote->id }}').classList.add('hidden');document.getElementById('edit-quote-modal-{{ $quote->id }}').classList.remove('flex');">&times;</button>
+                                            </div>
+                                            <form method="POST" action="{{ route('quotes.update', $quote->id) }}">
+                                                @csrf
+                                                @method('PATCH')
+                                                <div class="space-y-4">
+                                                    <div>
+                                                        <label class="block text-xs font-bold text-gray-600 mb-1">報價總金額（NT$）</label>
+                                                        <input type="number" name="agent_quote_total" min="1" step="1"
+                                                            value="{{ $quote->price }}"
+                                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                            required>
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-xs font-bold text-gray-600 mb-1">預計到貨日</label>
+                                                        <input type="date" name="estimated_date"
+                                                            value="{{ optional($quote->estimated_date)->format('Y-m-d') }}"
+                                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                            required>
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-xs font-bold text-gray-600 mb-1">備註說明（選填）</label>
+                                                        <textarea name="comment" rows="3"
+                                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                            placeholder="補充說明...">{{ $quote->comment }}</textarea>
+                                                    </div>
+                                                    <div class="flex justify-end gap-2 pt-2">
+                                                        <button type="button"
+                                                            onclick="document.getElementById('edit-quote-modal-{{ $quote->id }}').classList.add('hidden');document.getElementById('edit-quote-modal-{{ $quote->id }}').classList.remove('flex');"
+                                                            class="rounded-lg bg-gray-100 px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-200 transition">
+                                                            取消
+                                                        </button>
+                                                        <button type="submit"
+                                                            class="rounded-lg bg-orange-500 px-4 py-2 text-xs font-bold text-white hover:bg-orange-600 transition">
+                                                            送出修改
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </form>
                                         </div>
                                     </div>
 
@@ -799,6 +888,14 @@
                                                    class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700 transition">
                                                     聊天
                                                 </button>
+                                                <form method="POST" action="{{ route('quotes.ship', $quote->id) }}" onsubmit="return confirm('確認將此訂單標記為已出貨？')">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button type="submit"
+                                                        class="inline-flex items-center rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700 transition">
+                                                        出貨
+                                                    </button>
+                                                </form>
                                             </div>
                                         </div>
                                     </div>
@@ -1005,6 +1102,53 @@
                                 @empty
                                     <div class="text-gray-400 text-sm text-center py-8 border border-dashed border-gray-200 rounded-xl">
                                         目前沒有已拒絕的報價。
+                                    </div>
+                                @endforelse
+                            </div>
+
+                            {{-- 已出貨 --}}
+                            <div x-show="orderTab === 'shipped'" class="space-y-4">
+                                @forelse($shippedQuotes as $quote)
+                                    @php
+                                        $requestList = $quote->requestList;
+                                        if (!$requestList) continue;
+                                        $firstItem = $requestList->items->first();
+                                    @endphp
+                                    <div class="rounded-xl border border-blue-100 bg-blue-50/40 p-4">
+                                        <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                                            <div class="min-w-0">
+                                                <div class="flex items-center gap-2 flex-wrap">
+                                                    <h4 class="text-base font-bold text-gray-800 truncate">{{ $requestList->title }}</h4>
+                                                    <span class="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold bg-blue-50 text-blue-700 border-blue-200">已出貨</span>
+                                                </div>
+                                                <p class="mt-1 text-xs text-gray-500">
+                                                    請託人：{{ $requestList->user->name ?? '未知會員' }} ・
+                                                    截止日：{{ optional($requestList->deadline)->format('Y-m-d') ?? '-' }}
+                                                </p>
+                                                @if($firstItem)
+                                                    <p class="mt-2 text-sm text-gray-700">
+                                                        商品：{{ $firstItem->name }} × {{ (int) $firstItem->quantity }}
+                                                        @if($requestList->items->count() > 1)
+                                                            <span class="text-xs text-gray-500">（另有 {{ $requestList->items->count() - 1 }} 項）</span>
+                                                        @endif
+                                                    </p>
+                                                @endif
+                                            </div>
+                                            <div class="flex items-center gap-2 shrink-0">
+                                                <form method="POST" action="{{ route('quotes.complete', $quote->id) }}" onsubmit="return confirm('確認將此訂單標記為完成？')">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button type="submit"
+                                                        class="inline-flex items-center rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition">
+                                                        完成
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="text-gray-400 text-sm text-center py-8 border border-dashed border-gray-200 rounded-xl">
+                                        目前沒有已出貨的訂單。
                                     </div>
                                 @endforelse
                             </div>

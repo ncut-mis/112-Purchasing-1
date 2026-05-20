@@ -146,4 +146,69 @@ class QuoteController extends Controller
 
         return back()->with('success', '報價已退回給代購人修改。');
     }
+
+    // 代購人修改已退回的報價
+    public function update(Request $request, Quote $quote)
+    {
+        if ($quote->user_id !== auth()->id()) {
+            abort(403, '只有報價人才能修改報價');
+        }
+
+        if ($quote->status !== 'returned') {
+            return back()->with('error', '只有已退回的報價才能修改。');
+        }
+
+        $validated = $request->validate([
+            'agent_quote_total' => 'required|numeric|min:0.01',
+            'estimated_date'    => 'required|date',
+            'comment'           => 'nullable|string|max:1000',
+        ]);
+
+        $quote->update([
+            'price'          => $validated['agent_quote_total'],
+            'estimated_date' => $validated['estimated_date'],
+            'comment'        => $validated['comment'] ?? null,
+            'status'         => 'pending', // 改回 pending，等請託人再次審核
+        ]);
+
+        return back()->with('success', '報價已修改並重新送出，等待請託人確認。');
+    }
+
+    // 出貨：將 quote 狀態改為 shipped
+    public function ship(Quote $quote)
+    {
+        // 只有代購人本人能操作
+        if ($quote->user_id !== auth()->id()) {
+            abort(403, '只有報價人才能標記出貨');
+        }
+
+        if ($quote->status !== 'accepted') {
+            return back()->with('error', '只有已接單的報價才能標記出貨。');
+        }
+
+        $quote->update(['status' => 'shipped']);
+
+        return back()->with('success', '已成功標記為已出貨！');
+    }
+
+    // 完成：將 quote 狀態改為 completed
+    public function complete(Quote $quote)
+    {
+        // 只有代購人本人能操作
+        if ($quote->user_id !== auth()->id()) {
+            abort(403, '只有報價人才能標記完成');
+        }
+
+        if ($quote->status !== 'shipped') {
+            return back()->with('error', '只有已出貨的訂單才能標記為完成。');
+        }
+
+        DB::transaction(function () use ($quote) {
+            $quote->update(['status' => 'completed']);
+            // 同步更新請託單狀態
+            $quote->requestList->update(['status' => 'completed']);
+        });
+
+        return back()->with('success', '訂單已標記為完成！');
+    }
 }
