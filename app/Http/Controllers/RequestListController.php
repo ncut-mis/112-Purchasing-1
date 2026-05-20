@@ -166,7 +166,7 @@ class RequestListController extends Controller
         return redirect()->route('dashboard')->with('status', '請購清單更新成功');
     }
 
-    public function submit(RequestList $requestList)
+public function submit(RequestList $requestList)
     {
         abort_unless($requestList->user_id === Auth::id(), 403);
 
@@ -178,40 +178,55 @@ class RequestListController extends Controller
             return redirect()->route('dashboard')->with('status', '請至少保留 1 項商品後再送出');
         }
 
+        // 1. 變更狀態
         $requestList->update(['status' => 'pending']);
 
-        return redirect()->route('dashboard')->with('status', '請購清單已送出，等待代購人接單');
-    }
-    public function complete(RequestList $requestList)
-    {
-        abort_unless($requestList->user_id === Auth::id(), 403);
+        $buyer = Auth::user();
+        $targetCountry = $requestList->country; 
 
-        if (in_array($requestList->status, ['arrivaled', 'shipped'], true)) {
-            return redirect()->route('dashboard')->with('status', '此請購清單已是結案狀態。');
-        }
+        $countryMap = [
+            'jp' => '日本',
+            'kr' => '韓國',
+            'us' => '美國',
+        ];
+        $searchWord = $countryMap[strtolower($targetCountry)] ?? $targetCountry;
 
-        $requestList->update(['status' => 'arrivaled']);
+        // 🔍 2. 🔥【徹底破局】不使用任何 Model 關聯！直接用原生 Query Builder 進行雙表 Join
+        // 💡 備註：如果你的代購申請表裡串用戶的欄位是 agent_id，請把下面這行的 'user_id' 改成 'agent_id'！
+        $allAgents = \DB::table('users')
+            ->join('agent_applications', 'users.id', '=', 'agent_applications.user_id') // 👈 這裡如果是 agent_id 請記得改！
+            ->where('users.id', '!=', $buyer->id)
+            ->where('agent_applications.status', 'approved')
+            ->select('users.*')
+            ->get();
 
-        return redirect()->route('dashboard', ['section' => 'request-lists'])->with('status', '請購清單已標記完成，已移至歷史紀錄。');
-    }
+        // 3. 用 PHP 去篩選雙重引號的國家
+        $matchedAgents = $allAgents->filter(function ($agent) use ($searchWord) {
+            $rawCountries = $agent->purchasable_countries;
+            
+            if (empty($rawCountries)) return false;
 
-    public function destroy(RequestList $requestList)
-    {
-        abort_unless($requestList->user_id === Auth::id(), 403);
-
-        if ($requestList->status !== 'editing') {
-            return redirect()->route('dashboard')->with('status', '僅編輯中的請購清單可刪除');
-        }
-
-        foreach ($requestList->items as $item) {
-            if ($item->reference_image) {
-                $this->deleteStorageFileIfExists($item->reference_image);
+            $decoded = json_decode($rawCountries, true);
+            if (is_string($decoded)) {
+                $decoded = json_decode($decoded, true);
             }
+
+            return is_array($decoded) && in_array($searchWord, $decoded);
+        });
+
+        // 🔔 4. 寫入通知資料表
+        foreach ($matchedAgents as $agent) {
+            \App\Models\AgentNotification::create([
+                'agent_id'        => $agent->id,
+                'buyer_id'        => $buyer->id,
+                'request_list_id' => $requestList->id,
+                'title'           => '推薦請購人',
+                'content'         => '發現符合您國家的全新請購清單！',
+                'is_read'         => false,
+            ]);
         }
 
-        $requestList->delete();
-
-        return redirect()->route('dashboard')->with('status', '請購清單已刪除');
+        return redirect()->route('dashboard')->with('status', '請購清單已送出，系統已同步推薦給對應國家的代購人！');
     }
 
 

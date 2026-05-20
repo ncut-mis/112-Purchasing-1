@@ -8,22 +8,17 @@
         $isAgentMode = request()->is('agent', 'agent/*', '*/agent/*') || request()->routeIs('agent.*');
     @endphp
 
-    <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex">
-                <!-- Logo -->
                 <div class="shrink-0 flex items-center">
                     <a href="{{ route('home') }}">
-                        <!-- 地球圖示：代購模式(含聊天室與會員)顯示藍色，買家模式顯示綠色 -->
                         <i class="bi bi-globe-americas text-2xl {{ $isAgentMode ? 'text-indigo-600' : 'text-green-500' }}"></i>
                     </a>
                 </div>
 
-                <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex items-center">
                     @if($isAgentMode)
-                        <!-- 【代購人模式導覽列】 -->
                         @if($canEnterAgentLobby)
                             <x-nav-link :href="route('agent.dashboard')" :active="request()->routeIs('agent.dashboard')">
                                 {{ __('接單大廳') }}
@@ -41,21 +36,71 @@
                         <x-nav-link :href="route('home')">
                             <i class="bi bi-arrow-left-circle me-1"></i> {{ __('返回買家模式') }}
                         </x-nav-link>
+
+                        @if(request()->is('agent/member*'))
+
+                    <div class="relative inline-block ms-4" x-data="{ openNotification: false }">
+                        
                         <button
                             type="button"
-                            class="inline-flex items-center px-2 pt-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition duration-150 ease-in-out"
-                            onclick="openNotificationModal()"
+                            class="relative inline-flex items-center p-2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                            @click="openNotification = !openNotification"
                         >
-                            <i class="bi bi-bell-fill text-lg"></i>
+                            <i class="bi bi-bell-fill text-xl text-indigo-600" style="font-size: 22px;"></i>
+                            
+                            @if(isset($agentNotifications) && $agentNotifications->count() > 0)
+                                <span class="absolute top-1.5 right-1.5 bg-red-600 w-2 h-2 rounded-sm"></span>
+                            @endif
                         </button>
 
+                        <div 
+                            x-show="openNotification" 
+                            @click.away="openNotification = false"
+                            class="absolute top-full left-1/2 transform -translate-x-1/2 mt-3 w-64 bg-white border border-gray-300 rounded shadow-md p-2 z-50"
+                            style="display: none;"
+                        >
+                            <div class="fw-bold text-dark border-bottom pb-1 mb-2 px-1 text-start" style="font-size: 14px;">推薦</div>
+                            
+                            <div class="max-h-48 overflow-y-auto px-1">
+                                @if(isset($agentNotifications) && $agentNotifications->isNotEmpty())
+                                    @foreach($agentNotifications as $notify)
+                                        <div class="d-flex align-items-center justify-content-between py-2 border-bottom border-dashed border-gray-100 text-start">
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-slate-200 border border-info rounded p-1 me-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                                    <i class="bi bi-person-fill text-secondary"></i>
+                                                </div>
+                                                <span class="fw-medium text-dark" style="font-size: 15px;">
+                                                    {{ $notify->buyer->name ?? '未知用戶' }}
+                                                </span>
+                                            </div>
+                                            <a href="/agent/request-list/{{ $notify->request_list_id }}" 
+                                            class="inline-flex items-center px-2.5 py-1.5 text-xs font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none transition duration-150 ease-in-out shadow-sm"
+                                            style="font-size: 11px;">
+                                                {{ __('前往查看') }}
+                                            </a>
+                                        </div>
+                                    @endforeach
+                                @else
+                                    <div class="py-3 text-center text-muted small">目前沒有推薦的請購人</div>
+                                @endif
+                            </div>
+
+                            <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-solid border-b-white border-x-transparent border-t-transparent" 
+                                style="border-width: 0 8px 8px 8px; margin-bottom: -1px;">
+                            </div>
+                            <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-solid border-b-gray-300 border-x-transparent border-t-transparent -z-10" 
+                                style="border-width: 0 9px 9px 9px;">
+                            </div>
+                        </div>
+                        
+                    </div>
+
+                @endif
+
                     @else
-                        <!-- 【買家模式導覽列】 -->
                         <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                             {{ __('會員專區') }}
                         </x-nav-link>
-
-                        {{-- 聊天訊息已依先前需求移除 --}}
 
                         <x-nav-link :href="route('home')">
                             {{ __('返回首頁') }}
@@ -71,7 +116,6 @@
                 </div>
             </div>
 
-            <!-- Settings Dropdown -->
             <div class="hidden sm:flex sm:items-center sm:ms-6">
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
@@ -97,7 +141,6 @@
                             {{ __('個人資料') }}
                         </x-dropdown-link>
                         
-                        <!-- Authentication -->
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
                             <x-dropdown-link :href="route('logout')"
@@ -110,7 +153,6 @@
                 </x-dropdown>
             </div>
 
-            <!-- Hamburger (手機版) -->
             <div class="-me-2 flex items-center sm:hidden">
                 <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out">
                     <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
@@ -122,7 +164,6 @@
         </div>
     </div>
 
-    <!-- Responsive Navigation Menu -->
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
             @if($isAgentMode)
@@ -142,7 +183,6 @@
             @endif
         </div>
 
-        <!-- Responsive Settings Options -->
         <div class="pt-4 pb-1 border-t border-gray-200">
             <div class="px-4">
                 <div class="font-medium text-base text-gray-800">{{ auth()->user()?->nickname ?? auth()->user()?->name }}</div>
@@ -166,7 +206,6 @@
         </div>
     </div>
 
-    <!-- 阻擋彈窗 -->
     @if($isAgentMode && ! $canEnterAgentLobby)
         <div id="agent-lobby-block-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
             <div class="w-full max-w-md rounded-xl bg-white shadow-lg p-6">
