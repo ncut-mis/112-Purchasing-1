@@ -295,6 +295,7 @@ Route::view('/chat-view', 'chat_test');
 
 Route::middleware('auth')->group(function () {
     Route::post('/quotes', [App\Http\Controllers\QuoteController::class, 'store'])->name('quotes.store');
+    Route::post('/reviews', [App\Http\Controllers\ReviewController::class, 'store'])->name('reviews.store');
 });
 
 Route::middleware(['auth'])->group(function () {
