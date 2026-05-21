@@ -87,6 +87,30 @@
             min-height: 350px; 
             overflow: hidden;
             background-color: #f8f9fa;
+            position: relative;
+        }
+        .modal-slider-name {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            right: 16px;
+            z-index: 15;
+            background: rgba(255, 255, 255, 0.92);
+            border-radius: 999px;
+            padding: 0.65rem 1rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+        .modal-slider-name-text {
+            display: block;
+            font-weight: 700;
+            color: #1f2937;
+            font-size: 0.95rem;
+            line-height: 1.3;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .modal-slider-img {
             width: 100%;
@@ -152,8 +176,8 @@
         
         <div class="d-flex flex-column flex-lg-row align-items-center justify-content-between mb-5 gap-4">
             <div class="text-nowrap">
-                <h6 class="text-success fw-bold text-uppercase mb-1" style="letter-spacing: 2px; font-size: 0.8rem;">Agent Posts</h6>
-                <h2 class="fw-bold mb-0">最新代購貼文</h2>
+                <h6 class="text-success fw-bold text-uppercase mb-1" style="letter-spacing: 2px; font-size: 0.8rem;">All Agent Posts</h6>
+                <h2 class="fw-bold mb-0">全部代購團</h2>
             </div>
             
             <div class="flex-grow-1 ms-lg-5" style="max-width: 850px; width: 100%;">
@@ -289,7 +313,9 @@
 
                                         @if($modalImages->isNotEmpty())
                                             <div id="carouselModal{{ $post->id }}" class="carousel slide modal-slider-container" data-bs-ride="carousel">
-                                                
+                                                <div class="modal-slider-name">
+                                                    <span class="modal-slider-name-text">{{ $modalImages->first()->name }}</span>
+                                                </div>
                                                 @if($modalImages->count() > 1)
                                                     <div class="carousel-indicators mb-2">
                                                         @foreach($modalImages as $index => $product)
@@ -305,7 +331,7 @@
 
                                                 <div class="carousel-inner h-100">
                                                     @foreach($modalImages as $index => $product)
-                                                        <div class="carousel-item h-100 {{ $loop->first ? 'active' : '' }}">
+                                                        <div class="carousel-item h-100 {{ $loop->first ? 'active' : '' }}" data-product-name="{{ $product->name }}">
                                                             <img src="{{ route('post-product.image', ['postProduct' => $product->id, 'v' => $product->updated_at?->timestamp ?? now()->timestamp]) }}" class="modal-slider-img" alt="商品圖片 {{ $index + 1 }}">
                                                         </div>
                                                     @endforeach
@@ -452,6 +478,25 @@
                     checkoutBtn.disabled = (totalQty === 0);
                 }
             }
+
+            function initializeSliderProductLabels() {
+                document.querySelectorAll('.modal-slider-container.carousel').forEach(carousel => {
+                    const label = carousel.querySelector('.modal-slider-name-text');
+                    const activeItem = carousel.querySelector('.carousel-item.active');
+                    if (label && activeItem) {
+                        label.textContent = activeItem.dataset.productName || '';
+                    }
+
+                    carousel.addEventListener('slide.bs.carousel', function(event) {
+                        const nextItem = event.relatedTarget;
+                        if (label && nextItem) {
+                            label.textContent = nextItem.dataset.productName || '';
+                        }
+                    });
+                });
+            }
+
+            initializeSliderProductLabels();
         });
     </script>
     
