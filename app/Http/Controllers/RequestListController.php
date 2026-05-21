@@ -230,6 +230,30 @@ public function submit(RequestList $requestList)
     }
 
 
+    public function complete(RequestList $requestList)
+    {
+        abort_unless($requestList->user_id === Auth::id(), 403);
+
+        if ($requestList->status !== 'arrivaled') {
+            return redirect()->route('dashboard')->with('error', '只有商品已到貨的請購清單才能標記為完成');
+        }
+
+
+        $requestList->update(['status' => 'completed']);
+
+        return redirect()->route('dashboard')->with('status', '請購清單已標記為完成！');
+    }
+
+    public function destroy(RequestList $requestList)
+    {
+        abort_unless($requestList->user_id === Auth::id(), 403);
+
+        $requestList->items()->delete();
+        $requestList->delete();
+
+        return redirect()->route('dashboard')->with('status', '請購清單已刪除！');
+    }
+
     public function image(RequestItem $requestItem)
     {
         // 只要登入即可存取圖片

@@ -214,10 +214,20 @@
                                                 @endphp
 
                                                 <div class="inline-flex items-center gap-3">
-                                                    @if($requestList->status === 'matched')
+                                                    @if($requestList->status === 'arrivaled')
+                                                        {{-- 商品已到貨：完成按鈕可按 --}}
                                                         <button type="button" class="inline-flex items-center rounded-lg bg-blue-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-600" onclick="openRequestDetailModal({{ $requestList->id }})">檢視</button>
                                                         <button type="button" class="inline-flex items-center rounded-lg bg-green-400 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-green-500" onclick="openRequestChatModal({{ $requestList->id }}, {{ $requestList->people ?? 'null' }})">聊天</button>
-                                                        <button type="button" class="inline-flex items-center rounded-lg bg-emerald-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-600">完成</button>
+                                                        <form method="POST" action="{{ route('request-list.complete', $requestList) }}" onsubmit="return confirm('確認商品已收到，完成此訂單？');">
+                                                            @csrf
+                                                            @method('PATCH')
+                                                            <button type="submit" class="inline-flex items-center rounded-lg bg-emerald-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-600">完成</button>
+                                                        </form>
+                                                    @elseif(in_array($requestList->status, ['matched', 'wait-for-ship', 'shipped'], true))
+                                                        {{-- 已確認/等待出貨/已出貨：完成按鈕禁用（尚未到貨）--}}
+                                                        <button type="button" class="inline-flex items-center rounded-lg bg-blue-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-600" onclick="openRequestDetailModal({{ $requestList->id }})">檢視</button>
+                                                        <button type="button" class="inline-flex items-center rounded-lg bg-green-400 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-green-500" onclick="openRequestChatModal({{ $requestList->id }}, {{ $requestList->people ?? 'null' }})">聊天</button>
+                                                        <button type="button" class="inline-flex items-center rounded-lg bg-gray-300 px-4 py-2 text-xs font-semibold text-white cursor-not-allowed" disabled title="商品尚未到貨，無法完成">完成</button>
                                                     @elseif($requestList->status === 'editing')
                                                         <button type="button" class="text-blue-500 hover:underline" onclick="openEditModal({{ $requestList->id }})">編輯</button>
                         
@@ -233,16 +243,13 @@
                                                             <button type="submit" class="text-green-600 hover:underline">送出</button>
                                                         </form>
                                                     @elseif(in_array($requestList->status, ['pending', 'offered'], true))
+                                                        {{-- 等待報價/已報價：完成按鈕顯示但禁用 --}}
                                                         <button type="button" class="inline-flex items-center rounded-lg bg-blue-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-600" onclick="openRequestDetailModal({{ $requestList->id }})">檢視</button>
                                                         <button type="button" class="inline-flex items-center rounded-lg bg-gray-300 px-4 py-2 text-xs font-semibold text-white cursor-not-allowed" disabled title="尚未接受報價，無法聊天">聊天</button>
-                                                        <form method="POST" action="{{ route('request-list.complete', $requestList) }}" onsubmit="return confirm('是否已完成？');">
-                                                            @csrf
-                                                            @method('PATCH')
-                                                            <button type="submit" class="inline-flex items-center rounded-lg bg-emerald-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-600">完成</button>
-                                                        </form>  
-                                                         <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-amber-200 bg-amber-100 text-amber-600 shadow-sm transition hover:bg-amber-200" title="通知中心" aria-label="通知中心" onclick="openRequestNoticeModal({{ $requestList->id }})">
+                                                        <button type="button" class="inline-flex items-center rounded-lg bg-gray-300 px-4 py-2 text-xs font-semibold text-white cursor-not-allowed" disabled title="商品尚未到貨，無法完成">完成</button>
+                                                        <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-amber-200 bg-amber-100 text-amber-600 shadow-sm transition hover:bg-amber-200" title="通知中心" aria-label="通知中心" onclick="openRequestNoticeModal({{ $requestList->id }})">
                                                             🔔
-                                                        </button>              
+                                                        </button>
                                                     @endif
                                                 </div>
                                             </td>
