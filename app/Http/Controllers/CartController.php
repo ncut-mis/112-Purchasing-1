@@ -55,49 +55,6 @@ class CartController extends Controller
     {
         $userId = \Auth::id();
 
-<<<<<<< HEAD
-    // 1. 先用傳過來的 ID 找到「其中一筆」訂單，藉此拿到開團貼文 ID (source_id)
-    $baseOrder = \App\Models\Order::where('id', $id)
-                ->where('buyer_id', $userId)
-                ->first();
-
-    if ($baseOrder) {
-        $sourceId = $baseOrder->source_id;
-
-        DB::transaction(function () use ($userId, $sourceId) {
-            // 2. 撈出同一貼文、同一請購人、待付款的全部跟單
-            $allOrdersInGroup = Order::where('buyer_id', $userId)
-                ->where('source_id', $sourceId)
-                ->where('status', 'pending_payment')
-                ->with('items')
-                ->get();
-
-            // 3. 回補 sold_quantity（僅減少 sold_quantity，不變動 max_quantity）
-            foreach ($allOrdersInGroup as $order) {
-                foreach ($order->items as $item) {
-                    if (! $item->product_id || (int) $item->quantity <= 0) {
-                        continue;
-                    }
-
-                    PostProduct::where('id', $item->product_id)
-                        ->decrement('sold_quantity', (int) $item->quantity);
-
-                    // 避免 sold_quantity 因舊資料異常而變負數
-                    PostProduct::where('id', $item->product_id)
-                        ->where('sold_quantity', '<', 0)
-                        ->update(['sold_quantity' => 0]);
-                }
-            }
-
-            // 4. 移除整組待付款跟單
-            Order::where('buyer_id', $userId)
-                ->where('source_id', $sourceId)
-                ->where('status', 'pending_payment')
-                ->delete();
-        });
-
-        return back()->with('success', '已成功移除該項目，並回補商品的已售數量。');
-=======
         $baseOrder = \App\Models\Order::where('id', $id)
                     ->where('buyer_id', $userId)
                     ->first();
@@ -147,7 +104,6 @@ class CartController extends Controller
         }
 
         return back()->with('error', '找不到該項目。');
->>>>>>> b2e1db3 (新增代購人管理會員跟團人數功能)
     }
     public function processCheckout(Request $request)
     {
