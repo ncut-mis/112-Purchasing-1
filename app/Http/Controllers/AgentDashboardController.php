@@ -11,7 +11,7 @@ use App\Models\Favorite;
 class AgentDashboardController extends Controller
 {
     /**
-     * 顯示代購人接單大廳 (修正篩選欄位錯誤)
+     * 顯示代購人接單大廳 (已整合小鈴鐺點擊特定買家篩選功能)
      */
     public function index(Request $request)
     {
@@ -23,8 +23,6 @@ class AgentDashboardController extends Controller
         ->whereDate('deadline', '>=', now()->toDateString())
         // 排除已成交的單子 (people 欄位為空表示還沒人接單)
         ->whereNull('people')
-        // Laravel 預設有 SoftDeletes 就會排除已刪除的，
-        // 若要保險一點或沒用 SoftDeletes 可加上 ->whereNull('deleted_at')
         ->latest();
 
         // 2. 處理關鍵字搜尋
@@ -39,8 +37,14 @@ class AgentDashboardController extends Controller
             });
         }
 
+        // 🎯 【新增核心邏輯】：處理從小鈴鐺「前往查看」帶過來的買家篩選
+        // 只要網址後方有 ?search_buyer_id=X ，大廳就只會顯示該買家的清單
+        $searchBuyerId = $request->query('search_buyer_id');
+        if ($searchBuyerId) {
+            $query->where('user_id', $searchBuyerId);
+        }
+
         // 3. 修正點：將 'location' 改為 'country'
-        // 根據錯誤訊息，您的資料表欄位名稱應該是 country
         $country = $request->query('country');
         if ($country && $country !== 'all') {
             $query->where('country', $country);
@@ -81,6 +85,7 @@ class AgentDashboardController extends Controller
             'selectedCountry' => $country ?? 'all',
             'selectedTime' => $selectedTime,
             'keyword' => $keyword,
+            'searchBuyerId' => $searchBuyerId, // 💡 傳給前端，未來如果想做「清除篩選」按鈕可以用
         ]);
     }
 }

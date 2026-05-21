@@ -73,7 +73,7 @@
                                                     {{ $notify->buyer->name ?? '未知用戶' }}
                                                 </span>
                                             </div>
-                                            <a href="/agent/request-list/{{ $notify->request_list_id }}" 
+                                            <a href="{{ route('agent.notification.read', ['buyer_id' => $notify->buyer_id, 'request_list_id' => $notify->request_list_id]) }}" 
                                             class="inline-flex items-center px-2.5 py-1.5 text-xs font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none transition duration-150 ease-in-out shadow-sm"
                                             style="font-size: 11px;">
                                                 {{ __('前往查看') }}

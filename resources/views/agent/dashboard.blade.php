@@ -141,6 +141,23 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <!-- 篩選區 -->
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8 space-y-6">
+                     @if(request()->has('search_buyer_id'))
+                        <div class="mb-6 flex items-center justify-between bg-indigo-50 border border-indigo-100 p-4 rounded-xl shadow-sm animate-fade-in animate-duration-200">
+                            <div class="flex items-center space-x-2 text-indigo-800">
+                                <i class="bi bi-funnel-fill text-base text-indigo-500"></i>
+                                <span class="text-sm font-medium">
+                                    {{ __('目前正在檢視該特定請購人的推薦清單') }}
+                                </span>
+                            </div>
+                            
+                            <a href="{{ route('agent.dashboard') }}" 
+                            class="inline-flex items-center px-4 py-2 bg-white border border-indigo-300 rounded-lg text-xs font-semibold text-indigo-700 shadow-sm hover:bg-indigo-100 transition">
+                                <i class="bi bi-x-circle-fill me-1.5 text-indigo-500"></i>
+                                {{ __('清除篩選（顯示全部）') }}
+                            </a>
+                        </div>
+                    @endif
+                
                 <div>
                     <h5 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                         <i class="bi bi-geo-alt"></i> 依國家篩選

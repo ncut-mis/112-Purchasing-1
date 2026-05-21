@@ -28,10 +28,18 @@ use App\Http\Controllers\FollowController;
 use App\Http\Controllers\FollowOrderController; 
 use App\Http\Controllers\HistoryController;
 
+
+
+
+
 Route::get('/agent/dashboard', [AgentDashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('agent.dashboard');
+    
 // **權限控制**：您應該在路由或控制中加入檢查，確保只有 `status == 'approved'` 的使用者才能進入此頁面。
+Route::get('/agent/notification/read/{buyer_id}/{request_list_id}', [App\Http\Controllers\RequestListController::class, 'readNotification'])
+    ->middleware(['auth', 'verified']) // 👈 加上驗證中間件，確保安全
+    ->name('agent.notification.read');
 
 Route::get('/shop/store', [ShopController::class, 'store'])->name('store');
 
@@ -128,6 +136,7 @@ Route::get('/', function () {
 
     // 代購人會員專區
     Route::get('/agent/member', function (Request $request) {
+
         $user = Auth::user();
 
         $finishedOrdersCount = Order::where('seller_id', $user->id)
@@ -334,3 +343,4 @@ Route::middleware(['auth'])->group(function () {
     // 代購人歷史紀錄主路由
     Route::get('/agent/member', [HistoryController::class, 'agentHistory'])->name('agent.member');
 });
+
