@@ -20,6 +20,20 @@ class AgentApplicationSeeder extends Seeder
         $countries = ['日本', '韓國', '美國', '泰國', '中國'];
 
         foreach ($users as $index => $user) {
+            // 🎯 【新增核心邏輯】隨機產生該使用者的可代購國家（1 ~ 2 個國家）
+            $numCount = rand(1, 2); // 隨機決定要給 1 個還是 2 個國家
+            $randomKeys = (array) array_rand($countries, $numCount); // 隨機抓出索引值，強制轉型成陣列
+            
+            // 透過索引值拿到國家名稱
+            $selectedCountries = [];
+            foreach ($randomKeys as $key) {
+                $selectedCountries[] = $countries[$key];
+            }
+            
+            // 🎯 變成中文字串，用逗號隔開（例如："日本,美國"）
+            // 如果你的系統習慣用 JSON 字串，也可以改成 json_encode($selectedCountries, JSON_UNESCAPED_UNICODE)
+            $purchasableCountriesString = implode(',', $selectedCountries);
+
             // 建立申請紀錄
             AgentApplication::create([
                 'user_id'        => $user->id,
@@ -34,12 +48,13 @@ class AgentApplicationSeeder extends Seeder
                 'status'         => 'approved', // 直接設為已通過
             ]);
 
-            // 重點：直接更新 User 資料表的身分 (假設你的欄位是 role)
+            // 重點：直接更新 User 資料表的身分與可代購國家欄位
             $user->update([
-                'role' => 'seller', // 或是 'agent'，依據你的資料庫設計
+                'role'                  => 'seller', 
+                'purchasable_countries' => $purchasableCountriesString, // 🎯 寫入生成好的中文字串
             ]);
         }
 
-        echo "成功模擬 20 筆代購申請資料！\n";
+        echo "成功模擬 20 筆代購申請資料，並已同步更新 User 的可代購國家！\n";
     }
 }
