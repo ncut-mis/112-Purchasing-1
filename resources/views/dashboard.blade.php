@@ -16,7 +16,7 @@
                     <div class="text-2xl font-bold text-gray-800">{{ $stats['ongoing_requests'] }}</div>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-purple-500">
-                    <div class="text-sm text-gray-500 mb-1">進行中的跟單</div>
+                    <div class="text-sm text-gray-500 mb-1">進行中的跟團</div>
                     <div class="text-2xl font-bold text-gray-800">0</div>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500">
@@ -49,6 +49,11 @@
                                 <span>請託清單</span>
                             </a>
 
+                             <a href="{{ route('dashboard', ['section' => 'follow-orders']) }}" class="flex items-center space-x-3 p-3 rounded-lg {{ $currentSection === 'follow-orders' ? 'bg-purple-50 text-purple-600 font-medium' : 'text-gray-600 hover:bg-gray-50 transition' }}">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                                <span>跟團</span>
+                            </a>
+
                             <a href="{{ route('dashboard', ['section' => 'favorite-posts']) }}" class="flex items-center space-x-3 p-3 rounded-lg {{ $currentSection === 'favorite-posts' ? 'bg-pink-50 text-pink-600 font-medium' : 'text-gray-600 hover:bg-gray-50 transition' }}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
                                 <span>收藏</span>
@@ -60,10 +65,7 @@
                                 <span>追蹤名單</span>
                             </a>
 
-                            <a href="{{ route('dashboard', ['section' => 'follow-orders']) }}" class="flex items-center space-x-3 p-3 rounded-lg {{ $currentSection === 'follow-orders' ? 'bg-purple-50 text-purple-600 font-medium' : 'text-gray-600 hover:bg-gray-50 transition' }}">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
-                                <span>跟單紀錄</span>
-                            </a>
+
 
                             <!-- 聊天 (新移動位置) -->
 

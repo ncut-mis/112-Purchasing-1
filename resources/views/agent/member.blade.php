@@ -60,7 +60,7 @@
                             <!-- 1. 我的代購貼文 -->
                             <a href="#" @click.prevent="activeTab = 'posts'" :class="activeTab === 'posts' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-gray-600'" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition">
                                 <i class="bi bi-megaphone-fill text-lg"></i>
-                                <span>我的代購貼文</span>
+                                <span>我的代購團</span>
                             </a>
                             <!-- 2. 請託單管理 -->
                             <a href="#" @click.prevent="activeTab = 'order-management'" :class="activeTab === 'order-management' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-gray-600'" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition">
@@ -70,7 +70,7 @@
                             <!-- 3. 代購貼文管理 -->
                             <a href="#" @click.prevent="activeTab = 'product-management'" :class="activeTab === 'product-management' ? 'bg-blue-50 text-blue-600 font-bold' : 'text-gray-600'" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition">
                                 <i class="bi bi-box text-blue-500 text-lg"></i>
-                                <span>代購貼文管理</span>
+                                <span>代購團管理</span>
                             </a>
                             <!-- 4. 聊天訊息 -->
                             <a href="{{ route('agent.chat') }}" 
