@@ -335,25 +335,22 @@ public function submit(RequestList $requestList)
 
         return $mime ?: null;
     }
-<<<<<<< HEAD
-}
-=======
-        public function readNotification($buyer_id, $request_list_id)
-{
-    // 1. 安全檢查：確保使用者已登入
-    if (!\Illuminate\Support\Facades\Auth::check()) {
-        return redirect()->route('login');
+
+    public function readNotification($buyer_id, $request_list_id)
+    {
+        // 1. 安全檢查：確保使用者已登入
+        if (!\Illuminate\Support\Facades\Auth::check()) {
+            return redirect()->route('login');
+        }
+
+        // 2. 將目前登入代購人收到來自該買家的所有未讀通知全部改成已讀
+        \App\Models\AgentNotification::where('agent_id', \Illuminate\Support\Facades\Auth::id())
+            ->where('buyer_id', $buyer_id)
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
+
+        // 🎯【關鍵修正】：不要轉址到 /agent/request-list/{id}
+        // 必須直接導向「接單大廳 (agent.dashboard)」，並在網址後面帶上 search_buyer_id 參數！
+        return redirect()->route('agent.dashboard', ['search_buyer_id' => $buyer_id]);
     }
-
-    // 2. 將目前登入代購人收到來自該買家的所有未讀通知全部改成已讀
-    \App\Models\AgentNotification::where('agent_id', \Illuminate\Support\Facades\Auth::id())
-        ->where('buyer_id', $buyer_id)
-        ->where('is_read', false)
-        ->update(['is_read' => true]);
-
-    // 🎯【關鍵修正】：不要轉址到 /agent/request-list/{id}
-    // 必須直接導向「接單大廳 (agent.dashboard)」，並在網址後面帶上 search_buyer_id 參數！
-    return redirect()->route('agent.dashboard', ['search_buyer_id' => $buyer_id]);
 }
-}
->>>>>>> 12bec28 (新增前往查看)
