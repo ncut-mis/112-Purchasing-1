@@ -109,7 +109,7 @@
                                             <div class="carousel-item h-100 {{ $loop->first ? 'active' : '' }}">
                                                 <img src="{{ $imgUrl }}"
                                                      class="w-100 h-100 object-fit-cover"
-                                                     alt="{{ $popPost->title }} 商品圖片 {{ $loop->index + 1 }}">
+                                                     alt="{{ $popPost->title}} 商品圖片 {{ $loop->index + 1 }}">
                                             </div>
                                         @endforeach
                                     </div>
@@ -185,7 +185,7 @@
                                 </div>
 
                                 <p class="text-dark mb-3 small" style="line-height: 1.6;">
-                                    已是模擬系統自動產生的專業代購貼文內容。
+                                    {{ \Illuminate\Support\Str::limit($popPost->description ?: '代購人尚未填寫詳細說明。', 200) }}
                                 </p>
 
                                 <div class="rounded-3 bg-light px-3 py-2 border" style="border-color: #eef1f4 !important;">
@@ -422,7 +422,7 @@
                                 </div>
 
                                 <p class="text-dark mb-3 small" style="line-height: 1.6;">
-                                    {{ \Illuminate\Support\Str::limit($agentPost->description ?: '代購人尚未填寫詳細說明。', 80) }}
+                                    {{ \Illuminate\Support\Str::limit($agentPost->description ?: '代購人尚未填寫詳細說明。', 200) }}
                                 </p>
 
                                 <div class="rounded-3 bg-light px-3 py-2 border" style="border-color: #eef1f4 !important;">

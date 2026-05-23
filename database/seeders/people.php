@@ -93,6 +93,14 @@ class people extends Seeder
 
         $fallbackCountries = ['日本', '韓國', '美國', '英國', '泰國', '中國'];
 
+        $titleSuffixPool = [
+            '本週第一團', '限時連線', '現場直送', '快閃補貨', '熱門加開',
+            '空運優先', '晚鳥加碼', '人氣精選', '行李箱直送', '實拍回報',
+            '清單代買', '折扣季限定', '會員回饋', '精品快線', '零食專場',
+            '藥妝特輯', '香氛專場', '服飾熱賣', '球鞋連線', '伴手禮團',
+        ];
+        $titleCursor = 0;
+
         // 3. 開始為每位代購人產生貼文
         foreach ($agents as $user) {
             
@@ -118,6 +126,10 @@ class people extends Seeder
                 // 從該國家情境中抽取標題
                 $randomTitle = $campaign['titles'][array_rand($campaign['titles'])];
 
+                $titleSuffix = $titleSuffixPool[$titleCursor % count($titleSuffixPool)] . '-' . str_pad((string) ($titleCursor + 1), 2, '0', STR_PAD_LEFT);
+                $titleCursor++;
+                $finalTitle = "{$randomTitle}｜{$titleSuffix}";
+
                 // 隨機決定開團時間
                 $startDate = Carbon::now()->subDays(rand(0, 2));
                 $endDate = Carbon::now()->addDays(rand(3, 10));
@@ -126,7 +138,7 @@ class people extends Seeder
                 // 建立貼文主檔
                 $post = AgentPost::create([
                     'user_id'                 => $user->id,
-                    'title'                   => $randomTitle,
+                    'title'                   => $finalTitle,
                     'country'                 => $chosenCountry,
                     'description'             => $campaign['description'], // 👈 這裡現在絕對不會找不到 Key 了！
                     'start_date'              => $startDate,

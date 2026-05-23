@@ -61,6 +61,31 @@
         }
         .post-card:hover { transform: translateY(-5px); }
 
+        .post-card.is-own-post {
+            cursor: default;
+            opacity: 0.96;
+        }
+        .post-action-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,.85);
+            background: rgba(255,255,255,.95);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,.15);
+        }
+        .post-action-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .post-actions {
+            right: 12px;
+            bottom: 12px;
+            z-index: 20;
+        }
         /* 卡片上方的標籤：提高層級確保在圖片之上 */
         .badge-country { position: absolute; top: 15px; left: 15px; background: rgba(255,255,255,0.9); color: #333; font-weight: bold; font-size: 0.75rem; padding: 5px 12px; border-radius: 50px; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
         .badge-status { position: absolute; top: 15px; right: 15px; background: #198754; color: #fff; font-size: 0.75rem; padding: 5px 12px; border-radius: 50px; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
@@ -219,13 +244,48 @@
 
         <div class="row g-4">
             @forelse($posts as $post) 
+                @php
+                    $isOwner = auth()->check() && (int) auth()->id() === (int) $post->user_id;
+                    $isFavorited = in_array((int) $post->id, $favoritedAgentPostIds ?? [], true);
+                @endphp
                 <div class="col-12 col-sm-6 col-lg-4">
                     {{-- 卡片主體 --}}
-                    <div class="card post-card" data-bs-toggle="modal" data-bs-target="#orderModal{{ $post->id }}">
+                    <div class="card post-card js-post-card {{ $isOwner ? 'is-own-post' : '' }}"
+                         @if(!$isOwner) data-order-modal-id="orderModal{{ $post->id }}" @endif>
                         
                         <div class="card-slider-container position-relative">
                             <span class="badge-country">{{ $post->country }}</span>
                             <span class="badge-status">接單中</span>
+
+                             @if($isOwner)
+                                <span class="position-absolute bottom-0 start-0 m-3 badge rounded-pill bg-warning text-dark" style="z-index: 11;">
+                                    無法跟單
+                                </span>
+                            @endif
+                            @auth
+                                <div class="position-absolute post-actions d-flex gap-2">
+                                    <button type="button"
+                                        class="post-action-btn js-favorite-toggle"
+                                        data-type="agent_post"
+                                        data-id="{{ $post->id }}"
+                                        data-favorited="{{ $isFavorited ? '1' : '0' }}"
+                                        title="{{ $isFavorited ? '取消收藏' : '加入收藏' }}"
+                                        @disabled($isOwner)
+                                        >
+                                        <i class="bi {{ $isFavorited ? 'bi-heart-fill text-danger' : 'bi-heart text-danger' }}"></i>
+                                    </button>
+                                    <button type="button"
+                                        class="post-action-btn js-report-btn"
+                                        data-target-type="agent_post"
+                                        data-target-id="{{ $post->id }}"
+                                        data-report-modal-id="reportAgentPostModal{{ $post->id }}"
+                                        title="檢舉貼文"
+                                        @disabled($isOwner)
+                                        >
+                                        <i class="bi bi-flag text-secondary"></i>
+                                    </button>
+                                </div>
+                            @endauth
 
                             @php
                                 // 抓取這則貼文下的所有商品圖片
@@ -266,13 +326,14 @@
                         <div class="card-body p-4">
                             <h5 class="card-title fw-bold">{{ $post->title }}</h5>
                             <p class="text-muted small mb-0">
-                                {{ \Illuminate\Support\Str::limit($post->description ?: '無詳細說明。', 60) }}
+                                {{ \Illuminate\Support\Str::limit($post->description ?: '無詳細說明。', 200) }}
                             </p>
                         </div>
                     </div>
                 </div>
 
                 {{-- 對應的跟單彈出視窗 (Modal) --}}
+                 @unless($isOwner)
                 <div class="modal fade" id="orderModal{{ $post->id }}" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog modal-xl modal-dialog-centered">
                         
@@ -411,6 +472,50 @@
                         </form>
                     </div>
                 </div>
+                  @endunless
+
+                @auth
+                    @unless($isOwner)
+                    <div class="modal fade" id="reportAgentPostModal{{ $post->id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content border-0 shadow-lg rounded-4">
+                                <div class="modal-header border-0 pb-2">
+                                    <h5 class="modal-title fw-bold text-dark"><i class="bi bi-exclamation-triangle me-2 text-danger"></i>檢舉代購貼文</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form class="store-report-form px-4 pb-4" data-target-type="agent_post" data-target-id="{{ $post->id }}">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold mb-2">檢舉違規類型 <span class="text-danger">*</span></label>
+                                        <select class="form-select rounded-3" name="report_type" required>
+                                            <option value="" selected disabled>請選擇違規類型</option>
+                                            <option value="false_info">不實資訊</option>
+                                            <option value="fraud">詐騙行為</option>
+                                            <option value="prohibited_items">違禁品</option>
+                                            <option value="copyright">侵權內容</option>
+                                            <option value="harassment">騷擾仇恨</option>
+                                            <option value="spam">垃圾訊息</option>
+                                            <option value="other">其他</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label fw-bold mb-2">檢舉原因 <span class="text-danger">*</span></label>
+                                        <textarea class="form-control rounded-3 store-report-reason" name="reason" rows="4" maxlength="500" placeholder="請詳細描述檢舉原因（最多500字）" required></textarea>
+                                        <div class="text-end text-muted small mt-1"><span class="store-report-count">0</span>/500</div>
+                                    </div>
+                                    <div class="alert alert-info border-0 rounded-3 mb-0" role="alert">
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        <small>感謝您的檢舉，我們會認真審查您提供的信息，維護平台安全。</small>
+                                    </div>
+                                    <div class="d-flex gap-2 mt-3">
+                                        <button type="button" class="btn btn-outline-secondary rounded-pill flex-grow-1" data-bs-dismiss="modal">取消</button>
+                                        <button type="submit" class="btn btn-danger rounded-pill flex-grow-1 store-report-submit-btn">提交檢舉</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    @endunless
+                @endauth
             @empty
                 <div class="col-12 text-center py-5">
                     <p class="text-muted">目前沒有符合條件的代購貼文</p>
@@ -497,6 +602,127 @@
             }
 
             initializeSliderProductLabels();
+
+             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+            document.querySelectorAll('.js-favorite-toggle').forEach(button => {
+                button.addEventListener('click', async (event) => {
+                    event.stopPropagation();
+                    try {
+                        const response = await fetch(@json(route('favorite.toggle')), {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken,
+                                'Accept': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                type: button.dataset.type,
+                                id: Number(button.dataset.id),
+                            }),
+                        });
+
+                        const payload = await response.json();
+                        if (!response.ok) {
+                            throw new Error(payload.message || '收藏失敗');
+                        }
+
+                        const icon = button.querySelector('i');
+                        const isAdded = payload.status === 'added';
+                        button.dataset.favorited = isAdded ? '1' : '0';
+                        button.title = isAdded ? '取消收藏' : '加入收藏';
+                        if (icon) {
+                            icon.className = `bi ${isAdded ? 'bi-heart-fill' : 'bi-heart'} text-danger`;
+                        }
+                    } catch (error) {
+                        alert(error.message || '收藏失敗，請稍後再試');
+                    }
+                });
+            });
+
+            document.querySelectorAll('.js-report-btn').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    if (button.disabled) {
+                        return;
+                    }
+
+                    const modalId = button.dataset.reportModalId;
+                    const modalEl = modalId ? document.getElementById(modalId) : null;
+                    if (!modalEl || typeof bootstrap === 'undefined') return;
+                    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                });
+            });
+
+            document.querySelectorAll('.store-report-reason').forEach(textarea => {
+                textarea.addEventListener('input', () => {
+                    const counter = textarea.closest('form')?.querySelector('.store-report-count');
+                    if (counter) counter.textContent = String(textarea.value.length);
+                });
+            });
+
+            document.querySelectorAll('.store-report-form').forEach(form => {
+                form.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+                    const reportType = form.querySelector('select[name="report_type"]').value;
+                    const reason = (form.querySelector('textarea[name="reason"]').value || '').trim();
+                    const submitBtn = form.querySelector('.store-report-submit-btn');
+
+                    if (!reportType) { alert('請選擇違規類型'); return; }
+                    if (!reason) { alert('請輸入檢舉原因'); return; }
+
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = '提交中...';
+
+                    try {
+                        const response = await fetch(@json(route('reports.store')), {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken,
+                                'Accept': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                target_type: form.dataset.targetType,
+                                target_id: Number(form.dataset.targetId),
+                                report_type: reportType,
+                                reason,
+                            }),
+                        });
+                        const payload = await response.json();
+                        if (!response.ok) throw new Error(payload.message || '檢舉失敗');
+                        alert(payload.message || '檢舉已送出');
+                        const modalEl = form.closest('.modal');
+                        if (modalEl && typeof bootstrap !== 'undefined') {
+                            bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+                        }
+                        form.reset();
+                        const counter = form.querySelector('.store-report-count');
+                        if (counter) counter.textContent = '0';
+                    } catch (error) {
+                        alert(error.message || '檢舉失敗，請稍後再試');
+                    } finally {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = '提交檢舉';
+                    }
+                });
+            });
+
+            document.querySelectorAll('.js-post-card[data-order-modal-id]').forEach(card => {
+                card.addEventListener('click', (event) => {
+                    if (event.target.closest('.post-action-btn')) {
+                        return;
+                    }
+
+                    const modalId = card.dataset.orderModalId;
+                    const modalEl = document.getElementById(modalId);
+                    if (!modalEl || typeof bootstrap === 'undefined') {
+                        return;
+                    }
+
+                    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                });
+            });
         });
     </script>
     

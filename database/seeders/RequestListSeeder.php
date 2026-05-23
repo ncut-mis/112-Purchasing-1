@@ -91,9 +91,9 @@ class RequestListSeeder extends Seeder
                 'currency'       => 'TWD',
             ]);
 
-            // 🎯 4. 動態建立隨機個數的商品項目（隨機挑選 1 ~ 4 樣不重複商品）
+            // 🎯 4. 動態建立隨機個數的商品項目（隨機挑選 1 ~ 3 樣不重複商品）
             $totalBudget = 0;
-            $itemCount = rand(1, 4);
+            $itemCount = rand(1, 3); // 每單隨機 1 ~ 3 樣商品
             $shuffledItems = $scenario['item_bank'];
             shuffle($shuffledItems); // 打亂該國商品庫
             

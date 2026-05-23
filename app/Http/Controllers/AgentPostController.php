@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AgentPost;
 use App\Models\PostProduct;
+use App\Models\Favorite;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -399,6 +400,15 @@ class AgentPostController extends Controller
                    ->paginate(12)
                    ->withQueryString();
 
-    return view('store.index', compact('posts'));
+    $favoritedAgentPostIds = Auth::check()
+        ? Favorite::query()
+            ->where('user_id', Auth::id())
+            ->where('favoriteable_type', AgentPost::class)
+            ->pluck('favoriteable_id')
+            ->map(fn ($id) => (int) $id)
+            ->all()
+        : [];
+
+    return view('store.index', compact('posts', 'favoritedAgentPostIds'));
 }
 }

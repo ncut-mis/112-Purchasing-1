@@ -74,6 +74,19 @@ class CartController extends Controller
                 return $order->items->sum('quantity');
             });
 
+            // 逐商品統計要回補的數量，避免用單一總量直接扣整個貼文商品導致 sold_quantity 變成負值
+            $returnByProduct = [];
+            foreach ($allOrdersInGroup as $order) {
+                foreach ($order->items as $item) {
+                    $productId = (int) ($item->product_id ?? 0);
+                    $qty = (int) ($item->quantity ?? 0);
+                    if ($productId <= 0 || $qty <= 0) {
+                        continue;
+                    }
+                    $returnByProduct[$productId] = ($returnByProduct[$productId] ?? 0) + $qty;
+                }
+            }
+
             // 如果沒有 items 資料，用金額反推
             if ($returnQty <= 0) {
                 $groupTotalAmount = $allOrdersInGroup->sum('total_amount');
@@ -87,18 +100,32 @@ class CartController extends Controller
                 }
             }
 
-            // 修正：回補 sold_quantity 而非 max_quantity
-            if ($returnQty > 0) {
-                \DB::table('post_products')
-                    ->where('agent_post_id', $sourceId)
-                    ->decrement('sold_quantity', $returnQty);
-            }
+           DB::transaction(function () use ($userId, $sourceId, $returnQty, $returnByProduct) {
+                // 優先以「商品明細」回補對應商品 sold_quantity，並以 GREATEST(...,0) 防止負數
+                if (!empty($returnByProduct)) {
+                    foreach ($returnByProduct as $productId => $qty) {
+                        DB::table('post_products')
+                            ->where('id', $productId)
+                            ->where('agent_post_id', $sourceId)
+                            ->update([
+                                'sold_quantity' => DB::raw('GREATEST(sold_quantity - ' . (int) $qty . ', 0)'),
+                            ]);
+                    }
+                } elseif ($returnQty > 0) {
+                    // fallback：如果舊資料沒有 order_items.product_id，仍避免欄位下溢
+                    DB::table('post_products')
+                        ->where('agent_post_id', $sourceId)
+                        ->update([
+                            'sold_quantity' => DB::raw('GREATEST(sold_quantity - ' . (int) $returnQty . ', 0)'),
+                        ]);
+                }
 
             // 刪除整組訂單
-            \App\Models\Order::where('buyer_id', $userId)
-                ->where('source_id', $sourceId)
-                ->where('status', 'pending_payment')
-                ->delete();
+                \App\Models\Order::where('buyer_id', $userId)
+                    ->where('source_id', $sourceId)
+                    ->where('status', 'pending_payment')
+                    ->delete();
+            });
 
             return back()->with('success', "已成功移除該項目，釋出 {$returnQty} 個名額。");
         }
