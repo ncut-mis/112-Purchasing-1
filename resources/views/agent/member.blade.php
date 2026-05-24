@@ -675,53 +675,78 @@
 
                                     {{-- 修改報價 Modal（只有 returned 時才有意義） --}}
                                     <div id="edit-quote-modal-{{ $quote->id }}" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 px-4"
-                                         onclick="if(event.target===this){this.classList.add('hidden');this.classList.remove('flex');}">
-                                        <div class="bg-white w-full max-w-md rounded-2xl shadow-xl p-6">
-                                            <div class="flex items-center justify-between mb-4">
-                                                <h4 class="text-lg font-bold text-gray-800">修改報價</h4>
-                                                <button type="button" class="text-2xl text-gray-400 hover:text-gray-600"
-                                                    onclick="document.getElementById('edit-quote-modal-{{ $quote->id }}').classList.add('hidden');document.getElementById('edit-quote-modal-{{ $quote->id }}').classList.remove('flex');">&times;</button>
-                                            </div>
-                                            <form method="POST" action="{{ route('quotes.update', $quote->id) }}">
-                                                @csrf
-                                                @method('PATCH')
-                                                <div class="space-y-4">
-                                                    <div>
-                                                        <label class="block text-xs font-bold text-gray-600 mb-1">報價總金額（NT$）</label>
-                                                        <input type="number" name="agent_quote_total" min="1" step="1"
-                                                            value="{{ $quote->price }}"
-                                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                            required>
-                                                    </div>
-                                                    <div>
-                                                        <label class="block text-xs font-bold text-gray-600 mb-1">預計到貨日</label>
-                                                        <input type="date" name="estimated_date"
-                                                            value="{{ optional($quote->estimated_date)->format('Y-m-d') }}"
-                                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                            required>
-                                                    </div>
-                                                    <div>
-                                                        <label class="block text-xs font-bold text-gray-600 mb-1">備註說明（選填）</label>
-                                                        <textarea name="comment" rows="3"
-                                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                            placeholder="補充說明...">{{ $quote->comment }}</textarea>
-                                                    </div>
-                                                    <div class="flex justify-end gap-2 pt-2">
-                                                        <button type="button"
-                                                            onclick="document.getElementById('edit-quote-modal-{{ $quote->id }}').classList.add('hidden');document.getElementById('edit-quote-modal-{{ $quote->id }}').classList.remove('flex');"
-                                                            class="rounded-lg bg-gray-100 px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-200 transition">
-                                                            取消
-                                                        </button>
-                                                        <button type="submit"
-                                                            class="rounded-lg bg-orange-500 px-4 py-2 text-xs font-bold text-white hover:bg-orange-600 transition">
-                                                            送出修改
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
+     onclick="if(event.target===this){this.classList.add('hidden');this.classList.remove('flex');}">
+    
+    <div class="bg-white w-full max-w-md rounded-3xl shadow-xl p-6">
+        {{-- Header --}}
+        <div class="flex items-center justify-between mb-6">
+            <h4 class="text-xl font-bold text-gray-800">修改報價</h4>
+            <button type="button" class="text-2xl text-gray-400 hover:text-gray-600"
+                    onclick="document.getElementById('edit-quote-modal-{{ $quote->id }}').classList.add('hidden');document.getElementById('edit-quote-modal-{{ $quote->id }}').classList.remove('flex');">&times;</button>
+        </div>
 
+        <form method="POST" action="{{ route('quotes.update', $quote->id) }}">
+            @csrf
+            @method('PATCH')
+            
+            <div class="space-y-6">
+                {{-- 🎯 模擬商品資訊卡片 --}}
+                <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                    <div class="w-16 h-16 bg-gray-200 rounded-xl flex items-center justify-center text-gray-400">
+                        <i class="bi bi-image"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold text-gray-800">{{ $quote->product_name ?? '商品名稱' }}</p>
+                        <span class="inline-block bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded-md font-medium">需求數量：{{ $quote->quantity ?? 1 }}</span>
+                    </div>
+                </div>
+
+                {{-- 🎯 金額輸入框（加大並強化樣式） --}}
+                <div class="relative">
+                    <label class="block text-xs font-bold text-gray-500 mb-1">報價金額</label>
+                    <input type="number" name="agent_quote_total" min="1" step="1"
+                           value="{{ $quote->price }}"
+                           class="w-full rounded-2xl border border-gray-300 px-4 py-3 text-lg font-medium text-gray-700 focus:border-indigo-500 focus:ring-indigo-500"
+                           required>
+                </div>
+
+                {{-- 預計到貨日 --}}
+                <div>
+                    <label class="flex items-center text-xs font-bold text-gray-500 mb-1 gap-1">
+                        <i class="bi bi-calendar-check"></i> 預計到貨日
+                    </label>
+                    <input type="date" name="estimated_date"
+                           value="{{ optional($quote->estimated_date)->format('Y-m-d') }}"
+                           class="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                           required>
+                </div>
+
+                {{-- 報價備註 --}}
+                <div>
+                    <label class="flex items-center text-xs font-bold text-gray-500 mb-1 gap-1">
+                        <i class="bi bi-chat-left-text"></i> 報價備註（選填）
+                    </label>
+                    <textarea name="comment" rows="2"
+                              class="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                              placeholder="補充說明...">{{ $quote->comment }}</textarea>
+                </div>
+
+                {{-- 🎯 底部按鈕區 (改為左右佈局) --}}
+                <div class="grid grid-cols-2 gap-4 pt-2">
+                    <button type="button"
+                            onclick="document.getElementById('edit-quote-modal-{{ $quote->id }}').classList.add('hidden');document.getElementById('edit-quote-modal-{{ $quote->id }}').classList.remove('flex');"
+                            class="rounded-2xl bg-gray-100 py-3 text-sm font-bold text-gray-700 hover:bg-gray-200 transition">
+                        取消
+                    </button>
+                    <button type="submit"
+                            class="rounded-2xl bg-indigo-500 py-3 text-sm font-bold text-white hover:bg-indigo-600 transition shadow-lg shadow-indigo-200">
+                        確認送出 (NT${{ number_format($quote->price) }})
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
                                     {{-- 檢視完整請託單 Modal --}}
                                     <div id="view-rl-{{ $quote->id }}" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4"
                                          onclick="if(event.target===this){this.classList.add('hidden');this.classList.remove('flex');}">
