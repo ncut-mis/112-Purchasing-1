@@ -51,7 +51,7 @@ Route::get('/store/{id}', [ShopController::class, 'show'])->name('shop.show');
 Route::middleware(['auth'])->group(function () {
     Route::post('/follow/toggle', [FollowController::class, 'toggle'])->name('follow.toggle');
     Route::get('/follows', [FollowController::class, 'index'])->name('follows.index');
-    Route::post('/follow-orders', [FollowOrderController::class, 'store'])->name('follow-orders.store');
+    
 });
 
 Route::get('/post-product-image/{postProduct}', [AgentPostController::class, 'image'])->name('post-product.image');
@@ -344,3 +344,22 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/agent/member', [HistoryController::class, 'agentHistory'])->name('agent.member');
 });
 
+
+// 🌟 2. 這是保留給舊有 Home（首頁）或其他地方呼叫的相容路由（別名）
+// 網址一樣指向新的 /follow-order-submit，但名字保留舊的，這樣首頁就絕對不會報錯！
+Route::middleware(['auth'])->group(function () {
+    Route::post('/follow/toggle', [FollowController::class, 'toggle'])->name('follow.toggle');
+    Route::get('/follows', [FollowController::class, 'index'])->name('follows.index');
+
+    // 🎯 【關鍵解決】同時綁定所有前端 Blade 可能寫死、呼叫或轉譯的所有「名稱」與「網址」
+    // 這樣不論 Home 還是 ShoppingCart 走哪條路，全部都能正確送進 Controller 填寫資料！
+    
+    // 通道 A：專供 Home 首頁可能寫死的舊網址 / 舊名稱
+    Route::post('/follow-orders', [FollowOrderController::class, 'store'])->name('follow-orders.store');
+    
+    // 通道 B：專供你最想改、最漂亮的新名稱別名
+    Route::post('/follow-orders', [FollowOrderController::class, 'store'])->name('follow.order.submit');
+    
+    // 通道 C：預防某些 Blade 元件在改版時，把網址與名稱誤解析為 /follow-order-submit 
+    Route::post('/follow-order-submit', [FollowOrderController::class, 'store']);
+});

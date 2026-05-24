@@ -11,37 +11,44 @@ use Illuminate\Support\Facades\Auth;
 class FollowOrderController extends Controller
 {
     public function store(Request $request)
-    {
-        // 1. 驗證傳入欄位
-        $request->validate([
-            'agent_post_id'   => 'required|exists:agent_posts,id',
-            'post_product_id' => 'required|exists:post_products,id',
-            'quantity'        => 'required|integer|min:1',
-        ]);
+{
+    // 1. 偵錯日誌：幫你看看到底收到了什麼
+    \Log::info('跟單請求資料:', $request->all());
 
-        // 2. 獲取商品資訊以確保價格正確（不從前端傳價格，防止被竄改）
-        $product = PostProduct::findOrFail($request->post_product_id);
-        $quantity = $request->quantity;
-
-        // 3. 建立跟單紀錄 (包含你要求的所有欄位)
-        $followOrder = FollowOrder::create([
-            'user_id'         => Auth::id(),           // 誰在跟單
-            'agent_post_id'   => $request->agent_post_id,
-            'post_product_id' => $request->post_product_id,
-            'price'           => $product->price,      // 商品單價
-            'quantity'        => $quantity,            // 數量
-            'total_amount'    => $product->price * $quantity, // 總金額
-            'status'          => 'matched',            // 直接設為 matched 進入結帳流程
-        ]);
-
-        // 4. 判斷回傳方式
-        if ($request->ajax()) {
-            return response()->json([
-                'success' => true,
-                'redirect_url' => route('cart.index') // 跳轉到結帳頁面的路由名稱
-            ]);
+    // 2. 靈活驗證：判斷是單一傳入還是陣列傳入
+    $items = [];
+    if ($request->has('items')) {
+        // 處理批次陣列傳入 (來自 Modal 表格)
+        foreach ($request->items as $productId => $data) {
+            $qty = (int)($data['quantity'] ?? 0);
+            if ($qty > 0) {
+                $items[] = ['product_id' => $productId, 'quantity' => $qty];
+            }
         }
-
-        return redirect()->route('cart.index')->with('success', '已加入結帳區！');
+    } else {
+        // 處理單一傳入 (來自舊的購物車按鈕)
+        $items[] = ['product_id' => $request->post_product_id, 'quantity' => $request->quantity];
     }
+
+    if (empty($items)) {
+        return back()->withErrors('請至少選擇一個商品');
+    }
+
+    // 3. 批次寫入資料庫
+    foreach ($items as $item) {
+        $product = PostProduct::findOrFail($item['product_id']);
+        
+        FollowOrder::create([
+            'user_id'         => Auth::id(),
+            'agent_post_id'   => $request->agent_post_id,
+            'post_product_id' => $item['product_id'],
+            'price'           => $product->price,
+            'quantity'        => $item['quantity'],
+            'total_amount'    => $product->price * $item['quantity'],
+            'status'          => 'matched',
+        ]);
+    }
+
+    return redirect()->route('cart.index')->with('success', '已加入結帳區！');
+}
 }

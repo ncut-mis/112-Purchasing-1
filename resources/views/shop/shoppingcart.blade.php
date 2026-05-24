@@ -9,58 +9,111 @@
                 
                 {{-- A 區塊：跟單商品 (Primary 藍色系) --}}
 
-               @if($followOrders->isNotEmpty())
-    {{-- 💡 核心優化：在前端將待付款的訂單依照 source_id（貼文ID）進行分組，徹底解決重複顯示的問題 --}}
-    @php
-        $groupedOrders = $followOrders->groupBy('source_id');
-    @endphp
-
+@if($followOrders->isNotEmpty())
     <div class="mb-5">
-        <h4 class="text-info fw-bold mb-3"><i class="bi bi-file-earmark-text-fill"></i> 專屬團代購團</h4>
+        <h4 class="text-info fw-bold mb-3">
+            <i class="bi bi-file-earmark-text-fill"></i> 專屬代購跟單項目
+        </h4>
         
-        @foreach($groupedOrders as $sourceId => $ordersInGroup) 
-            @php
-                // 拿這組裡面的第一筆訂單來當作基礎資料（標題、代購人等）
-                $firstOrder = $ordersInGroup->first();
-                // 💡 自動累加這一組裡面所有重複訂單的總金額
-                $groupTotalAmount = $ordersInGroup->sum('total_amount');
+        {{-- 直接遍歷每一筆待付款的訂單 --}}
+        @foreach($followOrders as $order) 
+            <div class="card mb-4 bg-white shadow-sm border-start border-5 border-info rounded-3">
                 
-                // 撈取單價用來精準計算數量
-                $productItem = \DB::table('post_products')->where('agent_post_id', $sourceId)->first();
-                $productPrice = $productItem->price ?? 0;
-                // 反推總數量
-                $totalQty = $productPrice > 0 ? (int)($groupTotalAmount / $productPrice) : $ordersInGroup->count();
-            @endphp
-
-            <div class="row mb-4 align-items-center bg-white p-3 rounded-3 shadow-sm border-start border-5 border-info">
-                <div class="col-md-5">
-                    <span class="badge bg-info mb-3 text-white">需求單</span>
-                    <h5 class="text-dark">{{ $firstOrder->title }}</h5>
-                    <p class="mb-2 small text-muted">
-                        代購人：{{ $firstOrder->seller->name ?? '系統匹配' }}
-                    </p>
-                    {{-- 顯示累加後的總數量 --}}
-                    <span class="badge bg-light text-dark border">本次跟單共：{{ $totalQty }} 件</span>
-                </div>
-                
-                <div class="col-md-4 text-end">
-                    {{-- 顯示這一組合併後的總金額 --}}
-                    <h5 class="text-success fw-bold">NT$ {{ number_format($groupTotalAmount, 0) }}</h5>
-                    @if($productPrice > 0)
-                        <small class="text-muted">(單價: NT$ {{ number_format($productPrice, 0) }})</small>
-                    @endif
-                </div>
-
-                <div class="col-md-3 text-end">
-                    {{-- 跟單退回按鈕：因為前端合併了，點擊移除時，我們用這組的第一筆 ID 去做刪除 --}}
-                    <form action="{{ route('order.cancel', $firstOrder->id) }}" method="POST" onsubmit="return confirm('確定要移除這項跟單商品嗎？')">
+                {{-- 訂單主體標題與狀態 --}}
+                <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+                    <div>
+                        <span class="small text-muted">代購人：{{ $order->seller->name ?? '系統匹配' }}</span>
+                    </div>
+                    
+                    {{-- 移除整筆訂單按鈕 --}}
+                    <form action="{{ route('order.cancel', $order->id) }}" method="POST" onsubmit="return confirm('確定要移除這筆代購訂單與裡面的所有商品嗎？')">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="btn btn-outline-secondary btn-sm">
-                            <i class="bi bi-trash me-1"></i>移除項目
+                        <button type="submit" class="btn btn-link text-danger btn-sm p-0 text-decoration-none">
+                            <i class="bi bi-trash3-fill me-1"></i>移除整筆訂單
                         </button>
                     </form>
                 </div>
+
+                {{-- 展開這筆訂單底下的所有明細商品 --}}
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light small">
+                                <tr>
+                                    <th class="ps-3" style="width: 40%">商品名稱</th>
+                                    <th class="text-center" style="width: 15%">單價</th>
+                                    <th class="text-center" style="width: 25%">數量</th>
+                                    <th class="text-end pe-3" style="width: 20%">小計</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($order->items as $item)
+                                    <tr>
+                                        {{-- 欄位 1：商品名稱 --}}
+                                        <td class="ps-3">
+                                            <div class="fw-bold text-dark">{{ $item->name }}</div>
+                                        </td>
+
+                                        {{-- 欄位 2：單價 --}}
+                                        <td class="text-center text-muted">
+                                            NT$ {{ number_format($item->price, 0) }}
+                                        </td>
+                                        
+                                        {{-- 欄位 3：數量加減調整欄位 --}}
+                                        <td class="text-center">
+                                            <div class="d-flex justify-content-center align-items-center">
+                                                
+                                                {{-- 減號按鈕表單 --}}
+                                                <form action="{{ route('cart.update', $item->id) }}" method="POST" class="d-inline">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <input type="hidden" name="quantity" value="{{ $item->quantity - 1 }}">
+                                                    <button type="submit" class="btn btn-sm btn-outline-secondary px-2 py-1" {{ $item->quantity <= 1 ? 'disabled' : '' }}>
+                                                        <i class="bi bi-dash-lg small"></i>
+                                                    </button>
+                                                </form>
+
+                                                {{-- 數量直接輸入 --}}
+                                                <form action="{{ route('cart.update', $item->id) }}" method="POST" class="d-inline mx-2">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <input type="number" name="quantity" value="{{ $item->quantity }}" 
+                                                           class="form-control form-control-sm text-center fw-bold" 
+                                                           style="width: 60px;"
+                                                           onchange="this.form.submit()">
+                                                </form>
+
+                                                {{-- 加號按鈕表單 --}}
+                                                <form action="{{ route('cart.update', $item->id) }}" method="POST" class="d-inline">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <input type="hidden" name="quantity" value="{{ $item->quantity + 1 }}">
+                                                    <button type="submit" class="btn btn-sm btn-outline-secondary px-2 py-1">
+                                                        <i class="bi bi-plus-lg small"></i>
+                                                    </button>
+                                                </form>
+
+                                            </div>
+                                        </td>
+                                        
+                                        {{-- 欄位 4：商品小計 --}}
+                                        <td class="text-end pe-3 fw-bold text-success">
+                                            NT$ {{ number_format($item->subtotal, 0) }}
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {{-- 訂單底部的總結金額區塊 --}}
+                <div class="card-footer bg-white text-end py-3 pe-3">
+                    <span class="text-muted me-2">共 {{ $order->items->sum('quantity') }} 件商品，總計：</span>
+                    <h4 class="d-inline text-danger fw-bold m-0">NT$ {{ number_format($order->total_amount, 0) }}</h4>
+                </div>
+
             </div>
         @endforeach
     </div>

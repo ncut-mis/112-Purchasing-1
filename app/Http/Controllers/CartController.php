@@ -11,6 +11,7 @@ use App\Models\Order;
 use App\Models\PostProduct;
 use App\Models\Logistics;
 use Illuminate\Support\Facades\DB;
+use App\Models\OrderItem;
 
 class CartController extends Controller
 {
@@ -52,9 +53,13 @@ class CartController extends Controller
     }
 
     public function cancelOrder($id)
-    {
-        $userId = \Auth::id();
+{
+    // 1. 尋找要刪除的訂單
+    $order = Order::where('id', $id)
+                  ->where('buyer_id', auth()->id())
+                  ->firstOrFail();
 
+<<<<<<< HEAD
         $baseOrder = \App\Models\Order::where('id', $id)
                     ->where('buyer_id', $userId)
                     ->first();
@@ -126,12 +131,42 @@ class CartController extends Controller
                     ->where('status', 'pending_payment')
                     ->delete();
             });
+=======
+    try {
+        \DB::transaction(function () use ($order) {
+            
+            // 2. 循環這筆訂單裡的所有商品，回扣已售數量
+            foreach ($order->items as $item) {
+                $product = \App\Models\PostProduct::find($item->product_id);
+                
+                if ($product) {
+                    // 防護鎖：防止扣成負數
+                    $newSoldQuantity = $product->sold_quantity - $item->quantity;
+                    if ($newSoldQuantity < 0) {
+                        $newSoldQuantity = 0;
+                    }
+                    
+                    $product->update([
+                        'sold_quantity' => $newSoldQuantity
+                    ]);
+                }
+            }
 
-            return back()->with('success', "已成功移除該項目，釋出 {$returnQty} 個名額。");
-        }
+            // 🎯 核心關鍵修正：在刪除主訂單前，先把這筆訂單底下的所有明細清空！
+            // 這樣 order_items 資料表裡面的東西就會一併被處理掉
+            $order->items()->delete(); 
 
-        return back()->with('error', '找不到該項目。');
+            // 3. 執行主訂單的刪除
+            $order->delete(); 
+        });
+>>>>>>> 0efc2d3 (結帳有詳細資料(只能主畫面跟單))
+
+        return redirect()->route('shopping.cart')->with('success', '已成功移除該項跟單商品及明細！');
+
+    } catch (\Exception $e) {
+        return redirect()->route('shopping.cart')->with('error', '移除失敗，原因：' . $e->getMessage());
     }
+}
     public function processCheckout(Request $request)
     {
         $request->validate([
@@ -202,5 +237,53 @@ class CartController extends Controller
         DB::table('post_products')->where('agent_post_id', $sourceId)->decrement('max_quantity', $buyQty);
         return back()->with('success', '已成功加入！');
     }
+}
+public function update(Request $request, $id)
+{
+    // 1. 驗證前端傳過來的數量
+    $request->validate([
+        'quantity' => 'required|integer|min:1',
+    ]);
+
+    // 2. 精準撈出這一筆訂單明細 (order_items.id)
+    $item = OrderItem::with('order')->findOrFail($id);
+    
+    // 3. 撈出該明細對應的商品
+    $product = PostProduct::find($item->post_product_id);
+
+    $oldQuantity = $item->quantity;
+    $newQuantity = intval($request->quantity);
+    
+    // 計算這一次加減的「差值」
+    $diff = $newQuantity - $oldQuantity;
+
+    // 4. 透過資料庫交易處理，確保所有數字同步更新
+    DB::transaction(function () use ($item, $product, $newQuantity, $diff) {
+        // 🎯 修正：將這裡的總額欄位改為你的資料庫結構 subtotal
+        $item->quantity = $newQuantity;
+        $item->subtotal = $item->price * $newQuantity; 
+        $item->save();
+
+        // 連動更新商品表的已售數量 (sold_quantity)，並加上防負數安全機制
+        if ($product) {
+            $newSoldQty = $product->sold_quantity + $diff;
+            $product->sold_quantity = $newSoldQty < 0 ? 0 : $newSoldQty;
+            $product->save();
+        }
+
+        // 重新計算主訂單的總金額
+        $order = $item->order;
+        if ($order) {
+            // 🎯 修正：sum() 裡面改抓 'subtotal' 欄位
+            $order->items_total = $order->items()->sum('subtotal');
+            
+            // 這裡會加上運費、平台費等（如果有的話，沒有就直接等於 items_total）
+            $order->total_amount = $order->items_total + ($order->shipping_fee ?? 0) + ($order->platform_fee ?? 0);
+            $order->save();
+        }
+    });
+
+    // 5. 成功後返回，並帶上成功的 Session 訊息
+    return redirect()->back()->with('success', '數量與總金額已精準更新！');
 }
 }
