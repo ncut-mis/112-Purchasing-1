@@ -52,7 +52,8 @@
         <div class="mb-5 text-center text-md-start">
             <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-2 mb-1">
                 <div style="width: 40px; height: 2px; background-color: #ef4444;"></div>
-                <h6 class="text-danger fw-bold text-uppercase m-0" style="letter-spacing: 2px;">Trending Now</h6>
+                <h6 class="text-danger fw-bold text-uppercase m-0" style="letter-spacing: 2px;">Hot Agent Post</h6>
+                <div style="width: 40px; height: 2px; background-color: #ef4444;"></div>
             </div>
             <h2 class="fw-black m-0" style="font-weight: 900; font-size: 2.5rem;">熱門代購團</h2>
             <p class="text-muted mt-2">目前社群內最受歡迎、最多人收藏的代購團。</p>
@@ -261,7 +262,7 @@
         @else
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h6 class="text-success fw-bold text-uppercase mb-1">Agent Posts</h6>
+                    <h6 class="text-success fw-bold text-uppercase mb-1">Latest Agent Posts</h6>
                     <h2 class="fw-bold">最新代購團</h2>
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <a href="{{ route('store.index') }}" class="text-decoration-none text-muted">

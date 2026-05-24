@@ -166,16 +166,16 @@ class CartController extends Controller
 }
 public function update(Request $request, $id)
 {
-    // 1. 驗證前端傳過來的數量
+   // 1. 驗證前端傳過來的數量（允許 0，0 代表移除）
     $request->validate([
-        'quantity' => 'required|integer|min:1',
+        'quantity' => 'required|integer|min:0',
     ]);
 
     // 2. 精準撈出這一筆訂單明細 (order_items.id)
     $item = OrderItem::with('order')->findOrFail($id);
     
     // 3. 撈出該明細對應的商品
-    $product = PostProduct::find($item->post_product_id);
+    $product = PostProduct::find($item->product_id);
 
     $oldQuantity = $item->quantity;
     $newQuantity = intval($request->quantity);
@@ -184,16 +184,47 @@ public function update(Request $request, $id)
     $diff = $newQuantity - $oldQuantity;
 
     // 4. 透過資料庫交易處理，確保所有數字同步更新
-    DB::transaction(function () use ($item, $product, $newQuantity, $diff) {
-        // 🎯 修正：將這裡的總額欄位改為你的資料庫結構 subtotal
+    $resultMessage = DB::transaction(function () use ($item, $product, $newQuantity, $oldQuantity, $diff) {
+        if ($product) {
+            $product = PostProduct::where('id', $product->id)->lockForUpdate()->first();
+        }
+
+        if ($newQuantity === 0) {
+            if ($product) {
+                $product->sold_quantity = max(0, (int) $product->sold_quantity - $oldQuantity);
+                $product->save();
+            }
+
+            $order = $item->order;
+            $item->delete();
+
+            if ($order) {
+                if ($order->items()->count() === 0) {
+                    $order->delete();
+                } else {
+                    $order->items_total = $order->items()->sum('subtotal');
+                    $order->total_amount = $order->items_total + ($order->shipping_fee ?? 0) + ($order->platform_fee ?? 0);
+                    $order->save();
+                }
+            }
+
+            return '商品已從跟單中移除。';
+        }
+
+        if ($product && $diff > 0) {
+            $remaining = max(0, (int) $product->max_quantity - (int) $product->sold_quantity);
+            $allowedMax = $oldQuantity + $remaining;
+            if ($newQuantity > $allowedMax) {
+                return '超過可下單數量，目前最多可調整為 ' . $allowedMax . ' 件。';
+            }
+        }
         $item->quantity = $newQuantity;
-        $item->subtotal = $item->price * $newQuantity; 
+        $item->subtotal = $item->price * $newQuantity;
         $item->save();
 
         // 連動更新商品表的已售數量 (sold_quantity)，並加上防負數安全機制
         if ($product) {
-            $newSoldQty = $product->sold_quantity + $diff;
-            $product->sold_quantity = $newSoldQty < 0 ? 0 : $newSoldQty;
+             $product->sold_quantity = max(0, (int) $product->sold_quantity + $diff);
             $product->save();
         }
 
@@ -207,9 +238,11 @@ public function update(Request $request, $id)
             $order->total_amount = $order->items_total + ($order->shipping_fee ?? 0) + ($order->platform_fee ?? 0);
             $order->save();
         }
+
+         return '數量與總金額已精準更新！';
     });
 
     // 5. 成功後返回，並帶上成功的 Session 訊息
-    return redirect()->back()->with('success', '數量與總金額已精準更新！');
+    return redirect()->back()->with('success', $resultMessage);
 }
 }

@@ -332,85 +332,197 @@
                     </div>
                 </div>
 
-{{-- 對應的跟單彈出視窗 (Modal) --}}
-<div class="modal fade" id="orderModal{{ $post->id }}" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-        
-        {{-- 🎯 修正 1：使用 route 函數並傳入 $post->id，這是最標準的 Laravel 寫法 --}}
-        <form action="{{ route('order.store', $post->id) }}" method="POST" class="modal-content border-0 shadow-lg overflow-hidden" style="border-radius: 12px;">
-            @csrf
+                {{-- 對應的跟單彈出視窗 (Modal) --}}
+                 @unless($isOwner)
+                <div class="modal fade" id="orderModal{{ $post->id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-xl modal-dialog-centered">
+                        
+                         <form action="{{ route('orders.store', $post) }}" method="POST" class="modal-content border-0 shadow-lg overflow-hidden follow-order-form" style="border-radius: 12px;">
+                            @csrf
+                            <input type="hidden" name="agent_post_id" value="{{ $post->id }}">
 
-            <div style="background-color: #63a388; height: 45px; width: 100%;">
-                <h5 class="modal-title fw-bold text-white p-md-2"><i class="bi bi-cart-plus me-2 text-white"></i>確認跟單商品</h5>
-            </div>
-            
-            <div class="modal-body p-4 p-md-8 pt-4">
-                {{-- (省略上方資訊區塊，保持原樣即可) --}}
-
-                <div class="row g-4">
-                    {{-- 左側圖片區塊 (保持原樣) --}}
-                    <div class="col-md-4">
-                        {{-- ... --}}
-                    </div>
-                    
-                    {{-- 右側：表格區塊 --}}
-                    <div class="col-md-8 d-flex flex-column">
-                        <div class="table-responsive flex-grow-1">
-                            <table class="table align-middle text-center custom-table mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>商品名稱</th>
-                                        <th>可下單數量</th>
-                                        <th>單價</th>
-                                        <th>數量</th>
-                                        <th>小計</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($post->products as $product)
-                                        <tr class="product-row" data-price="{{ $product->price }}" data-max="{{ $product->max_quantity }}">
-                                            <td>{{ $product->name }}</td>
-                                            <td>{{ $product->max_quantity }}</td>
-                                            <td>${{ number_format($product->price) }}</td>
-                                            
-                                            <td>
-                                                <div class="d-flex align-items-center justify-content-center">
-                                                    <button class="qty-btn btn-minus" type="button">−</button>
-                                                    <span class="mx-3 fw-bold qty-text">0</span>
-                                                    {{-- 🎯 修正 2：將 name 改為 products，這樣才能對應到 OrderController 的驗證 --}}
-                                                    <input type="hidden" name="products[{{ $product->id }}][quantity]" value="0" class="qty-hidden-input">
-                                                    <button class="qty-btn btn-plus" type="button">+</button>
-                                                </div>
-                                            </td>
-                                            
-                                            <td class="subtotal-text">$0</td>
-                                        </tr>
-                                    @empty
-                                        <tr><td colspan="5" class="text-muted text-center py-4">此貼文目前沒有商品</td></tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div class="mt-4 pt-3">
-                            <div class="text-end mb-4">
-                                <h5 class="fw-bold m-0 text-dark total-amount">總計金額：NT$0</h5>
+                            <div style="background-color: #63a388; height: 45px; width: 100%;">
+                                     <h5 class="modal-title fw-bold text-white p-md-2"><i class="bi bi-cart-plus me-2 text-white"></i>確認跟單商品</h5>
                             </div>
+                            <div class="modal-body p-4 p-md-8 pt-4">
+
                             
-                            <div class="d-flex justify-content-end gap-3 mt-3">
-                                <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">再逛逛</button>
-                                {{-- 🎯 修正 3：按鈕保持 type="submit"，會自動觸發上方 Form 提交 --}}
-                                <button type="submit" class="btn text-white px-4 py-2 btn-checkout" style="background-color: #63a388;" disabled>
-                                    確認結帳
-                                </button>
+                                <div class="row mb-5 g-3">
+                                    <div class="col-lg-3 col-md-6 d-flex align-items-center">
+                                        <span class="text-nowrap me-2 fw-bold text-muted">代購人</span>
+                                        <input type="text" class="form-control custom-input" value="{{ $post->user->name ?? '系統匹配' }}" readonly>
+                                    </div>
+                                    <div class="col-lg-4 col-md-6 d-flex align-items-center">
+                                        <span class="text-nowrap me-2 fw-bold text-muted">銷售期間：</span>
+                                        <input type="text" class="form-control custom-input" 
+                                               value="{{ \Carbon\Carbon::parse($post->start_date)->format('Y-m-d') }} ~ {{ \Carbon\Carbon::parse($post->end_date)->format('Y-m-d') }}" 
+                                               readonly>
+                                    </div>
+                                    <div class="col-lg-5 col-md-12 d-flex align-items-center">
+                                        <span class="text-nowrap me-2 fw-bold text-muted">描述訊息：</span>
+                                        <input type="text" class="form-control custom-input" value="{{ $post->description }}" readonly>
+                                    </div>
+                                </div>
+
+                                <div class="row g-4">
+                                    
+                                    {{-- 左側：商品圖片輪播 (Slider) --}}
+                                    <div class="col-md-4">
+                                        @php
+                                            $modalImages = $post->products->filter(fn($product) => $product->image_path);
+                                        @endphp
+
+                                        @if($modalImages->isNotEmpty())
+                                            <div id="carouselModal{{ $post->id }}" class="carousel slide modal-slider-container" data-bs-ride="carousel">
+                                                <div class="modal-slider-name">
+                                                    <span class="modal-slider-name-text">{{ $modalImages->first()->name }}</span>
+                                                </div>
+                                                @if($modalImages->count() > 1)
+                                                    <div class="carousel-indicators mb-2">
+                                                        @foreach($modalImages as $index => $product)
+                                                            <button type="button" 
+                                                                    data-bs-target="#carouselModal{{ $post->id }}" 
+                                                                    data-bs-slide-to="{{ $index }}" 
+                                                                    class="{{ $loop->first ? 'active' : '' }}" 
+                                                                    aria-current="{{ $loop->first ? 'true' : 'false' }}" 
+                                                                    aria-label="Slide {{ $index + 1 }}"></button>
+                                                        @endforeach
+                                                    </div>
+                                                @endif
+
+                                                <div class="carousel-inner h-100">
+                                                    @foreach($modalImages as $index => $product)
+                                                        <div class="carousel-item h-100 {{ $loop->first ? 'active' : '' }}" data-product-name="{{ $product->name }}">
+                                                            <img src="{{ route('post-product.image', ['postProduct' => $product->id, 'v' => $product->updated_at?->timestamp ?? now()->timestamp]) }}" class="modal-slider-img" alt="商品圖片 {{ $index + 1 }}">
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+
+                                                @if($modalImages->count() > 1)
+                                                    <button class="carousel-control-prev" type="button" data-bs-target="#carouselModal{{ $post->id }}" data-bs-slide="prev">
+                                                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                                        <span class="visually-hidden">Previous</span>
+                                                    </button>
+                                                    <button class="carousel-control-next" type="button" data-bs-target="#carouselModal{{ $post->id }}" data-bs-slide="next">
+                                                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                                        <span class="visually-hidden">Next</span>
+                                                    </button>
+                                                @endif
+                                            </div>
+                                        @else
+                                            <div class="modal-slider-container img-placeholder">
+                                                <i class="bi bi-image fs-1 me-2"></i> 無商品圖片
+                                            </div>
+                                        @endif
+                                    </div>
+                                    
+                                    {{-- 右側：表格區塊 --}}
+                                    <div class="col-md-8 d-flex flex-column">
+                                        <div class="table-responsive flex-grow-1">
+                                            <table class="table align-middle text-center custom-table mb-0">
+                                                <thead>
+                                                    <tr>
+                                                        <th>商品名稱</th>
+                                                        <th>可下單數量</th>
+                                                        <th>單價</th>
+                                                        <th>數量</th>
+                                                        <th>小計</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @forelse($post->products as $product)
+                                                        @php
+                                                            $maxQuantity = is_null($product->max_quantity) ? null : (int) $product->max_quantity;
+                                                            $soldQuantity = (int) ($product->sold_quantity ?? 0);
+                                                            $remaining = is_null($maxQuantity) ? 9999 : max($maxQuantity - $soldQuantity, 0);
+                                                        @endphp
+                                                        <tr class="product-row" data-price="{{ $product->price }}" data-max="{{ $remaining }}">
+                                                            <td>{{ $product->name }}</td>
+                                                          <td>
+                                                                @if($remaining > 0)
+                                                                    <span class="badge bg-info-subtle text-info rounded-pill">還有 {{ $remaining }}</span>
+                                                                @else
+                                                                    <span class="badge bg-danger-subtle text-danger rounded-pill">已售罄</span>
+                                                                @endif
+                                                            </td>
+                                                            <td>${{ number_format($product->price) }}</td>
+                                                            
+                                                            <td>
+                                                                <div class="d-flex align-items-center justify-content-center">
+                                                                    <button class="qty-btn btn-minus" type="button" {{ $remaining <= 0 ? 'disabled' : '' }}>−</button>
+                                                                    <span class="mx-3 fw-bold qty-text">0</span>
+                                                                    <input type="hidden" name="products[{{ $product->id }}][quantity]" value="0" class="qty-hidden-input">
+                                                                    <button class="qty-btn btn-plus" type="button" {{ $remaining <= 0 ? 'disabled' : '' }}>+</button>
+                                                                </div>
+                                                            </td>
+                                                            
+                                                            <td class="subtotal-text">$0</td>
+                                                        </tr>
+                                                    @empty
+                                                        <tr>
+                                                            <td colspan="5" class="text-muted text-center py-4">此貼文目前沒有商品</td>
+                                                        </tr>
+                                                    @endforelse
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        <div class="mt-4 pt-3">
+                                            <div class="text-end mb-4">
+                                                <h5 class="fw-bold m-0 text-dark total-amount">總計金額：NT$0</h5>
+                                            </div>
+                                            <div class="d-flex justify-content-end gap-3">
+                                                <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">再逛逛</button>
+                                                {{-- 預設加入 disabled 屬性，並加上 btn-checkout class 以便操作 --}}
+                                                <button type="submit" class="btn text-white px-4 py-2 btn-checkout" style="background-color: #63a388;" disabled>確認結帳</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        </form>
                     </div>
                 </div>
-            </div>
-        </form>
-    </div>
-</div>
+                  @endunless
+
+                @auth
+                    @unless($isOwner)
+                    <div class="modal fade" id="reportAgentPostModal{{ $post->id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content border-0 shadow-lg rounded-4">
+                                <div class="modal-header border-0 pb-2">
+                                    <h5 class="modal-title fw-bold text-dark"><i class="bi bi-exclamation-triangle me-2 text-danger"></i>檢舉代購貼文</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form class="store-report-form px-4 pb-4" data-target-type="agent_post" data-target-id="{{ $post->id }}">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold mb-2">檢舉違規類型 <span class="text-danger">*</span></label>
+                                        <select class="form-select rounded-3" name="report_type" required>
+                                            <option value="" selected disabled>請選擇違規類型</option>
+                                            <option value="false_info">不實資訊</option>
+                                            <option value="fraud">詐騙行為</option>
+                                            <option value="prohibited_items">違禁品</option>
+                                            <option value="copyright">侵權內容</option>
+                                            <option value="harassment">騷擾仇恨</option>
+                                            <option value="spam">垃圾訊息</option>
+                                            <option value="other">其他</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label fw-bold mb-2">檢舉原因 <span class="text-danger">*</span></label>
+                                        <textarea class="form-control rounded-3 store-report-reason" name="reason" rows="4" maxlength="500" placeholder="請詳細描述檢舉原因（最多500字）" required></textarea>
+                                        <div class="text-end text-muted small mt-1"><span class="store-report-count">0</span>/500</div>
+                                    </div>
+                                    <div class="d-flex gap-2 mt-3">
+                                        <button type="button" class="btn btn-outline-secondary rounded-pill flex-grow-1" data-bs-dismiss="modal">取消</button>
+                                        <button type="submit" class="btn btn-danger rounded-pill flex-grow-1 store-report-submit-btn">提交檢舉</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    @endunless
+                @endauth
             @empty
                 <div class="col-12 text-center py-5">
                     <p class="text-muted">目前沒有符合條件的代購貼文</p>
@@ -498,7 +610,7 @@
 
             initializeSliderProductLabels();
 
-             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
             document.querySelectorAll('.js-favorite-toggle').forEach(button => {
                 button.addEventListener('click', async (event) => {
