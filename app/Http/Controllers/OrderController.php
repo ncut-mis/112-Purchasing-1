@@ -11,6 +11,7 @@ class OrderController extends Controller
 {
     public function store(Request $request, AgentPost $agentPost)
     {
+        // 1. 權限與狀態檢查
         if ((int) $request->user()->id === (int) $agentPost->user_id) {
             return back()->withErrors(['follow_order' => '不能跟自己的貼文下單。']);
         }
@@ -19,16 +20,13 @@ class OrderController extends Controller
             return back()->withErrors(['follow_order' => '此貼文目前不開放跟單。']);
         }
 
+        // 2. 驗證前端傳來的 products 陣列
         $validated = $request->validate([
             'products' => ['required', 'array'],
             'products.*.quantity' => ['nullable', 'integer', 'min:0'],
         ]);
 
-        $productsById = $agentPost->products()
-            ->where('is_active', true)
-            ->get()
-            ->keyBy('id');
-
+        $productsById = $agentPost->products()->where('is_active', true)->get()->keyBy('id');
         $selectedItems = [];
         $totalQty = 0;
         $itemsTotal = 0.0;
@@ -36,85 +34,65 @@ class OrderController extends Controller
 
         foreach ($validated['products'] as $productId => $row) {
             $quantity = (int) ($row['quantity'] ?? 0);
-            if ($quantity < 1) {
-                continue;
-            }
+            if ($quantity < 1) continue;
 
             $product = $productsById->get((int) $productId);
-            if (! $product) {
-                continue;
+            if (! $product) continue;
+
+            // 檢查庫存
+            $remaining = is_null($product->max_quantity) ? null : max(0, (int) $product->max_quantity - (int) $product->sold_quantity);
+            if (! is_null($remaining) && $quantity > $remaining) {
+                return back()->withErrors(['follow_order' => "商品「{$product->name}」剩餘可跟單數量不足。"]);
             }
 
-            $maxQuantity = $product->max_quantity;
-            $soldQuantity = (int) ($product->sold_quantity ?? 0);
-            $remainingQuantity = is_null($maxQuantity) ? null : max(0, (int) $maxQuantity - $soldQuantity);
-
-            if (! is_null($remainingQuantity) && $quantity > $remainingQuantity) {
-                return back()->withErrors([
-                    'follow_order' => "商品「{$product->name}」剩餘可跟單數量不足。",
-                ]);
-            }
-
-            $price = (float) $product->price;
-            $subtotal = $price * $quantity;
-
+            $subtotal = (float)$product->price * $quantity;
             $totalQty += $quantity;
             $itemsTotal += $subtotal;
-            $currency = $product->currency ?: $currency;
 
             $selectedItems[] = [
                 'product' => $product,
                 'quantity' => $quantity,
-                'price' => $price,
+                'price' => (float)$product->price,
                 'subtotal' => $subtotal,
             ];
         }
 
-        if ($totalQty < 1) {
-            return back()->withErrors(['follow_order' => '請至少選擇一項商品數量後再確認結帳。']);
-        }
+        if ($totalQty < 1) return back()->withErrors(['follow_order' => '請至少選擇一項商品。']);
 
+        // 3. 執行交易寫入資料庫
         DB::transaction(function () use ($request, $agentPost, $selectedItems, $itemsTotal, $currency) {
             $buyer = $request->user();
 
-            $order = Order::create([
-                'order_no' => Order::generateOrderNo(),
+           $order = Order::create([
+                'order_no' => 'ORD-' . time() . '-' . $buyer->id,
                 'buyer_id' => $buyer->id,
                 'seller_id' => $agentPost->user_id,
                 'source_type' => AgentPost::class,
                 'source_id' => $agentPost->id,
-                'items_total' => $itemsTotal,
-                'shipping_fee' => 0,
-                'platform_fee' => 0,
-                'total_amount' => $itemsTotal,
+                
+                // 這裡務必同時指定兩個欄位，確保資料庫不會報錯
+                'total_amount' => $itemsTotal, 
+                'items_total'  => $itemsTotal, 
+                
                 'currency' => $currency,
                 'status' => 'pending_payment',
-                'recipient_data' => [
-                    'name' => $buyer->name,
-                    'email' => $buyer->email,
-                ],
+                'recipient_data' => ['name' => $buyer->name, 'email' => $buyer->email],
                 'note' => "跟單來源：{$agentPost->title}",
             ]);
 
             foreach ($selectedItems as $item) {
-                $product = $item['product'];
-
                 $order->items()->create([
-                    'product_id' => $product->id,
-                    'name' => $product->name,
-                    'options' => null,
+                    'product_id' => $item['product']->id,
+                    'name' => $item['product']->name,
                     'price' => $item['price'],
                     'quantity' => $item['quantity'],
                     'subtotal' => $item['subtotal'],
                 ]);
-
-                $product->increment('sold_quantity', $item['quantity']);
+                $item['product']->increment('sold_quantity', $item['quantity']);
             }
         });
 
-        return redirect()
-            ->route('dashboard', ['section' => 'follow-orders'])
-            ->with('status', '跟單成功，已建立訂單並加入跟單紀錄。');
+        return redirect()->route('cart.index')->with('status', '跟單成功！');
     }
     public function cancel(Request $request, Order $order)
     {
