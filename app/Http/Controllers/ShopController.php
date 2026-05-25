@@ -2,55 +2,74 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Post;
-use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\AgentPost;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ShopController extends Controller
 {
     /**
-     * 顯示「找代購」列表頁面，支援搜尋功能
+     * 顯示前台首頁大廳 (支援貼文搜尋)
      */
-        public function store(Request $request)
-        {
-            // 1. 審核通過的 Agent
-            $query = User::whereHas('agentApplication', function($q) {
-                $q->where('status', 'approved');
+    public function home(Request $request)
+    {
+        $query = AgentPost::where('status', 'open')->with(['user', 'products']);
+
+        // 1. 這裡處理精準 ID 搜尋 (由追蹤名單跳轉過來時)
+        if ($postId = $request->input('post_id')) {
+            $query->where('id', $postId);
+        } 
+        // 2. 這裡處理關鍵字搜尋
+        elseif ($search = $request->input('search')) {
+            $searchTerm = "%{$search}%";
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('title', 'like', $searchTerm)
+                  ->orWhere('description', 'like', $searchTerm);
             });
-
-            // 2. 姓名搜尋
-            if ($search = $request->input('search')) {
-                $query->where('name', 'like', "%{$search}%");
-            }
-
-            // ✅ 3. 國家篩選：users.purchasable_countries (JSON)
-            if ($country = $request->input('country')) {
-                $query->whereJsonContains('purchasable_countries', $country);
-            }
-
-            $agents = $query->with([
-                'agentApplication', 
-                'agentPosts' => fn($q) => $q->where('status', 'open')->orderBy('created_at', 'desc')
-            ])->paginate(12)->withQueryString();
-
-            return view('shop.store', compact('agents'));
         }
 
+        $posts = $query->latest()->paginate(12)->withQueryString();
 
-
-
+        return view('home', compact('posts'));
+    }
 
     /**
-     * 詳細資料頁面 (保留作為單獨連結使用)
+     * 【核心優化】：顯示「找代購」大廳頁面
+     * 僅撈取在 agent_applications 表中審核狀態為 'approved' 的代購人
      */
-    public function show($id)
+    public function store(Request $request)
     {
-        $agent = User::whereHas('agentApplication', function($q) {
+        // 1. 初始化查詢：透過 whereHas 強制約束，只撈取有代購申請且狀態為 'approved' 的使用者
+        $query = User::whereHas('agentApplication', function($q) {
             $q->where('status', 'approved');
-        })->with(['agentApplication', 'agentPosts' => function($q) {
-            $q->where('status', 'open')->orderBy('created_at', 'desc');
-        }])->findOrFail($id);
+        })->with(['agentApplication', 'agentPosts']); // 預載入關聯，防止 N+1 效能問題
 
-        return view('shop.show', compact('agent'));
+        // 2. 【核心修正】：直接在資料庫查詢層過濾掉目前登入的代購人自己
+        // 這樣可以確保後端傳出去的資料筆數與前端統計人數 100% 同步，且不影響分頁
+        if (Auth::check()) {
+            $query->where('id', '!=', Auth::id());
+        }
+
+        // 3. 處理國家篩選 (例如：日本、韓國、美國)
+        if ($country = $request->input('country')) {
+            $query->where('purchasable_countries', 'like', "%{$country}%");
+        }
+
+        // 4. 處理代購人姓名、暱稱、或個人簡介的關鍵字搜尋
+        if ($search = $request->input('search')) {
+            $searchTerm = "%{$search}%";
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('name', 'like', $searchTerm)
+                  ->orWhere('nickname', 'like', $searchTerm)
+                  ->orWhere('bio', 'like', $searchTerm);
+            });
+        }
+
+        // 5. 撈取符合條件的所有代購人（交由前端 Blade 搭配 Alpine.js 進行每頁 12 筆的滾動加載）
+        $agents = $query->get();
+
+        // 6. 將過濾後的代購人集合傳遞給前台 views/shop/store.blade.php 渲染
+        return view('shop.store', compact('agents'));
     }
 }

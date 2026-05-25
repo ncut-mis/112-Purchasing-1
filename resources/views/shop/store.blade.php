@@ -1,11 +1,33 @@
 <x-app-layout>
-    <!-- 使用 Alpine.js 管理彈窗狀態與追蹤狀態 -->
+    @php
+        // 【核心優化】：在最前端就過濾掉登入者本人的卡片，確保統計數量與實際顯示的卡片 100% 同步
+        $visibleAgents = $agents->filter(function($agent) {
+            return !(Auth::check() && $agent->id === Auth::id());
+        });
+        $displayCount = $visibleAgents->count();
+    @endphp
+
+    <!-- 使用 Alpine.js 管理彈窗狀態、追蹤狀態以及分頁加載限制 -->
     <div x-data="{ 
         showModal: false, 
         activeAgent: null,
+        limit: 12, // 預設最多顯示 12 個代購人
+        totalCount: {{ $displayCount }},
         // 初始化：確保 ID 都是數字型態以利比對
         followedAgents: {{ Js::from(Auth::user() ? Auth::user()->followings->pluck('id')->map(fn($id) => (int)$id) : []) }}, 
         
+        // 初始化監聽器：實現使用者下拉時自動載入更多
+        init() {
+            window.addEventListener('scroll', () => {
+                // 當使用者下拉滾動至接近底部 300px 時，自動載入下一頁 (加載 12 筆)
+                if ((window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 300)) {
+                    if (this.limit < this.totalCount) {
+                        this.limit += 12;
+                    }
+                }
+            });
+        },
+
         // 輔助函式：確保回傳的是陣列，解決 JSON 字串顯示為亂碼字元的問題
         getArray(data) {
             if (!data) return [];
@@ -88,9 +110,9 @@
                 <h1 class="text-4xl font-black text-white mb-4">找代購</h1>
                 <p class="text-emerald-100 opacity-80">
                     @if(request('country'))
-                        正在瀏覽 <span class="text-yellow-400 underline">{{ request('country') }}</span> 的代購職人
+                        正在瀏覽 <span class="text-yellow-400 underline">{{ request('country') }}</span> 的代購職人 (共有 {{ $displayCount }} 位)
                     @else
-                        共有 {{ $agents->count() }} 位認證代購人在線為您服務
+                        共有 {{ $displayCount }} 位認證代購人在線為您服務
                     @endif
                 </p>
             </div>
@@ -124,9 +146,7 @@
                                 <option value="日本" {{ request('country') == '日本' ? 'selected' : '' }}>JP 日本</option>
                                 <option value="韓國" {{ request('country') == '韓國' ? 'selected' : '' }}>KR 韓國</option>
                                 <option value="美國" {{ request('country') == '美國' ? 'selected' : '' }}>US 美國</option>
-                                <option value="歐洲" {{ request('country') == '歐洲' ? 'selected' : '' }}>EU 歐洲</option>
-                                <option value="澳洲" {{ request('country') == '澳洲' ? 'selected' : '' }}>AU 澳洲</option>
-                                <option value="香港" {{ request('country') == '香港' ? 'selected' : '' }}>HK 香港</option>
+                                <option value="歐洲" {{ request('country') == '英國' ? 'selected' : '' }}>EU 英國</option>
                             </select>
                         </div>
     
@@ -143,9 +163,15 @@
 
             <!-- 代購人卡片清單 -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20">
-                @forelse($agents as $agent)
-                    <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
-                        <div class="flex flex-col items-center text-center">
+                <!-- 核心優化：將原本的迴圈改為附帶 index 陣列，以便進行限制與動態載入 -->
+                @forelse($visibleAgents->values() as $index => $agent)
+                    <div x-show="{{ $index }} < limit"
+                         x-transition:enter="transition ease-out duration-500"
+                         x-transition:enter-start="opacity-0 translate-y-6"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col h-full">
+                        
+                        <div class="flex flex-col items-center text-center flex-1">
                             <div class="relative mb-4 cursor-pointer" @click="openProfile({{ Js::from($agent) }})">
                                 <img src="{{ $agent->avatar ? asset('storage/' . $agent->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode($agent->name) . '&background=10b981&color=fff' }}" 
                                      class="w-24 h-24 rounded-full border-4 border-white shadow-md object-cover transition group-hover:scale-105">
@@ -178,7 +204,7 @@
                                 @endif
                             </div>
 
-                            <div class="grid grid-cols-2 gap-3 w-full">
+                            <div class="grid grid-cols-2 gap-3 w-full mt-auto">
                                 <button type="button" @click="openProfile({{ Js::from($agent) }})" 
                                     class="bg-gray-100 text-gray-600 py-3 rounded-2xl text-sm font-bold hover:bg-gray-200 transition">
                                     查看檔案
@@ -202,6 +228,16 @@
                         <p class="text-gray-400 font-medium">目前暫時沒有認證代購人在線</p>
                     </div>
                 @endforelse
+
+                <!-- 【新增載入更多按鈕區塊】：手動載入與下拉載入雙重支援 -->
+                <template x-if="limit < totalCount">
+                    <div class="col-span-full text-center mt-12">
+                        <button @click="limit += 12" class="bg-emerald-500 hover:bg-emerald-600 text-white px-10 py-4 rounded-2xl font-bold shadow-lg shadow-emerald-100 transition duration-300 transform hover:-translate-y-0.5 inline-flex items-center gap-2">
+                            <span>載入更多代購人</span>
+                            <i class="bi bi-chevron-down animate-bounce"></i>
+                        </button>
+                    </div>
+                </template>
             </div>
         </div>
 
