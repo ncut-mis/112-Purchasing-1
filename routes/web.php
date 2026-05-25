@@ -63,6 +63,7 @@ Route::middleware(['auth'])->group(function () {
     // 請購單聊天室（請託人 & 代購人共用同一個頁面）
     Route::get('/request-list/{requestList}/chat',  [App\Http\Controllers\RequestListChatController::class, 'show'])->name('request-list.chat.show');
     Route::post('/request-list/{requestList}/chat', [App\Http\Controllers\RequestListChatController::class, 'send'])->name('request-list.chat.send');
+    Route::post('/request-list/{requestList}/chat/read', [App\Http\Controllers\RequestListChatController::class, 'markRead'])->name('request-list.chat.read');
  
 });
 
@@ -186,6 +187,7 @@ Route::get('/', function () {
     Route::get('/messages/search-users', [MessageController::class, 'searchUsers'])->name('messages.search-users');
     Route::get('/messages/{user}/history', [MessageController::class, 'history'])->name('messages.history');
     Route::post('/messages/send', [MessageController::class, 'send'])->name('messages.send');
+    Route::post('/messages/{user}/read', [MessageController::class, 'markRead'])->name('messages.read');
     // --- 代購人專屬的聊天路由 ---
     Route::get('/agent/chat', [MessageController::class, 'agentIndex'])->name('agent.chat');
     

@@ -78,6 +78,33 @@ class RequestListChatController extends Controller
         return view('messages.chat', compact('requestList', 'partner', 'messages', 'isBuyer'));
     }
  
+    // 標記已讀（請託單聊天）
+    public function markRead(Request $request, RequestList $requestList)
+    {
+        $user = Auth::user();
+        $myId = $user->id;
+
+        $updated = Message::where('request_list_id', $requestList->id)
+            ->where('receiver_id', $myId)
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+
+        if ($updated > 0) {
+            // 找出最後一筆訊息的發送者，廣播已讀
+            $lastMsg = Message::where('request_list_id', $requestList->id)
+                ->where('receiver_id', $myId)
+                ->orderByDesc('created_at')
+                ->first();
+            if ($lastMsg) {
+                broadcast(new \App\Events\MessageRead(
+                    $myId, $lastMsg->sender_id, now()->format('H:i'), $requestList->id
+                ))->toOthers();
+            }
+        }
+
+        return response()->json(['ok' => true]);
+    }
+
     // 傳送訊息
     public function send(Request $request, RequestList $requestList)
     {

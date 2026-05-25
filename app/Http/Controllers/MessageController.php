@@ -18,6 +18,7 @@ class MessageController extends Controller
         $sentToIds = \DB::table('messages')
             ->where('sender_id', $userId)
             ->where('context', 'buyer')
+            ->whereNull('request_list_id')
             ->pluck('receiver_id')
             ->unique()
             ->values();
@@ -47,16 +48,18 @@ class MessageController extends Controller
     {
         $userId = Auth::id();
 
-        // 別人以 buyer 身份傳給我
+        // 別人以 buyer 身份傳給我（排除請託單聊天）
         $receivedFrom = \DB::table('messages')
             ->where('receiver_id', $userId)
             ->where('context', 'buyer')
+            ->whereNull('request_list_id')
             ->pluck('sender_id');
 
-        // 我以 agent 身份回覆的對象
+        // 我以 agent 身份回覆的對象（排除請託單聊天）
         $sentTo = \DB::table('messages')
             ->where('sender_id', $userId)
             ->where('context', 'agent')
+            ->whereNull('request_list_id')
             ->pluck('receiver_id');
 
         $partnerIds = $receivedFrom->merge($sentTo)
@@ -75,11 +78,13 @@ class MessageController extends Controller
         $myId = Auth::id();
 
         $messages = Message::with('sender')
+            ->whereNull('request_list_id')
             ->where(function ($q) use ($myId, $user) {
-                $q->where('sender_id', $myId)->where('receiver_id', $user->id);
-            })
-            ->orWhere(function ($q) use ($myId, $user) {
-                $q->where('sender_id', $user->id)->where('receiver_id', $myId);
+                $q->where(function ($q2) use ($myId, $user) {
+                    $q2->where('sender_id', $myId)->where('receiver_id', $user->id);
+                })->orWhere(function ($q2) use ($myId, $user) {
+                    $q2->where('sender_id', $user->id)->where('receiver_id', $myId);
+                });
             })
             ->orderBy('created_at')
             ->get()
@@ -92,9 +97,10 @@ class MessageController extends Controller
                 'read_at'   => $m->read_at,
             ]);
 
-        // 標記已讀
+        // 標記已讀（排除請託單聊天）
         Message::where('sender_id', $user->id)
             ->where('receiver_id', $myId)
+            ->whereNull('request_list_id')
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
 
@@ -149,6 +155,25 @@ class MessageController extends Controller
             ->get(['id', 'name']);
 
         return response()->json($users);
+    }
+
+    // 標記已讀（一般聊天）並廣播給對方
+    public function markRead(User $user)
+    {
+        $myId = Auth::id();
+
+        $updated = Message::where('sender_id', $user->id)
+            ->where('receiver_id', $myId)
+            ->whereNull('request_list_id')
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+
+        if ($updated > 0) {
+            // 廣播給對方：你的訊息已被讀
+            broadcast(new \App\Events\MessageRead($myId, $user->id, now()->format('H:i')))->toOthers();
+        }
+
+        return response()->json(['ok' => true]);
     }
 
     // 取得未讀訊息數

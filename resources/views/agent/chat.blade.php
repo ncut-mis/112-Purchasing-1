@@ -127,6 +127,8 @@
 
         const channel = pusher.subscribe('private-chat.' + MY_ID);
         channel.bind('message.sent', function (data) {
+            // 篩掉請託單聊天訊息
+            if (data.requestListId) return;
             const senderId = data.senderId;
             let partner = partners.find(p => p.id === senderId);
             if (!partner) {
@@ -135,11 +137,24 @@
             }
             partner.messages.push({
                 sender: 'other', name: data.userName,
-                text: data.messageContent, time: data.time,
+                text: data.messageContent, time: data.time, read_at: null,
             });
-            if (currentPartnerId !== senderId) partner.unread++;
+            if (currentPartnerId === senderId) {
+                markRead(senderId);
+            } else {
+                partner.unread++;
+            }
             renderUserList();
             if (currentPartnerId === senderId) renderMessages();
+        });
+
+        // 收到已讀通知
+        channel.bind('message.read', function (data) {
+            const partner = partners.find(p => p.id === data.readerId);
+            if (partner) {
+                partner.messages.forEach(m => { if (m.sender === 'me') m.read_at = data.readAt; });
+                if (currentPartnerId === data.readerId) renderMessages();
+            }
         });
 
         // ── 載入歷史對話對象 ───────────────────────────────────
@@ -161,6 +176,14 @@
             if (partners.length > 0) openChat(partners[0].id);
         }
 
+        // 標記已讀 API
+        function markRead(partnerId) {
+            fetch(`/messages/${partnerId}/read`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
+            }).catch(() => {});
+        }
+
         // ── 開啟對話 ──────────────────────────────────────────
         function openChat(partnerId) {
             currentPartnerId = partnerId;
@@ -170,6 +193,7 @@
             renderUserList();
             renderHeader(partner);
             enableInput(true);
+            markRead(partnerId);
 
             if (partner.messages.length > 0) { renderMessages(); return; }
 
@@ -297,8 +321,9 @@
                 chatMessages.innerHTML = '<div class="text-muted text-center py-5">還沒有任何訊息，傳送第一則訊息吧！</div>';
                 return;
             }
-            partner.messages.forEach(msg => {
+            partner.messages.forEach((msg, idx) => {
                 const isMe = msg.sender === 'me';
+                const isLast = idx === partner.messages.length - 1;
                 const row = document.createElement('div');
                 row.className = `d-flex mb-3 ${isMe ? 'justify-content-end' : 'justify-content-start'}`;
 
@@ -322,10 +347,10 @@
                 topRow.appendChild(bubble);
                 wrap.appendChild(topRow);
 
-                const time = document.createElement('div');
-                time.className = `small text-muted mt-1 px-1 ${isMe ? 'text-end' : 'text-start'}`;
-                time.textContent = msg.time || '--:--';
-                wrap.appendChild(time);
+                const meta = document.createElement('div');
+                meta.className = `small text-muted mt-1 px-1 d-flex align-items-center gap-1 ${isMe ? 'justify-content-end' : ''}`;
+                meta.innerHTML = `<span>${msg.time || '--:--'}</span>${isMe && isLast ? `<span style="color:${msg.read_at ? '#4a6cf7' : '#aaa'}">${msg.read_at ? '已讀' : '未讀'}</span>` : ''}`;
+                wrap.appendChild(meta);
 
                 row.appendChild(wrap);
                 chatMessages.appendChild(row);

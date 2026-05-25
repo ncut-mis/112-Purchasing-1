@@ -120,8 +120,8 @@
         let currentPartnerId = null;
 
         // ── 初始化 Pusher ──────────────────────────────────────
-        const pusher = new Pusher('{{ env("PUSHER_APP_KEY") }}', {
-            cluster: '{{ env("PUSHER_APP_CLUSTER") }}',
+        const pusher = new Pusher('{{ config("broadcasting.connections.pusher.key") }}', {
+            cluster: '{{ config("broadcasting.connections.pusher.options.cluster") }}',
             forceTLS: true,
             authEndpoint: '/broadcasting/auth',
             auth: { headers: { 'X-CSRF-TOKEN': CSRF } }
@@ -130,9 +130,10 @@
         // 訂閱自己的私人頻道
         const channel = pusher.subscribe('private-chat.' + MY_ID);
         channel.bind('message.sent', function (data) {
-            const senderId = data.senderId;
+            // 篩掉請託單聊天訊息
+            if (data.requestListId) return;
 
-            // 找到或建立對話夥伴
+            const senderId = data.senderId;
             let partner = partners.find(p => p.id === senderId);
             if (!partner) {
                 partner = { id: senderId, name: data.userName, messages: [], unread: 0 };
@@ -144,15 +145,29 @@
                 name: data.userName,
                 text: data.messageContent,
                 time: data.time,
+                read_at: null,
             });
 
-            if (currentPartnerId !== senderId) {
+            if (currentPartnerId === senderId) {
+                // 已在聊天中，立即標記已讀
+                markRead(senderId);
+            } else {
                 partner.unread++;
             }
 
             renderUserList();
-            if (currentPartnerId === senderId) {
-                renderMessages();
+            if (currentPartnerId === senderId) renderMessages();
+        });
+
+        // 收到已讀通知
+        channel.bind('message.read', function (data) {
+            // 對方已讀我的訊息
+            const partner = partners.find(p => p.id === data.readerId);
+            if (partner) {
+                partner.messages.forEach(m => {
+                    if (m.sender === 'me') m.read_at = data.readAt;
+                });
+                if (currentPartnerId === data.readerId) renderMessages();
             }
         });
 
@@ -194,8 +209,8 @@
             renderUserList();
             renderHeader(partner);
             enableInput(true);
+            markRead(partnerId);
 
-            // 如果已有載入的訊息就直接顯示，否則從 API 拿
             if (partner.messages.length > 0) {
                 renderMessages();
                 return;
@@ -219,6 +234,14 @@
                 partner.messages = [];
                 renderMessages();
             });
+        }
+
+        // 標記已讀 API
+        function markRead(partnerId) {
+            fetch(`/messages/${partnerId}/read`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
+            }).catch(() => {});
         }
 
         // ── 傳送訊息 ───────────────────────────────────────────
@@ -354,8 +377,9 @@
                 chatMessages.innerHTML = '<div class="text-muted text-center py-5">還沒有任何訊息，傳送第一則訊息吧！</div>';
                 return;
             }
-            partner.messages.forEach(msg => {
+            partner.messages.forEach((msg, idx) => {
                 const isMe = msg.sender === 'me';
+                const isLast = idx === partner.messages.length - 1;
                 const row = document.createElement('div');
                 row.className = `d-flex mb-3 ${isMe ? 'justify-content-end' : 'justify-content-start'}`;
 
@@ -379,10 +403,10 @@
                 topRow.appendChild(bubble);
                 wrap.appendChild(topRow);
 
-                const time = document.createElement('div');
-                time.className = `small text-muted mt-1 px-1 ${isMe ? 'text-end' : 'text-start'}`;
-                time.textContent = msg.time || '--:--';
-                wrap.appendChild(time);
+                const meta = document.createElement('div');
+                meta.className = `small text-muted mt-1 px-1 d-flex align-items-center gap-1 ${isMe ? 'justify-content-end' : ''}`;
+                meta.innerHTML = `<span>${msg.time || '--:--'}</span>${isMe && isLast ? `<span style="color:${msg.read_at ? '#3d8e7f' : '#aaa'}">${msg.read_at ? '已讀' : '未讀'}</span>` : ''}`;
+                wrap.appendChild(meta);
 
                 row.appendChild(wrap);
                 chatMessages.appendChild(row);
