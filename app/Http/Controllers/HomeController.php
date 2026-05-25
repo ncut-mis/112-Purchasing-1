@@ -18,6 +18,26 @@ class HomeController extends Controller
             ->get();
 
         // 撈取最新的 8 筆請購清單
+
+        $totalOpenPosts = max(AgentPost::where('status', 'open')->count(), 1);
+
+        $hotPosts = AgentPost::with(['user', 'products'])
+            ->withCount(['favorites', 'orders'])
+            ->where('status', 'open')
+            ->get()
+            ->map(function (AgentPost $post) use ($totalOpenPosts) {
+                $favoriteRatio = min(($post->favorites_count / $totalOpenPosts) * 100, 100);
+                $orderRatio = min(($post->orders_count / $totalOpenPosts) * 100, 100);
+
+                $score = (int) round(($favoriteRatio * 0.55) + ($orderRatio * 0.45));
+                $post->hot_score = max(0, min(100, $score));
+
+                return $post;
+            })
+            ->sortByDesc('hot_score')
+            ->take(6)
+            ->values();
+
         $requests = RequestList::with('user')
             ->where('status', 'pending')
             ->latest()
@@ -42,6 +62,7 @@ class HomeController extends Controller
     {
         $query = AgentPost::withCount('products')
             ->with('user')
+             ->where('status', 'open')
             ->latest();
 
         if ($request->filled('search')) {
@@ -69,6 +90,25 @@ class HomeController extends Controller
                 ->map(fn ($id) => (int) $id)
                 ->all()
             : [];
+
+            $totalOpenPosts = max(AgentPost::where('status', 'open')->count(), 1);
+
+        $hotPosts = AgentPost::with(['user', 'products'])
+            ->withCount(['favorites', 'orders'])
+            ->where('status', 'open')
+            ->get()
+            ->map(function (AgentPost $post) use ($totalOpenPosts) {
+                $favoriteRatio = min(($post->favorites_count / $totalOpenPosts) * 100, 100);
+                $orderRatio = min(($post->orders_count / $totalOpenPosts) * 100, 100);
+
+                $score = (int) round(($favoriteRatio * 0.55) + ($orderRatio * 0.45));
+                $post->hot_score = max(0, min(100, $score));
+
+                return $post;
+            })
+            ->sortByDesc('hot_score')
+            ->take(6)
+            ->values();
         
         $requests = RequestList::with('user')
             ->where('status', 'pending')
@@ -82,7 +122,8 @@ class HomeController extends Controller
             'favoritedAgentPostIds' => $favoritedAgentPostIds,
             'countries' => ['日本', '韓國', '美國', '歐洲', '澳洲', '其他'],
             'selectedCountry' => $request->country ?? '',
-            'searchQuery' => $request->search ?? ''
+            'searchQuery' => $request->search ?? '',
+            'hotPosts' => $hotPosts
         ]);
     }
 

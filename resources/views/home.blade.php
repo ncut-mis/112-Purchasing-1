@@ -202,9 +202,9 @@
                                     <img src="https://ui-avatars.com/api/?name={{ urlencode($popPost->user->name) }}&background=6366f1&color=fff" class="rounded-circle" width="28" height="28">
                                     <span class="small fw-bold text-gray-700">{{ $popPost->user->nickname ?? $popPost->user->name }}</span>
                                 </div>
-                                <span class="text-danger fw-bold" style="font-size: 12px;">
-                                    <i class="bi bi-fire me-1"></i> 熱門代購團
-                                </span>
+                               <a href="{{ route('agent.posts.search', ['search' => $popPost->title, 'post_id' => $popPost->id]) }}" class="text-danger fw-bold text-decoration-none" style="font-size: 12px;">
+                                    <i class="bi bi-fire me-1"></i> 搜尋此熱門代購團
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -223,7 +223,7 @@
      【最新代購團區塊】
      修改：圖片區改為 Bootstrap Carousel 滑動式顯示所有商品圖片
      ===================================================================== --}}
-<section class="py-5">
+<section class="py-5" id="search-results-section">
     <div class="container">
         @if(session('status'))
             <div class="alert alert-success rounded-4 shadow-sm border-0 mb-4">
@@ -253,7 +253,7 @@
                     @endif
 
                     <div class="ms-auto">
-                        <a href="{{ route('agent.posts.search') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                        <a href="{{ route('home') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
                             <i class="bi bi-x-circle me-1"></i>清除
                         </a>
                     </div>
@@ -639,7 +639,7 @@
                             <ul class="text-start text-muted mb-0">
                                 <li>使用其他關鍵字（如商品名稱、國家）</li>
                                 <li>檢查拼字是否正確</li>
-                                <li><a href="{{ route('agent.posts.search') }}" class="text-primary fw-bold">清除搜尋條件</a></li>
+                                  <li><a href="{{ route('home') }}" class="text-primary fw-bold">清除搜尋條件</a></li>
                             </ul>
                         </div>
                     </div>
@@ -702,6 +702,14 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+     @if(request()->filled('search') || request()->filled('country') || request()->filled('post_id'))
+        const searchResultsSection = document.getElementById('search-results-section');
+        if (searchResultsSection) {
+            setTimeout(() => {
+                searchResultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        }
+    @endif
         const csrfToken = '{{ csrf_token() }}';
         const favoriteToggleUrl = '{{ route('favorite.toggle') }}';
         const reportStoreUrl = '{{ route('reports.store') }}';
