@@ -257,8 +257,14 @@ class DashboardController extends Controller
 
         // --- 8. 統計數據 (關鍵修正區塊) ---
         $stats = [
+            // 進行中的請託：尚未完成、尚未過期都算進行中
             'ongoing_requests' => RequestList::where('user_id', $user->id)
-                ->whereIn('status', ['pending', 'offered', 'matched'])
+                ->whereNotIn('status', ['completed', 'expired'])
+                ->count(),
+
+            // 進行中的跟團：未付款 + 待出貨 + 已到貨
+            'ongoing_follow_orders' => Order::where('buyer_id', $user->id)
+                ->whereIn('status', ['pending_payment', 'wait-for-ship', 'arrivaled'])
                 ->count(),
             
             // 修正點：徹底移除 request_list_id 的過濾與 exists 子查詢
