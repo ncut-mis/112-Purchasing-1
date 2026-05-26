@@ -27,7 +27,7 @@ use App\Events\MessageSent;
 use App\Http\Controllers\FollowController; 
 use App\Http\Controllers\FollowOrderController; 
 use App\Http\Controllers\HistoryController;
-
+use App\Http\Controllers\HomeController;
 
 
 
@@ -90,7 +90,11 @@ Route::patch('/admin/reports/{report}/reject', [AdminAuthController::class, 'rej
 Route::patch('/admin/reports/{report}/override', [AdminAuthController::class, 'overrideDecision'])->middleware('admin.auth')->name('admin.reports.override');
 Route::middleware('auth')->get('/api/latest-orders', [DashboardController::class, 'getLatestOrders'])->name('api.orders.latest');
 
-Route::get('/', function () {
+Route::get('/', function (Request $request) {
+
+    if ($request->filled('post_id') || $request->filled('search') || $request->filled('country')) {
+        return app(HomeController::class)->search($request);
+    }
 
  $totalOpenPosts = max(AgentPost::where('status', 'open')->count(), 1);
 

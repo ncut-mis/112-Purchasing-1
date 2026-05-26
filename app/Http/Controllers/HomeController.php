@@ -65,8 +65,11 @@ class HomeController extends Controller
              ->where('status', 'open')
             ->latest();
 
-        if ($request->filled('search')) {
-            $search = $request->search;
+         // 若有指定貼文 ID，優先精準篩選，避免同名/相似標題造成多筆誤中
+        if ($request->filled('post_id')) {
+            $query->where('id', (int) $request->post_id);
+        } elseif ($request->filled('search')) {
+            $search = trim((string) $request->search);
             $query->where(function ($q) use ($search) {
                 // ✅ 新增：標題搜尋 OR 商品搜尋
                 $q->whereHas('products', function ($productQuery) use ($search) {
