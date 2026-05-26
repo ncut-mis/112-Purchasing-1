@@ -53,7 +53,14 @@ class DashboardController extends Controller
             ->limit(20)
             ->get();
 
-        $hasUnreadExpiredNotice = $expiredNotices->contains(fn ($item) => is_null($item->expired_notice_read_at));
+        $unreadExpiredNoticeCount = RequestList::where('user_id', $user->id)
+            ->where('status', 'expired')
+            ->whereNotNull('expired_notified_at')
+            ->whereNull('expired_notice_read_at')
+            ->count();
+
+        $hasUnreadExpiredNotice = $unreadExpiredNoticeCount > 0;
+
 
         // --- 1. 獲取使用者收藏的 ID 陣列 ---
         $favoriteIds = $user->favorites()
@@ -283,6 +290,7 @@ class DashboardController extends Controller
             'currentHistoryType',
             'expiredNotices',
             'hasUnreadExpiredNotice',
+            'unreadExpiredNoticeCount',
             'offers', 
             'followings'
         ));

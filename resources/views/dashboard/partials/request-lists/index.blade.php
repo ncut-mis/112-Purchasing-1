@@ -31,7 +31,9 @@
                                 <button type="button" onclick="openExpiredNoticeModal()" class="relative inline-flex items-center rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700 hover:bg-sky-200 transition">
                                     系統通知
                                     @if(!empty($hasUnreadExpiredNotice) && $hasUnreadExpiredNotice)
-                                        <span class="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-red-500"></span>
+                                        <span id="expired-notice-unread-dot" class="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] leading-[18px] text-center font-bold">
+                                            {{ (int) ($unreadExpiredNoticeCount ?? 0) }}
+                                        </span>
                                     @endif
                                 </button>
                             </div>
@@ -859,6 +861,63 @@
 
 @once
     <script>
+
+         function openExpiredNoticeModal() {
+            const modal = document.getElementById('expired-notice-modal');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+
+            const unreadDot = document.getElementById('expired-notice-unread-dot');
+            if (unreadDot) {
+                unreadDot.remove();
+            }
+
+            fetch("{{ route('dashboard.expired-notices.read') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({}),
+            }).catch(() => {
+                // 忽略非關鍵錯誤：即使更新失敗，也不影響彈窗開啟
+            });
+        }
+
+        function closeExpiredNoticeModal() {
+            const modal = document.getElementById('expired-notice-modal');
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = '';
+        }
+
+        function openRequestNoticeModal(requestListId) {
+            const modal = document.getElementById(`request-notice-modal-${requestListId}`);
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeRequestNoticeModal(requestListId) {
+            const modal = document.getElementById(`request-notice-modal-${requestListId}`);
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = '';
+        }
+
+        function handleRequestNoticeBackdrop(event, requestListId) {
+            if (event.target.id === `request-notice-modal-${requestListId}`) {
+                closeRequestNoticeModal(requestListId);
+            }
+        }
+
         function openQuoteDetailModal(quoteId) {
             const modal = document.getElementById(`quote-detail-modal-${quoteId}`);
             if (!modal) return;
