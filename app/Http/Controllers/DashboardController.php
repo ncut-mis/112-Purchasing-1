@@ -297,6 +297,28 @@ class DashboardController extends Controller
             'followings'
         ));
     }
+
+    public function markQuoteNoticeRead(Request $request, RequestList $requestList)
+    {
+        $user = Auth::user();
+        if (!$user || (int) $requestList->user_id !== (int) $user->id) {
+            abort(403);
+        }
+
+        $pendingQuoteCount = $requestList->quotes()
+            ->where('status', 'pending')
+            ->count();
+
+        $requestList->update([
+            'quote_notice_seen_count' => $pendingQuoteCount,
+        ]);
+
+        return response()->json([
+            'status' => 'ok',
+            'seen_count' => $pendingQuoteCount,
+        ]);
+    }
+
  public function markExpiredNoticeRead(Request $request)
     {
         $user = Auth::user();

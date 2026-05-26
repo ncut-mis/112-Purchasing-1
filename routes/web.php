@@ -81,7 +81,6 @@ Route::get('/admin/request-items/{requestItem}/image', [AdminAuthController::cla
 
 Route::delete('/admin/request-lists/{requestList}', [AdminAuthController::class, 'deleteRequestList'])->middleware('admin.auth')->name('admin.request-lists.delete');
 Route::delete('/admin/agent-posts/{agentPost}', [AdminAuthController::class, 'deleteAgentPost'])->middleware('admin.auth')->name('admin.agent-posts.delete');
-Route::patch('/admin/review-mode', [AdminAuthController::class, 'updateReviewMode'])->middleware('admin.auth')->name('admin.review-mode.update');
 
 
 Route::patch('/admin/reports/{report}/approve', [AdminAuthController::class, 'approveReport'])->middleware('admin.auth')->name('admin.reports.approve');
@@ -226,6 +225,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/request-list/{requestList}/complete', [RequestListController::class, 'complete'])->name('request-list.complete');
     Route::delete('/request-list/{requestList}', [RequestListController::class, 'destroy'])->name('request-list.destroy');
     Route::get('/request-item-image/{requestItem}', [RequestListController::class, 'image'])->name('request-item.image');
+     Route::post('/dashboard/request-lists/{requestList}/quote-notices/read', [DashboardController::class, 'markQuoteNoticeRead'])->name('dashboard.quote-notices.read');
 
     // 聊天路由已統一在上方 auth 群組
 

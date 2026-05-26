@@ -7,7 +7,6 @@ use App\Models\AgentPost;
 use App\Models\ContentReport;
 use App\Models\RequestItem;
 use App\Models\RequestList;
-use App\Services\ModerationModeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -26,11 +25,9 @@ class AdminAuthController extends Controller
         return redirect()->route('login');
     }
 
-    public function dashboard(Request $request, ModerationModeService $moderationModeService)
+    public function dashboard(Request $request)
     {
          $adminName = Auth::guard('admin')->user()?->name ?? $request->session()->get('admin_auth_name');
-        $reviewMode = $moderationModeService->getMode();
-        $reviewModeLabel = $moderationModeService->modeLabel($reviewMode);
         $agentApplications = AgentApplication::with('user')->latest()->take(10)->get();
         $requestLists = RequestList::with(['items', 'user'])->latest()->take(10)->get();
         $posts = AgentPost::with(['user', 'products'])->latest()->take(10)->get();
@@ -51,24 +48,10 @@ class AdminAuthController extends Controller
             'requestLists',
             'posts',
             'requestListReports',
-            'agentPostReports',
-            'reviewMode',
-            'reviewModeLabel'
+            'agentPostReports'
         ));
     }
 
-    public function updateReviewMode(Request $request, ModerationModeService $moderationModeService)
-    {
-        $validated = $request->validate([
-            'mode' => ['required', 'in:manual,auto'],
-        ]);
-
-        $moderationModeService->setMode($validated['mode']);
-
-        return redirect()
-            ->route('admin.dashboard', ['tab' => 'violation'])
-            ->with('status', '違規內容審核模式已切換為：' . $moderationModeService->modeLabel($validated['mode']));
-    }
 
     public function approveReport(ContentReport $report)
     {
@@ -100,13 +83,8 @@ class AdminAuthController extends Controller
         return redirect()->route('admin.dashboard', ['tab' => 'violation'])->with('status', '已標記為檢舉不成立');
     }
 
-    public function overrideDecision(ContentReport $report, ModerationModeService $moderationModeService)
+    public function overrideDecision(ContentReport $report)
     {
-        // 只允許在自動審核模式下更改已完成的判定
-        if ($moderationModeService->getMode() !== 'auto') {
-            return redirect()->route('admin.dashboard')->with('status', '只能在自動審核模式下更改判定');
-        }
-
         if (!in_array($report->status, [ContentReport::STATUS_APPROVED, ContentReport::STATUS_REJECTED])) {
             return redirect()->route('admin.dashboard')->with('status', '只能更改已完成的判定');
         }
@@ -121,7 +99,6 @@ class AdminAuthController extends Controller
             'status' => $newStatus,
             'reviewed_by_admin_id' => Auth::guard('admin')->id(),
             'reviewed_at' => now(),
-            'review_note' => '管理員手動覆蓋自動審核結果',
         ]);
 
         $statusMessage = $newStatus === ContentReport::STATUS_APPROVED ? '已更改為檢舉成立' : '已更改為檢舉不成立';

@@ -150,21 +150,6 @@
         <div class="tab-pane fade" id="violation-pane" role="tabpanel">
             <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-body p-4 p-lg-5" style="min-height: 620px;">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <div>
-                            <p class="text-muted mb-0">目前審核違規內容方式：<span class="fw-semibold text-dark">{{ $reviewModeLabel ?? '人工審核' }}</span></p>
-                        </div>
-                        <button
-                            type="button"
-                            class="btn btn-outline-secondary rounded-2"
-                            data-bs-toggle="modal"
-                            data-bs-target="#reviewModeModal"
-                            aria-label="審核模式設定"
-                            title="審核模式設定"
-                        >
-                            <i class="bi bi-gear me-2"></i>設定
-                        </button>
-                    </div>
 
                     <ul class="nav nav-pills gap-2 mb-4" id="violationSwitchTab" role="tablist">
                         <li class="nav-item" role="presentation">
@@ -243,7 +228,7 @@
                                                             @method('PATCH')
                                                             <button type="submit" class="btn btn-sm btn-danger">檢舉不成立</button>
                                                         </form>
-                                                    @elseif($reviewMode === 'auto' && in_array($report->status, [\App\Models\ContentReport::STATUS_APPROVED, \App\Models\ContentReport::STATUS_REJECTED]))
+                                                     @elseif(in_array($report->status, [\App\Models\ContentReport::STATUS_APPROVED, \App\Models\ContentReport::STATUS_REJECTED]))
                                                         <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#overrideDecisionModal-{{ $report->id }}">更改判定</button>
                                                     @endif
                                                 </td>
@@ -303,7 +288,7 @@
                                                             @method('PATCH')
                                                             <button type="submit" class="btn btn-sm btn-danger">檢舉不成立</button>
                                                         </form>
-                                                    @elseif($reviewMode === 'auto' && in_array($report->status, [\App\Models\ContentReport::STATUS_APPROVED, \App\Models\ContentReport::STATUS_REJECTED]))
+                                                    @elseif(in_array($report->status, [\App\Models\ContentReport::STATUS_APPROVED, \App\Models\ContentReport::STATUS_REJECTED]))
                                                         <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#overrideDecisionModal-{{ $report->id }}">更改判定</button>
                                                     @endif
                                                 </td>
@@ -323,46 +308,8 @@
         </div>
     </div>
 </div>
-<div class="modal fade" id="reviewModeModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-4 border-0 shadow">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold">違規內容審核方式設定</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body pt-2">
-                <p class="mb-3">
-                    目前審核違規內容方式：
-                    <span class="fw-bold">{{ $reviewModeLabel ?? '人工審核' }}</span>
-                </p>
-                <p class="small text-muted mb-4">
-                    切換為自動審核後，系統會在使用者送出檢舉時，依據請託單與代購貼文文字內容、圖片路徑文字、檢舉理由與檢舉類型進行一致性判斷，自動標記「檢舉成立」或「檢舉不成立」。
-                </p>
-
-                <div class="d-flex gap-2">
-                    <form method="POST" action="{{ route('admin.review-mode.update') }}" class="flex-fill">
-                        @csrf
-                        @method('PATCH')
-                        <input type="hidden" name="mode" value="manual">
-                        <button type="submit" class="btn {{ ($reviewMode ?? 'manual') === 'manual' ? 'btn-primary' : 'btn-outline-primary' }} w-100">
-                            人工審核
-                        </button>
-                    </form>
-                    <form method="POST" action="{{ route('admin.review-mode.update') }}" class="flex-fill">
-                        @csrf
-                        @method('PATCH')
-                        <input type="hidden" name="mode" value="auto">
-                        <button type="submit" class="btn {{ ($reviewMode ?? 'manual') === 'auto' ? 'btn-success' : 'btn-outline-success' }} w-100">
-                            自動審核
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 @foreach($requestListReports->merge($agentPostReports) as $report)
-    @if($reviewMode === 'auto' && in_array($report->status, [\App\Models\ContentReport::STATUS_APPROVED, \App\Models\ContentReport::STATUS_REJECTED]))
+    @if(in_array($report->status, [\App\Models\ContentReport::STATUS_APPROVED, \App\Models\ContentReport::STATUS_REJECTED]))
         <div class="modal fade" id="overrideDecisionModal-{{ $report->id }}" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content rounded-4 border-0 shadow">

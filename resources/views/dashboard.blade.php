@@ -776,10 +776,32 @@
                 document.body.appendChild(modal);
             }
 
+            const unreadDot = document.getElementById(`request-notice-unread-${id}`);
+            if (unreadDot) {
+                unreadDot.remove();
+            }
+
+
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             modal.style.display = 'flex';
             document.body.classList.add('overflow-hidden');
+
+            const urlTemplate = "{{ route('dashboard.quote-notices.read', ['requestList' => '__ID__']) }}";
+            const readUrl = urlTemplate.replace('__ID__', String(id));
+
+            fetch(readUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({}),
+            }).catch(() => {
+                // 忽略非關鍵錯誤，避免影響彈窗開啟
+            });
         }
 
         function closeRequestNoticeModal(id) {
