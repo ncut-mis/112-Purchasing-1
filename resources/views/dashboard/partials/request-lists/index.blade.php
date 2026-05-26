@@ -69,19 +69,39 @@
                                     <h4 class="text-lg font-bold">系統通知</h4>
                                     <button type="button" class="text-2xl leading-none" onclick="closeExpiredNoticeModal()">&times;</button>
                                 </div>
-                                <div class="max-h-[70vh] overflow-y-auto p-5 space-y-3">
+                             <div id="expired-notice-list" class="max-h-[70vh] overflow-y-auto p-5 space-y-3">
                                     @forelse(($expiredNotices ?? collect()) as $notice)
-                                        <div class="rounded-xl border border-sky-100 bg-sky-50 p-4 text-sm text-slate-700">
-                                            您於{{ optional($notice->created_at)->format('Y年m月d日') }}所建立的標題為「{{ $notice->title }}」之請託單因截止日到前未有代購人報價因此該請託單已自動丟入歷史紀錄並標記為已過期。
+                                       <div class="expired-notice-card rounded-xl border border-sky-100 bg-sky-50 p-4 text-sm text-slate-700 flex items-start justify-between gap-3" data-request-list-id="{{ $notice->id }}">
+                                            <p class="leading-6">
+                                                您於{{ optional($notice->created_at)->format('Y年m月d日') }}所建立的標題為「{{ $notice->title }}」之請託單因截止日到前未有代購人報價因此該請託單已自動丟入歷史紀錄並標記為已過期。
+                                            </p>
+                                            <button
+                                                type="button"
+                                                class="flex-shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 bg-white text-rose-500 hover:bg-rose-50 transition"
+                                                title="移除此通知"
+                                                aria-label="移除此通知"
+                                                onclick="openExpiredNoticeRemoveModal(this)"
+                                            >
+                                                <i class="bi bi-trash"></i>
+                                            </button>
                                         </div>
                                     @empty
-                                        <div class="text-sm text-gray-500">目前沒有系統通知。</div>
+                                        <div id="expired-notice-empty" class="text-sm text-gray-500">目前沒有系統通知。</div>
                                     @endforelse
                                 </div>
                             </div>
                         </div>
 
-
+                        <div id="expired-notice-remove-modal" class="hidden fixed inset-0 z-[90] items-center justify-center bg-slate-900/50 px-4" onclick="if(event.target===this){closeExpiredNoticeRemoveModal();}">
+                            <div class="w-full max-w-sm rounded-2xl bg-white shadow-xl p-6">
+                                <h5 class="text-lg font-bold text-gray-800 mb-2">移除通知</h5>
+                                <p class="text-sm text-gray-600 mb-6">確定要移除此通知卡片嗎？</p>
+                                <div class="flex justify-end gap-3">
+                                    <button type="button" class="px-4 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50" onclick="closeExpiredNoticeRemoveModal()">否</button>
+                                    <button type="button" class="px-4 py-2 rounded-lg bg-rose-500 text-white hover:bg-rose-600" onclick="confirmExpiredNoticeRemove()">是，移除</button>
+                                </div>
+                            </div>
+                        </div>
 
                         <!-- 搜尋結果提示 -->
                         @if(request('request_search'))
@@ -862,6 +882,7 @@
 @once
     <script>
 
+       let expiredNoticeCardToRemove = null;
          function openExpiredNoticeModal() {
             const modal = document.getElementById('expired-notice-modal');
             if (!modal) return;
@@ -894,6 +915,67 @@
             modal.classList.add('hidden');
             modal.classList.remove('flex');
             document.body.style.overflow = '';
+        }
+
+        function openExpiredNoticeRemoveModal(triggerButton) {
+            const card = triggerButton?.closest('.expired-notice-card');
+            if (!card) return;
+
+            expiredNoticeCardToRemove = card;
+            const modal = document.getElementById('expired-notice-remove-modal');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeExpiredNoticeRemoveModal() {
+            const modal = document.getElementById('expired-notice-remove-modal');
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            expiredNoticeCardToRemove = null;
+        }
+
+        function confirmExpiredNoticeRemove() {
+            if (!expiredNoticeCardToRemove) {
+                closeExpiredNoticeRemoveModal();
+                return;
+            }
+
+            const requestListId = expiredNoticeCardToRemove.dataset.requestListId;
+            const removeUrlTemplate = "{{ route('dashboard.expired-notices.remove', ['requestList' => '__ID__']) }}";
+            const removeUrl = removeUrlTemplate.replace('__ID__', String(requestListId || ''));
+
+            fetch(removeUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({}),
+            })
+                .then((response) => {
+                    if (!response.ok) throw new Error('remove failed');
+
+                    expiredNoticeCardToRemove.remove();
+                    closeExpiredNoticeRemoveModal();
+
+                    const list = document.getElementById('expired-notice-list');
+                    const hasCards = list && list.querySelector('.expired-notice-card');
+                    if (!hasCards && list) {
+                        const emptyEl = document.createElement('div');
+                        emptyEl.id = 'expired-notice-empty';
+                        emptyEl.className = 'text-sm text-gray-500';
+                        emptyEl.textContent = '目前沒有系統通知。';
+                        list.appendChild(emptyEl);
+                    }
+                })
+                .catch(() => {
+                    closeExpiredNoticeRemoveModal();
+                    alert('移除失敗，請稍後再試。');
+                });
         }
 
         function openRequestNoticeModal(requestListId) {

@@ -49,6 +49,7 @@ class DashboardController extends Controller
         $expiredNotices = RequestList::where('user_id', $user->id)
             ->where('status', 'expired')
             ->whereNotNull('expired_notified_at')
+            ->whereNull('expired_notice_removed_at')
             ->latest('expired_notified_at')
             ->limit(20)
             ->get();
@@ -56,6 +57,7 @@ class DashboardController extends Controller
         $unreadExpiredNoticeCount = RequestList::where('user_id', $user->id)
             ->where('status', 'expired')
             ->whereNotNull('expired_notified_at')
+            ->whereNull('expired_notice_removed_at')
             ->whereNull('expired_notice_read_at')
             ->count();
 
@@ -307,6 +309,27 @@ class DashboardController extends Controller
             ->whereNotNull('expired_notified_at')
             ->whereNull('expired_notice_read_at')
             ->update(['expired_notice_read_at' => now()]);
+
+        return response()->json(['status' => 'success']);
+    }
+public function removeExpiredNotice(RequestList $requestList)
+    {
+        $user = Auth::user();
+        if (! $user) {
+            return response()->json(['status' => 'unauthorized'], 401);
+        }
+
+        if ((int) $requestList->user_id !== (int) $user->id) {
+            return response()->json(['status' => 'forbidden'], 403);
+        }
+
+        if ($requestList->status !== 'expired' || is_null($requestList->expired_notified_at)) {
+            return response()->json(['status' => 'invalid_notice'], 422);
+        }
+
+        $requestList->update([
+            'expired_notice_removed_at' => now(),
+        ]);
 
         return response()->json(['status' => 'success']);
     }

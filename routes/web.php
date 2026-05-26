@@ -140,6 +140,7 @@ Route::get('/', function (Request $request) {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
      Route::post('/dashboard/request-lists/expired-notices/read', [DashboardController::class, 'markExpiredNoticeRead'])->name('dashboard.expired-notices.read');
+     Route::post('/dashboard/request-lists/expired-notices/{requestList}/remove', [DashboardController::class, 'removeExpiredNotice'])->name('dashboard.expired-notices.remove');
 
     // 代購人會員專區
     Route::get('/agent/member', function (Request $request) {
@@ -246,6 +247,7 @@ Route::patch('/orders/{order}/complete', [OrderController::class, 'complete'])->
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('/dashboard/request-lists/expired-notices/read', [DashboardController::class, 'markExpiredNoticeRead'])->name('dashboard.expired-notices.read');
+    Route::post('/dashboard/request-lists/expired-notices/{requestList}/remove', [DashboardController::class, 'removeExpiredNotice'])->name('dashboard.expired-notices.remove');
 });
 
 
