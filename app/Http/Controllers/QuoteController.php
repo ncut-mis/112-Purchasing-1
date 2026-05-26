@@ -212,7 +212,12 @@ class QuoteController extends Controller
             return back()->with('error', '只有已接單的報價才能標記出貨。');
         }
 
-        $quote->update(['status' => 'shipped']);
+        DB::transaction(function () use ($quote) {
+            $quote->update(['status' => 'shipped']);
+
+            // 同步更新請託單狀態，讓請購人會員專區能立即顯示「商品已出貨」
+            $quote->requestList?->update(['status' => 'shipped']);
+        });
 
         return back()->with('success', '已成功標記為已出貨！');
     }

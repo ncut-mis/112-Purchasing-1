@@ -9,6 +9,7 @@ use App\Models\RequestList;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class DashboardController extends Controller
@@ -31,6 +32,28 @@ class DashboardController extends Controller
         $user = Auth::user();
         $currentSection = $request->query('section', 'request-lists');
         $today = now()->toDateString();
+
+         // --- 自動過期：截止日已過且仍等待報價的請託單，於隔天 00:00 後改為 expired 並移入歷史紀錄 ---
+        $expiredCandidateIds = RequestList::where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->whereDate('deadline', '<', $today)
+            ->pluck('id');
+
+        if ($expiredCandidateIds->isNotEmpty()) {
+            RequestList::whereIn('id', $expiredCandidateIds)->update([
+                'status' => 'expired',
+                'expired_notified_at' => now(),
+            ]);
+        }
+
+        $expiredNotices = RequestList::where('user_id', $user->id)
+            ->where('status', 'expired')
+            ->whereNotNull('expired_notified_at')
+            ->latest('expired_notified_at')
+            ->limit(20)
+            ->get();
+
+        $hasUnreadExpiredNotice = $expiredNotices->contains(fn ($item) => is_null($item->expired_notice_read_at));
 
         // --- 1. 獲取使用者收藏的 ID 陣列 ---
         $favoriteIds = $user->favorites()
@@ -258,8 +281,25 @@ class DashboardController extends Controller
             'myWorkingOrders',
             'historyRecords',
             'currentHistoryType',
+            'expiredNotices',
+            'hasUnreadExpiredNotice',
             'offers', 
             'followings'
         ));
+    }
+ public function markExpiredNoticeRead(Request $request)
+    {
+        $user = Auth::user();
+        if (! $user) {
+            return response()->json(['status' => 'unauthorized'], 401);
+        }
+
+        RequestList::where('user_id', $user->id)
+            ->where('status', 'expired')
+            ->whereNotNull('expired_notified_at')
+            ->whereNull('expired_notice_read_at')
+            ->update(['expired_notice_read_at' => now()]);
+
+        return response()->json(['status' => 'success']);
     }
 }

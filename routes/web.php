@@ -139,6 +139,8 @@ Route::get('/', function (Request $request) {
     Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+     Route::post('/dashboard/request-lists/expired-notices/read', [DashboardController::class, 'markExpiredNoticeRead'])->name('dashboard.expired-notices.read');
+
     // 代購人會員專區
     Route::get('/agent/member', function (Request $request) {
 
@@ -243,6 +245,7 @@ Route::patch('/orders/{order}/complete', [OrderController::class, 'complete'])->
     //建立搜尋自己清單的路由
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::post('/dashboard/request-lists/expired-notices/read', [DashboardController::class, 'markExpiredNoticeRead'])->name('dashboard.expired-notices.read');
 });
 
 

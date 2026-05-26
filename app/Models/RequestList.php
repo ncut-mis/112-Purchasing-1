@@ -14,11 +14,13 @@ use App\Models\User;
 
         protected $fillable = [
             'user_id', 'title', 'store_name', 'country', 'deadline',
-            'budget_total', 'currency', 'status', 'detail_address', 'note', 'people', 'time', 'agent_quote_total'
+           'budget_total', 'currency', 'status', 'expired_notified_at', 'expired_notice_read_at', 'detail_address', 'note', 'people', 'time', 'agent_quote_total'
         ];
 
         protected $casts = [
             'deadline' => 'date',
+            'expired_notified_at' => 'datetime',
+            'expired_notice_read_at' => 'datetime',
         ];
 
         // 關聯：這張單包含哪些商品

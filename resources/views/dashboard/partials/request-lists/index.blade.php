@@ -26,8 +26,15 @@
             @endpush
     <div class="flex justify-between items-center mb-6">
 
-                            <h3 class="text-lg font-bold text-gray-800">目前請託單</h3>
-
+                             <div class="flex items-center gap-3">
+                                <h3 class="text-lg font-bold text-gray-800">目前請託單</h3>
+                                <button type="button" onclick="openExpiredNoticeModal()" class="relative inline-flex items-center rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700 hover:bg-sky-200 transition">
+                                    系統通知
+                                    @if(!empty($hasUnreadExpiredNotice) && $hasUnreadExpiredNotice)
+                                        <span class="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-red-500"></span>
+                                    @endif
+                                </button>
+                            </div>
                             <div class="flex items-center gap-4">                        
 
                                 <!-- 搜尋框 -->
@@ -52,6 +59,24 @@
 
                             </div>
 
+                        </div>
+
+                        <div id="expired-notice-modal" class="hidden fixed inset-0 z-[80] items-center justify-center bg-slate-900/60 px-4" onclick="if(event.target===this){closeExpiredNoticeModal();}">
+                            <div class="w-full max-w-2xl rounded-2xl bg-white shadow-2xl overflow-hidden">
+                                <div class="flex items-center justify-between bg-sky-500 px-5 py-4 text-white">
+                                    <h4 class="text-lg font-bold">系統通知</h4>
+                                    <button type="button" class="text-2xl leading-none" onclick="closeExpiredNoticeModal()">&times;</button>
+                                </div>
+                                <div class="max-h-[70vh] overflow-y-auto p-5 space-y-3">
+                                    @forelse(($expiredNotices ?? collect()) as $notice)
+                                        <div class="rounded-xl border border-sky-100 bg-sky-50 p-4 text-sm text-slate-700">
+                                            您於{{ optional($notice->created_at)->format('Y年m月d日') }}所建立的標題為「{{ $notice->title }}」之請託單因截止日到前未有代購人報價因此該請託單已自動丟入歷史紀錄並標記為已過期。
+                                        </div>
+                                    @empty
+                                        <div class="text-sm text-gray-500">目前沒有系統通知。</div>
+                                    @endforelse
+                                </div>
+                            </div>
                         </div>
 
 
@@ -170,7 +195,7 @@
 
                                             <td class="py-4 text-gray-500">{{ $countryLabel }}</td>
                                             <td class="py-4 text-gray-800">
-                                                @if(in_array($requestList->status, ['pending', 'offered', 'matched'], true))
+                                                   @if(in_array($requestList->status, ['pending', 'offered', 'matched', 'wait-for-ship', 'shipped', 'arrivaled'], true))
                                                     <button type="button" class="text-blue-600 hover:underline cursor-pointer font-medium" onclick="openRequestCountdownModal({{ $requestList->id }})" title="點擊查看截止倒數">{{ optional($requestList->deadline)->format('Y-m-d') ?? '-' }}</button>
                                                 @else
                                                     {{ optional($requestList->deadline)->format('Y-m-d') ?? '-' }}
@@ -186,8 +211,10 @@
                                                         'editing' => ['text' => '清單送出後將不能修改與刪除,請先確認內容后再按「送出」', 'class' => 'bg-slate-100 text-slate-700'],
                                                         'pending' => ['text' => '等待代購人報價中,請留意通知中心', 'class' => 'bg-yellow-50 text-yellow-700'],
                                                         'offered' => ['text' => '請至通知中心確認代購人', 'class' => 'bg-blue-50 text-blue-700'],
-                                                        'matched' => ['text' => '已確認代購人，可檢視、聊天與完成訂單', 'class' => 'bg-green-50 text-green-700'],
+                                                        'matched' => ['text' => '已確認代購人，可檢視、聊天', 'class' => 'bg-green-50 text-green-700'],
                                                         'wait-for-ship' => ['text' => '已結帳等待代購人出貨', 'class' => 'bg-cyan-50 text-cyan-700'],
+                                                        'shipped' => ['text' => '代購人已出貨，請留意清單狀態', 'class' => 'bg-indigo-50 text-indigo-700'],
+                                                        'arrivaled' => ['text' => '注意，按下完成後視交易已完成', 'class' => 'bg-emerald-50 text-emerald-700'],
                                                         'expired' => ['text' => '此請購單已過期', 'class' => 'bg-rose-50 text-rose-700'],
                                                     ];
                                                     $notice = $noticeMap[$requestList->status] ?? null;
@@ -275,7 +302,7 @@
                     </div>
 
                         @foreach($requestLists ?? [] as $requestList)
-                             @if(in_array($requestList->status, ['pending', 'offered', 'matched'], true))
+                               @if(in_array($requestList->status, ['pending', 'offered', 'matched', 'wait-for-ship', 'shipped', 'arrivaled'], true))
                                 @php
                                     $modalCountryLabel = [
                                         'jp' => '日本',
@@ -301,7 +328,16 @@
 
                                     $isOffered = $requestList->status === 'offered';
                                     $isMatched = $requestList->status === 'matched';
-                                    $modalHeading = $isMatched ? '已確認代購人的請託單' : ($isOffered ? '代購人已報價的請託單' : '等待報價中的請託單');
+                                      $isWaitForShip = $requestList->status === 'wait-for-ship';
+                                    $isShipped = $requestList->status === 'shipped';
+                                    $isArrivaled = $requestList->status === 'arrivaled';
+                                    $modalHeading = $isArrivaled
+                                        ? '已到貨的請託單'
+                                        : ($isShipped
+                                        ? '已出貨的請託單'
+                                        : ($isWaitForShip
+                                            ? '已結帳的請託單'
+                                            : ($isMatched ? '已確認代購人的請託單' : ($isOffered ? '代購人已報價的請託單' : '等待報價中的請託單'))));
                                     $modalSubHeading = '可查看商品明細與目前接單狀況。';
 
                                 @endphp
@@ -439,10 +475,12 @@
                                                                             $statusLabel = [
                                                                                 'pending' => '待確認',
                                                                                 'accepted' => '已接受',
+                                                                                'shipped' => '已出貨',
                                                                             ][$quoteStatus] ?? $quoteStatus;
                                                                             $statusClass = [
                                                                                 'pending' => 'bg-amber-100 text-amber-700',
                                                                                 'accepted' => 'bg-emerald-100 text-emerald-700',
+                                                                                'shipped' => 'bg-indigo-100 text-indigo-700',
                                                                             ][$quoteStatus] ?? 'bg-slate-100 text-slate-700';
                                                                         @endphp
                                                                         <span class="inline-flex rounded-full px-3 py-1 text-[10px] {{ $statusClass }}">{{ $statusLabel }}</span>
@@ -495,11 +533,19 @@
                                                         </div>
                                                     @endif
 
-                                                    @if($requestList->status === 'matched')
+                                                        @if(in_array($requestList->status, ['matched', 'wait-for-ship', 'shipped', 'arrivaled'], true))
                                                         <div class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                                                             <h6 class="text-sm font-bold text-emerald-700">物流狀況</h6>
                                                             <p class="mt-2 text-sm text-emerald-800">
-                                                                {{ $requestList->logistics_status ?? '代購人已確認接單，待更新物流進度。' }}
+                                                               @if($requestList->status === 'arrivaled')
+                                                                    {{ $requestList->logistics_status ?? '商品已到貨請收到包裹後檢查商品是否完整，若有毀損請告知，若確認商品無誤後請按下完成' }}
+                                                                @elseif($requestList->status === 'shipped')
+                                                                    {{ $requestList->logistics_status ?? '商品已出貨待商品抵達配送地點' }}
+                                                                @elseif($requestList->status === 'wait-for-ship')
+                                                                    {{ $requestList->logistics_status ?? '已結帳等待代購人出貨' }}
+                                                                @else
+                                                                    {{ $requestList->logistics_status ?? '提醒！請記得結帳以利後續物流程序。' }}
+                                                                @endif
                                                             </p>
                                                         </div>
                                                     @endif
