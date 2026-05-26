@@ -555,21 +555,21 @@
 
                             @php
                                 // 確認中：quote status = pending 或 returned
-                                $pendingQuotes = \App\Models\Quote::with(['requestList.user:id,name', 'requestList.items:id,request_list_id,name,quantity'])
+                              $pendingQuotes = \App\Models\Quote::with(['requestList.user:id,name', 'requestList.items:id,request_list_id,name,quantity', 'quoteItems:id,quote_id,request_item_id,unit_price'])
                                     ->where('user_id', Auth::id())
                                     ->whereIn('status', ['pending', 'returned'])
                                     ->latest('updated_at')
                                     ->get();
 
                                 // 已接單：quote status = accepted
-                                $acceptedQuotes = \App\Models\Quote::with(['requestList.user:id,name', 'requestList.items:id,request_list_id,name,quantity'])
+                                $acceptedQuotes = \App\Models\Quote::with(['requestList.user:id,name', 'requestList.items:id,request_list_id,name,quantity', 'quoteItems:id,quote_id,request_item_id,unit_price'])
                                     ->where('user_id', Auth::id())
                                     ->where('status', 'accepted')
                                     ->latest('updated_at')
                                     ->get();
 
                                 // 已拒絕：quote status = rejected
-                                $rejectedQuotes = \App\Models\Quote::with(['requestList.user:id,name', 'requestList.items:id,request_list_id,name,quantity'])
+                              $rejectedQuotes = \App\Models\Quote::with(['requestList.user:id,name', 'requestList.items:id,request_list_id,name,quantity', 'quoteItems:id,quote_id,request_item_id,unit_price'])
                                     ->where('user_id', Auth::id())
                                     ->where('status', 'rejected')
                                     ->latest('updated_at')
@@ -578,7 +578,7 @@
                                 $myQuotes = $pendingQuotes; // 保留相容性
 
                                 // 已出貨：quote status = shipped
-                                $shippedQuotes = \App\Models\Quote::with(['requestList.user:id,name', 'requestList.items:id,request_list_id,name,quantity'])
+                               $shippedQuotes = \App\Models\Quote::with(['requestList.user:id,name', 'requestList.items:id,request_list_id,name,quantity', 'quoteItems:id,quote_id,request_item_id,unit_price'])
                                     ->where('user_id', Auth::id())
                                     ->where('status', 'shipped')
                                     ->latest('updated_at')
@@ -690,24 +690,30 @@
             @method('PATCH')
             
             <div class="space-y-6">
-                {{-- 🎯 模擬商品資訊卡片 --}}
-                <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-2xl border border-gray-100">
-                    <div class="w-16 h-16 bg-gray-200 rounded-xl flex items-center justify-center text-gray-400">
-                        <i class="bi bi-image"></i>
-                    </div>
-                    <div>
-                        <p class="font-bold text-gray-800">{{ $quote->product_name ?? '商品名稱' }}</p>
-                        <span class="inline-block bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded-md font-medium">需求數量：{{ $quote->quantity ?? 1 }}</span>
-                    </div>
-                </div>
-
-                {{-- 🎯 金額輸入框（加大並強化樣式） --}}
-                <div class="relative">
-                    <label class="block text-xs font-bold text-gray-500 mb-1">報價金額</label>
-                    <input type="number" name="agent_quote_total" min="1" step="1"
-                           value="{{ $quote->price }}"
-                           class="w-full rounded-2xl border border-gray-300 px-4 py-3 text-lg font-medium text-gray-700 focus:border-indigo-500 focus:ring-indigo-500"
-                           required>
+               @php
+                    $quoteItemsByRequestItemId = $quote->quoteItems->keyBy('request_item_id');
+                @endphp
+                <div class="space-y-3">
+                    <label class="block text-xs font-bold text-gray-500">商品單價（可修改）</label>
+                    @foreach($requestList->items as $item)
+                        @php
+                            $unitPrice = $quoteItemsByRequestItemId->get($item->id)?->unit_price ?? 0;
+                        @endphp
+                        <div class="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
+                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-800">{{ $item->name }}</p>
+                                    <p class="text-xs text-gray-500">數量：{{ (int) $item->quantity }}</p>
+                                </div>
+                                <div class="sm:w-44">
+                                    <input type="number" name="items[{{ $item->id }}][agent_quote]" min="0" step="1"
+                                        value="{{ old('items.'.$item->id.'.agent_quote', $unitPrice) }}"
+                                        class="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 focus:border-indigo-500 focus:ring-indigo-500"
+                                        required>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
 
                 {{-- 預計到貨日 --}}
@@ -717,6 +723,7 @@
                     </label>
                     <input type="date" name="estimated_date"
                            value="{{ optional($quote->estimated_date)->format('Y-m-d') }}"
+                           max="{{ optional($requestList->deadline)->format('Y-m-d') }}"
                            class="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm focus:border-indigo-500 focus:ring-indigo-500"
                            required>
                 </div>
@@ -740,7 +747,7 @@
                     </button>
                     <button type="submit"
                             class="rounded-2xl bg-indigo-500 py-3 text-sm font-bold text-white hover:bg-indigo-600 transition shadow-lg shadow-indigo-200">
-                        確認送出 (NT${{ number_format($quote->price) }})
+                         確認送出
                     </button>
                 </div>
             </div>

@@ -158,18 +158,44 @@ class QuoteController extends Controller
             return back()->with('error', '只有已退回的報價才能修改。');
         }
 
+        $requestList = $quote->requestList()->with('items:id,request_list_id')->firstOrFail();
+        $deadline = optional($requestList->deadline)->format('Y-m-d');
+
         $validated = $request->validate([
-            'agent_quote_total' => 'required|numeric|min:0.01',
-            'estimated_date'    => 'required|date',
+            'estimated_date'    => array_filter(['required', 'date', $deadline ? 'before_or_equal:' . $deadline : null]),
             'comment'           => 'nullable|string|max:1000',
+            'items'             => 'required|array|min:1',
+            'items.*.agent_quote' => 'required|numeric|min:0',
         ]);
 
-        $quote->update([
-            'price'          => $validated['agent_quote_total'],
-            'estimated_date' => $validated['estimated_date'],
-            'comment'        => $validated['comment'] ?? null,
-            'status'         => 'pending', // 改回 pending，等請託人再次審核
-        ]);
+          $itemIds = $requestList->items->pluck('id')->all();
+        $total = 0;
+
+        DB::transaction(function () use ($quote, $validated, $itemIds, &$total) {
+            foreach ($validated['items'] as $requestItemId => $itemData) {
+                if (!in_array((int) $requestItemId, $itemIds, true)) {
+                    continue;
+                }
+
+                $unitPrice = (float) $itemData['agent_quote'];
+                $total += $unitPrice;
+
+                QuoteItem::updateOrCreate(
+                    [
+                        'quote_id' => $quote->id,
+                        'request_item_id' => (int) $requestItemId,
+                    ],
+                    ['unit_price' => $unitPrice]
+                );
+            }
+
+            $quote->update([
+                'price'          => $total,
+                'estimated_date' => $validated['estimated_date'],
+                'comment'        => $validated['comment'] ?? null,
+                'status'         => 'pending', // 改回 pending，等請託人再次審核
+            ]);
+        });
 
         return back()->with('success', '報價已修改並重新送出，等待請託人確認。');
     }
