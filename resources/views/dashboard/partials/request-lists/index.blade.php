@@ -302,8 +302,16 @@
                                                         <button type="button" class="inline-flex items-center rounded-lg bg-blue-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-600" onclick="openRequestDetailModal({{ $requestList->id }})">檢視</button>
                                                         <button type="button" class="inline-flex items-center rounded-lg bg-gray-300 px-4 py-2 text-xs font-semibold text-white cursor-not-allowed" disabled title="尚未接受報價，無法聊天">聊天</button>
                                                         <button type="button" class="inline-flex items-center rounded-lg bg-gray-300 px-4 py-2 text-xs font-semibold text-white cursor-not-allowed" disabled title="商品尚未到貨，無法完成">完成</button>
-                                                        <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-amber-200 bg-amber-100 text-amber-600 shadow-sm transition hover:bg-amber-200" title="通知中心" aria-label="通知中心" onclick="openRequestNoticeModal({{ $requestList->id }})">
+                                                         @php
+                                                            $pendingQuoteCount = $requestList->quotes->where('status', 'pending')->count();
+                                                            $seenQuoteCount = (int) ($requestList->quote_notice_seen_count ?? 0);
+                                                            $unseenQuoteCount = max($pendingQuoteCount - $seenQuoteCount, 0);
+                                                        @endphp
+                                                        <button type="button" class="relative inline-flex h-9 w-9 items-center justify-center rounded-lg border border-amber-200 bg-amber-100 text-amber-600 shadow-sm transition hover:bg-amber-200" title="通知中心" aria-label="通知中心" onclick="openRequestNoticeModal({{ $requestList->id }})">
                                                             🔔
+                                                            @if($unseenQuoteCount > 0)
+                                                                <span id="request-notice-unread-{{ $requestList->id }}" class="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] leading-[18px] text-center font-bold">{{ $unseenQuoteCount }}</span>
+                                                            @endif
                                                         </button>
                                                     @endif
                                                 </div>
@@ -1035,6 +1043,29 @@
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             document.body.style.overflow = 'hidden';
+
+            const urlTemplate = "{{ route('dashboard.quote-notices.read', ['requestList' => '__ID__']) }}";
+            const readUrl = urlTemplate.replace('__ID__', requestListId);
+            fetch(readUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({}),
+            })
+            .then((response) => response.ok ? response.json() : null)
+            .then(() => {
+                const unreadDot = document.getElementById(`request-notice-unread-${requestListId}`);
+                if (unreadDot) {
+                    unreadDot.remove();
+                }
+            })
+            .catch(() => {
+                // 保持靜默，避免影響使用者閱讀通知內容
+            });
         }
 
         function closeRequestNoticeModal(requestListId) {
