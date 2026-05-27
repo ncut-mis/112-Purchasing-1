@@ -91,7 +91,9 @@
                                             <div class="grid grid-cols-12 gap-4 rounded-2xl border border-slate-200 p-4">
                                                 <div class="col-span-12 md:col-span-2">
                                                     @if($item->reference_image)
-                                                        <img src="{{ route('request-item.image', ['requestList' => $requestList->id, 'requestItem' => $item->id, 'v' => $item->updated_at?->timestamp ?? now()->timestamp]) }}" alt="{{ $item->name }}" class="h-24 w-full rounded-xl object-cover">
+                                                       <div class="flex h-24 w-full items-center justify-center overflow-hidden rounded-xl bg-slate-100">
+                                                            <img src="{{ route('request-item.image', ['requestList' => $requestList->id, 'requestItem' => $item->id, 'v' => $item->updated_at?->timestamp ?? now()->timestamp]) }}" alt="{{ $item->name }}" class="h-full w-full object-contain">
+                                                        </div>
                                                     @else
                                                         <div class="flex h-24 w-full items-center justify-center rounded-xl bg-slate-100 text-slate-400"><i class="bi bi-image"></i></div>
                                                     @endif

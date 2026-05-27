@@ -264,7 +264,7 @@ class DashboardController extends Controller
 
             // 進行中的跟團：未付款 + 待出貨 + 已到貨
             'ongoing_follow_orders' => Order::where('buyer_id', $user->id)
-                ->whereIn('status', ['pending_payment', 'wait-for-ship', 'arrivaled'])
+                ->whereIn('status', ['pending_payment', 'wait-for-ship', 'shipped', 'arrivaled'])
                 ->count(),
             
             // 修正點：徹底移除 request_list_id 的過濾與 exists 子查詢

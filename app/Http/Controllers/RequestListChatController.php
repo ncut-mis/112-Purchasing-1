@@ -10,6 +10,16 @@ use Illuminate\Support\Facades\Auth;
  
 class RequestListChatController extends Controller
 {
+
+     private function ensureChatEnabledStatus(RequestList $requestList): void
+    {
+        $enabledStatuses = ['matched', 'wait-for-ship', 'shipped', 'arrivaled'];
+
+        if (!in_array((string) $requestList->status, $enabledStatuses, true)) {
+            abort(403, '目前此請購單狀態不可使用聊天功能。');
+        }
+    }
+
     private function resolveEligibleAgentIds(RequestList $requestList): array
     {
         $agentIds = [];
@@ -36,6 +46,7 @@ class RequestListChatController extends Controller
     public function show(RequestList $requestList)
     {
         $user = Auth::user();
+        $this->ensureChatEnabledStatus($requestList);
         $agentId = $this->resolveAgentId($requestList);
  
         // 只有請託人或承接代購人才能進入
@@ -65,6 +76,7 @@ class RequestListChatController extends Controller
         }
  
         // 定義這場對話的參與者
+        $this->ensureChatEnabledStatus($requestList);
         $myId = $user->id;
         $chatPartnerId = null;
  
@@ -117,6 +129,7 @@ class RequestListChatController extends Controller
     public function send(RequestList $requestList, Request $request)
     {
         $user = Auth::user();
+         $this->ensureChatEnabledStatus($requestList);
         $agentId = $this->resolveAgentId($requestList);
  
         $isBuyer = (int) $requestList->user_id === $user->id;

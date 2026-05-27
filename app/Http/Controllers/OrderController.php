@@ -127,6 +127,12 @@ class OrderController extends Controller
             abort(403, '你沒有權限完成這筆跟單。');
         }
 
+        if ($order->status !== 'arrivaled') {
+            return redirect()
+                ->route('dashboard', ['section' => 'follow-orders'])
+                ->with('error', '只有已到貨的跟團訂單才能標記為完成。');
+        }
+
         if (in_array($order->status, ['completed', 'cancelled', 'refunded'], true)) {
             return redirect()
                 ->route('dashboard', ['section' => 'follow-orders'])

@@ -37,7 +37,7 @@
                                     @click="followTab = 'shipping'"
                                     :class="followTab === 'shipping' ? 'bg-blue-50 text-blue-700 border-blue-300 font-bold' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'"
                                     class="px-4 py-1.5 rounded-full border text-xs transition">
-                                    待出貨
+                                    待出貨/已出貨
                                     @if($shippingOrders->count() > 0)
                                         <span class="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500 text-white text-[10px]">{{ $shippingOrders->count() }}</span>
                                     @endif
@@ -121,16 +121,7 @@
                                                     >
                                                         檢視
                                                     </button>
-                                                    <form method="POST" action="{{ route('orders.complete', $followOrder) }}" onsubmit="return confirm('是否已完成？');">
-                                                        @csrf
-                                                        @method('PATCH')
-                                                        <button
-                                                            type="submit"
-                                                            class="inline-flex items-center rounded-full bg-emerald-500 px-3 py-1 text-[0.8rem] font-semibold text-white shadow-sm transition hover:bg-emerald-600"
-                                                        >
-                                                            完成
-                                                        </button>
-                                                    </form>
+                                                    
                                                 </div>
                                             </div>
                                         </div>
@@ -351,6 +342,19 @@
                                                         class="rounded-full border border-gray-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-gray-50">
                                                         檢視
                                                     </button>
+
+                                                    @if($followOrder->status === 'arrivaled')
+                                                        <form method="POST" action="{{ route('orders.complete', $followOrder) }}" onsubmit="return confirm('是否已完成？');">
+                                                            @csrf
+                                                            @method('PATCH')
+                                                            <button
+                                                                type="submit"
+                                                                class="inline-flex items-center rounded-full bg-emerald-500 px-3 py-1 text-[0.8rem] font-semibold text-white shadow-sm transition hover:bg-emerald-600"
+                                                            >
+                                                                完成
+                                                            </button>
+                                                        </form>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </div>
