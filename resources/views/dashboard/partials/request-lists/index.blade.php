@@ -1157,46 +1157,48 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 收到新訊息（請託單聊天）
     channel.bind('message.sent', function (data) {
-        if (!data.requestListId) return; // 一般聊天不處理
-        // 自己發的訊息已由 sendRequestChat() 即時追加，不再重複處理
-        if (data.senderId === MY_ID) return;
+        if (!data.requestListId) return;
+        if (data.senderId === MY_ID) return; // 自己發的不重複處理
+
+        // box ID 用 senderId（代購人）找
         const boxId = `request-chat-messages-${data.requestListId}-${data.senderId}`;
         const box = document.getElementById(boxId);
-        if (!box) return;
-
-        // 移除空訊息提示
-        const emptyTip = document.getElementById(`empty-tip-${data.requestListId}-${data.senderId}`);
-        if (emptyTip) emptyTip.remove();
-
-        const row = document.createElement('div');
-        row.className = 'mb-3 flex justify-start';
-        row.innerHTML = `
-            <div class="max-w-[75%]">
-                <div class="rounded-xl border px-3 py-2 bg-white border-slate-200">
-                    <p class="text-xs text-slate-500"></p>
-                    <p class="mt-1 text-sm text-slate-800 break-words"></p>
-                </div>
-                <p class="mt-1 text-xs text-slate-500"></p>
-            </div>`;
-        row.querySelector('.text-xs.text-slate-500').textContent = data.userName;
-        row.querySelector('.break-words').textContent = data.messageContent;
-        row.querySelectorAll('p')[2].textContent = data.time;
-        box.appendChild(row);
-        box.scrollTop = box.scrollHeight;
 
         // 判斷聊天室是否開著
         const modal = document.getElementById(`request-chat-modal-${data.requestListId}`);
         const isOpen = modal && !modal.classList.contains('hidden');
 
+        if (box) {
+            // 移除空訊息提示
+            const emptyTip = document.getElementById(`empty-tip-${data.requestListId}-${data.senderId}`);
+            if (emptyTip) emptyTip.remove();
+
+            const row = document.createElement('div');
+            row.className = 'mb-3 flex justify-start';
+            row.innerHTML = `
+                <div class="max-w-[75%]">
+                    <div class="rounded-xl border px-3 py-2 bg-white border-slate-200">
+                        <p class="text-xs text-slate-500"></p>
+                        <p class="mt-1 text-sm text-slate-800 break-words"></p>
+                    </div>
+                    <p class="mt-1 text-xs text-slate-500"></p>
+                </div>`;
+            row.querySelector('.text-xs.text-slate-500').textContent = data.userName;
+            row.querySelector('.break-words').textContent = data.messageContent;
+            row.querySelectorAll('p')[2].textContent = data.time;
+            box.appendChild(row);
+            box.scrollTop = box.scrollHeight;
+        }
+
         if (isOpen) {
-            // 聊天室是開著的，立即標記已讀
+            // 聊天室開著，立即標記已讀並廣播
             fetch(`/request-list/${data.requestListId}/chat/read`, {
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
             }).catch(() => {});
             clearBuyerChatBadge(data.requestListId);
         } else {
-            // 聊天室是關閉的，顯示未讀紅點
+            // 聊天室關閉，顯示未讀紅點
             const current = buyerUnreadCounts[data.requestListId] || 0;
             setBuyerChatBadge(data.requestListId, current + 1);
         }
@@ -1217,6 +1219,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // 請託人開啟聊天室時清除 badge 並標記已讀
     function openRequestChatModalAndClear(requestListId, agentId) {
         clearBuyerChatBadge(requestListId);
+        // 標記已讀並廣播給代購人
         fetch(`/request-list/${requestListId}/chat/read`, {
             method: 'POST',
             headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
@@ -1229,6 +1232,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 el.textContent = '已讀';
             });
         }
+        // 通知中心聊天按鈕的 badge 也清除
+        document.querySelectorAll(`.buyer-chat-badge[data-request-list-id="${requestListId}"]`).forEach(b => b.classList.add('hidden'));
     }
 
     // ── 送出訊息（fetch 即時）────────────────────────────────────
@@ -1244,17 +1249,28 @@ document.addEventListener('DOMContentLoaded', function () {
         input.value = '';
         btn.disabled = true;
 
+        // 帶 X-Socket-ID 讓 toOthers() 排除自己，避免 Pusher 廣播重複
+        const socketId = (typeof pusher !== 'undefined' && pusher?.connection?.socket_id) ? pusher.connection.socket_id : '';
+
         fetch(sendUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': CSRF,
                 'Accept': 'application/json',
+                'X-Socket-ID': socketId,
             },
             body: JSON.stringify({ body: text, receiver_id: parseInt(receiverId) }),
         })
-        .then(r => r.json())
+        .then(r => {
+            if (!r.ok) { btn.disabled = false; return Promise.reject('send_failed'); }
+            return r.json();
+        })
         .then(msg => {
+            const name = msg.name ?? msg.sender_name ?? msg.userName ?? '';
+            const text = msg.text ?? msg.body ?? msg.message ?? '';
+            const time = msg.time ?? msg.created_at ?? '';
+
             const box = document.getElementById(`request-chat-messages-${requestListId}-${agentId}`);
             if (!box) return;
 
@@ -1269,14 +1285,17 @@ document.addEventListener('DOMContentLoaded', function () {
             row.innerHTML = `
                 <div class="max-w-[75%]">
                     <div class="rounded-xl border px-3 py-2 bg-emerald-100 border-emerald-200">
-                        <p class="text-xs text-slate-500">${msg.name}</p>
-                        <p class="mt-1 text-sm text-slate-800 break-words">${msg.text}</p>
+                        <p class="text-xs text-slate-500"></p>
+                        <p class="mt-1 text-sm text-slate-800 break-words"></p>
                     </div>
                     <p class="mt-1 text-xs text-slate-500 flex items-center gap-1 justify-end">
-                        <span>${msg.time}</span>
+                        <span></span>
                         <span class="msg-read-status" style="color:#94a3b8">未讀</span>
                     </p>
                 </div>`;
+            row.querySelectorAll('p')[0].textContent = name;
+            row.querySelectorAll('p')[1].textContent = text;
+            row.querySelectorAll('span')[0].textContent = time;
             box.appendChild(row);
             box.scrollTop = box.scrollHeight;
             btn.disabled = false;

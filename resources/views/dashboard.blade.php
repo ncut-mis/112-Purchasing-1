@@ -408,37 +408,7 @@
             }
         }
 
-        function appendRequestChatMessage(requestListId, message) {
-            const messagesBox = document.getElementById(`request-chat-messages-${requestListId}`);
-            if (!messagesBox || !message) {
-                return;
-            }
-
-            const row = document.createElement('div');
-            row.className = 'mb-3 flex justify-end';
-            row.innerHTML = `
-                <div class="max-w-[75%]">
-                    <div class="rounded-xl border px-3 py-2 bg-emerald-100 border-emerald-200">
-                        <p class="text-xs text-slate-500">${message.sender_name ?? ''}</p>
-                        <p class="mt-1 text-sm text-slate-800 break-words"></p>
-                    </div>
-                    <p class="mt-1 text-xs text-slate-500 text-right">${message.created_at ?? ''}</p>
-                </div>
-            `;
-
-            const bodyNode = row.querySelector('.break-words');
-            if (bodyNode) {
-                bodyNode.textContent = message.body ?? '';
-            }
-
-            const emptyState = messagesBox.querySelector('p.py-12');
-            if (emptyState) {
-                emptyState.remove();
-            }
-
-            messagesBox.appendChild(row);
-            messagesBox.scrollTop = messagesBox.scrollHeight;
-        }
+        // appendRequestChatMessage 定義在下方請購單聊天 JS 區塊
 
 
         const favoriteUnfavoriteModal = document.getElementById('favorite-unfavorite-modal');
@@ -964,6 +934,30 @@
             const box = document.getElementById(`request-chat-messages-${id}-${targetAgentId}`);
             if (box) box.scrollTop = box.scrollHeight;
             markRequestChatAsRead(id);
+
+            // 把聊天室內現有「未讀」的 span 全部改成「已讀」
+            if (box) {
+                box.querySelectorAll('.msg-read-status').forEach(el => {
+                    if (el.textContent.trim() === '未讀') {
+                        el.textContent = '已讀';
+                        el.classList.remove('text-slate-400');
+                        el.classList.add('text-emerald-500');
+                    }
+                });
+            }
+
+            // 清除請託單列表聊天按鈕的未讀紅點
+            const badge = document.querySelector(`.buyer-chat-badge[data-request-list-id="${id}"]`);
+            if (badge) {
+                badge.textContent = '';
+                badge.classList.add('hidden');
+            }
+            // 清除通知中心的聊天紅點
+            const noticeBadge = document.querySelector(`.notice-chat-badge[data-request-list-id="${id}"]`);
+            if (noticeBadge) {
+                noticeBadge.textContent = '';
+                noticeBadge.classList.add('hidden');
+            }
         }
 
         function closeRequestChatModal(id) {
@@ -989,14 +983,16 @@
             row.innerHTML = `
                 <div class="max-w-[75%]">
                     <div class="rounded-xl border px-3 py-2 bg-emerald-100 border-emerald-200">
-                        <p class="text-xs text-slate-500">${message.name ?? ''}</p>
+                        <p class="text-xs text-slate-500"></p>
                         <p class="mt-1 text-sm text-slate-800 break-words"></p>
                     </div>
-                    <p class="mt-1 text-xs text-slate-500 text-right">${message.time ?? ''}</p>
+                    <p class="mt-1 text-xs text-slate-500 text-right"></p>
                 </div>
             `;
-            const bodyNode = row.querySelector('.break-words');
-            if (bodyNode) bodyNode.textContent = message.text ?? '';
+            // 用 textContent 避免 undefined 字串或 XSS
+            row.querySelectorAll('p')[0].textContent = message.name ?? '';
+            row.querySelector('.break-words').textContent = message.text ?? '';
+            row.querySelectorAll('p')[2].textContent = message.time ?? '';
 
             // 移除「尚無訊息」提示
             const empty = box.querySelector('p.py-12');
@@ -1049,12 +1045,15 @@
             submitBtn.textContent = '送出中...';
 
             try {
+                // 帶 X-Socket-ID 讓 toOthers() 排除自己，避免 Pusher 廣播重複
+                const socketId = pusher?.connection?.socket_id ?? '';
                 const response = await fetch(form.action, {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content'),
                         'X-Requested-With': 'XMLHttpRequest',
+                        'X-Socket-ID': socketId,
                     },
                     body: new FormData(form),
                 });
@@ -1063,6 +1062,9 @@
                 if (!response.ok) {
                     throw new Error(payload?.message || '訊息送出失敗');
                 }
+
+                // 記錄此 messageId，萬一 X-Socket-ID 失效時 Pusher 回來也不會重複渲染
+                if (payload.id) requestChatRenderedMessageIds.add(payload.id);
 
                 appendRequestChatMessage(requestListId, payload, receiverId);
                 input.value = '';
@@ -1090,35 +1092,59 @@
 
         const myChannel = pusher.subscribe('private-chat.{{ Auth::id() }}');
         myChannel.bind('message.sent', function (data) {
-            // 找到對應的聊天視窗並顯示訊息
-             const box = document.getElementById(`request-chat-messages-${data.requestListId}-${data.senderId}`) || document.getElementById(`request-chat-messages-${data.requestListId}`);
-            if (!box) return; // 這張單的聊天視窗不在畫面上就忽略
+            // 只處理請託單聊天（有 requestListId）
+            if (!data.requestListId) return;
+
+            // 重複防護：若此 messageId 已由 submit 渲染過，跳過
+            if (data.messageId && requestChatRenderedMessageIds.has(data.messageId)) return;
+            if (data.messageId) requestChatRenderedMessageIds.add(data.messageId);
+
+            const box = document.getElementById(`request-chat-messages-${data.requestListId}-${data.senderId}`) || document.getElementById(`request-chat-messages-${data.requestListId}`);
+            if (!box) return;
 
             const row = document.createElement('div');
             row.className = 'mb-3 flex justify-start';
             row.innerHTML = `
                 <div class="max-w-[75%]">
                     <div class="rounded-xl border px-3 py-2 bg-white border-slate-200">
-                        <p class="text-xs text-slate-500">${data.userName}</p>
+                        <p class="text-xs text-slate-500"></p>
                         <p class="mt-1 text-sm text-slate-800 break-words"></p>
                     </div>
-                    <p class="mt-1 text-xs text-slate-500 text-left">${data.time}</p>
+                    <p class="mt-1 text-xs text-slate-500 text-left"></p>
                 </div>
             `;
-            row.querySelector('.break-words').textContent = data.messageContent;
+            row.querySelectorAll('p')[0].textContent = data.userName ?? '';
+            row.querySelector('.break-words').textContent = data.messageContent ?? '';
+            row.querySelectorAll('p')[2].textContent = data.time ?? '';
 
             const empty = box.querySelector('p.py-12');
             if (empty) empty.remove();
 
-             if (data.messageId && requestChatRenderedMessageIds.has(data.messageId)) return;
-            if (data.messageId) requestChatRenderedMessageIds.add(data.messageId);
-
             box.appendChild(row);
             box.scrollTop = box.scrollHeight;
 
+            // 判斷聊天室目前是否開著
             const modal = document.getElementById(`request-chat-modal-${data.requestListId}`);
-            if (modal && !modal.classList.contains('hidden')) {
+            const isChatOpen = modal && !modal.classList.contains('hidden');
+
+            if (isChatOpen) {
+                // 聊天室開著 → 立刻標記已讀
                 markRequestChatAsRead(data.requestListId);
+            } else {
+                // 聊天室沒開 → 更新未讀紅點
+
+                // 請託單列表聊天按鈕的紅點
+                const badge = document.querySelector(`.buyer-chat-badge[data-request-list-id="${data.requestListId}"]`);
+                if (badge) {
+                    badge.textContent = (parseInt(badge.textContent) || 0) + 1;
+                    badge.classList.remove('hidden');
+                }
+                // 通知中心聊天按鈕的紅點
+                const noticeBadge = document.querySelector(`.notice-chat-badge[data-request-list-id="${data.requestListId}"]`);
+                if (noticeBadge) {
+                    noticeBadge.textContent = (parseInt(noticeBadge.textContent) || 0) + 1;
+                    noticeBadge.classList.remove('hidden');
+                }
             }
         });
 

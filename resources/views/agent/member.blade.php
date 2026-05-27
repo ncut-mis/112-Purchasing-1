@@ -523,7 +523,7 @@
                     <!-- 分頁二：訂單管理 -->
                     <div x-show="activeTab === 'order-management'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4">
                         <section id="order-management" class="bg-white rounded-2xl shadow-sm border border-indigo-100 p-6" x-data="{ orderTab: 'pending' }">
-                            <h3 class="text-lg font-bold text-indigo-600 mb-4">【請託單】訂單管理</h3>
+                            <h3 class="text-lg font-bold text-indigo-600 mb-4">請託單管理</h3>
 
                             {{-- 切換按鈕 --}}
                             <div class="flex gap-2 mb-6 border-b border-gray-100 pb-4">
@@ -2201,17 +2201,28 @@
             input.value = '';
             btn.disabled = true;
 
+            // 帶 X-Socket-ID 讓 toOthers() 排除自己，避免 Pusher 廣播重複
+            const socketId = (typeof pusher !== 'undefined' && pusher?.connection?.socket_id) ? pusher.connection.socket_id : '';
+
             fetch(sendUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': AGENT_CSRF,
                     'Accept': 'application/json',
+                    'X-Socket-ID': socketId,
                 },
                 body: JSON.stringify({ body: text, receiver_id: parseInt(receiverId) }),
             })
-            .then(r => r.json())
+            .then(r => {
+                if (!r.ok) { btn.disabled = false; return Promise.reject('send_failed'); }
+                return r.json();
+            })
             .then(msg => {
+                const name = msg.name ?? msg.sender_name ?? msg.userName ?? '';
+                const text = msg.text ?? msg.body ?? msg.message ?? '';
+                const time = msg.time ?? msg.created_at ?? '';
+
                 const box = document.getElementById(`agent-request-chat-messages-${requestListId}`);
                 if (!box) return;
                 const emptyTip = document.getElementById(`agent-empty-tip-${requestListId}`);
@@ -2222,15 +2233,17 @@
                 row.innerHTML = `
                     <div class="max-w-[75%]">
                         <div class="rounded-xl border px-3 py-2 bg-indigo-100 border-indigo-200">
-                            <p class="text-xs text-gray-500">${msg.name}</p>
+                            <p class="text-xs text-gray-500"></p>
                             <p class="mt-1 text-sm text-gray-800 break-words"></p>
                         </div>
                         <p class="mt-1 text-xs text-gray-500 flex items-center gap-1 justify-end">
-                            <span>${msg.time}</span>
+                            <span></span>
                             <span class="agent-msg-read-status" style="color:#94a3b8">未讀</span>
                         </p>
                     </div>`;
-                row.querySelector('.break-words').textContent = msg.text;
+                row.querySelectorAll('p')[0].textContent = name;
+                row.querySelectorAll('p')[1].textContent = text;
+                row.querySelectorAll('span')[0].textContent = time;
                 box.appendChild(row);
                 box.scrollTop = box.scrollHeight;
                 btn.disabled = false;

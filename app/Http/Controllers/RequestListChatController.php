@@ -10,11 +10,9 @@ use Illuminate\Support\Facades\Auth;
  
 class RequestListChatController extends Controller
 {
-
-     private function ensureChatEnabledStatus(RequestList $requestList): void
+    private function ensureChatEnabledStatus(RequestList $requestList): void
     {
-        $enabledStatuses = ['matched', 'wait-for-ship', 'shipped', 'arrivaled'];
-
+        $enabledStatuses = ['offered', 'matched', 'wait-for-ship', 'shipped', 'arrivaled'];
         if (!in_array((string) $requestList->status, $enabledStatuses, true)) {
             abort(403, '目前此請購單狀態不可使用聊天功能。');
         }
@@ -23,17 +21,14 @@ class RequestListChatController extends Controller
     private function resolveEligibleAgentIds(RequestList $requestList): array
     {
         $agentIds = [];
-
         if (!empty($requestList->people)) {
             $agentIds[] = (int) $requestList->people;
         }
-
         $quoteAgentIds = $requestList->quotes()
             ->orderByDesc('created_at')
             ->pluck('user_id')
             ->map(fn ($id) => (int) $id)
             ->all();
-
         return array_values(array_unique(array_merge($agentIds, $quoteAgentIds)));
     }
 
@@ -48,38 +43,36 @@ class RequestListChatController extends Controller
         $user = Auth::user();
         $this->ensureChatEnabledStatus($requestList);
         $agentId = $this->resolveAgentId($requestList);
- 
-        // 只有請託人或承接代購人才能進入
+
         $isBuyer = (int) $requestList->user_id === $user->id;
         $eligibleAgentIds = $this->resolveEligibleAgentIds($requestList);
         $isAgent = in_array((int) $user->id, $eligibleAgentIds, true);
- 
+
         if (!$isBuyer && !$isAgent) {
             abort(403);
         }
- 
+
         return view('request_lists.chat', compact('requestList', 'isBuyer', 'agentId', 'eligibleAgentIds'));
     }
- 
+
     // 取得歷史訊息（點開對話框時觸發）
     public function history(RequestList $requestList, Request $request)
     {
         $user = Auth::user();
         $agentId = $this->resolveAgentId($requestList);
- 
+
         $isBuyer = (int) $requestList->user_id === $user->id;
         $eligibleAgentIds = $this->resolveEligibleAgentIds($requestList);
         $isAgent = in_array((int) $user->id, $eligibleAgentIds, true);
- 
+
         if (!$isBuyer && !$isAgent) {
             abort(403);
         }
- 
-        // 定義這場對話的參與者
+
         $this->ensureChatEnabledStatus($requestList);
         $myId = $user->id;
         $chatPartnerId = null;
- 
+
         if ($isBuyer) {
             $requestedAgentId = (int) $request->input('agent_id', 0);
             $chatPartnerId = in_array($requestedAgentId, $eligibleAgentIds, true)
@@ -93,15 +86,21 @@ class RequestListChatController extends Controller
             return response()->json([]);
         }
 
-        // 💡 【修正問題二、三】當使用者點開聊天室讀取歷史訊息時，將對方傳給我的未讀訊息全部更新為「已讀」
-        // 這會讓當下的「未讀」變「已讀」，同時因為資料庫變更，通知中心的紅點與計數也會自動扣除！
-        Message::where('request_list_id', $requestList->id)
+        // 標記已讀（用 read_at 欄位）
+        $updated = Message::where('request_list_id', $requestList->id)
             ->where('sender_id', $chatPartnerId)
             ->where('receiver_id', $myId)
-            ->where('is_read', false)
-            ->update(['is_read' => true]);
- 
-        // 撈取兩人的對話紀錄
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+
+        // 如果有更新，廣播已讀通知給對方
+        if ($updated > 0) {
+            broadcast(new \App\Events\MessageRead(
+                $myId, $chatPartnerId, now()->format('H:i'), $requestList->id
+            ))->toOthers();
+        }
+
+        // 撈取對話紀錄
         $messages = Message::where('request_list_id', $requestList->id)
             ->where(function ($q) use ($myId, $chatPartnerId) {
                 $q->where('sender_id', $myId)->where('receiver_id', $chatPartnerId);
@@ -111,37 +110,63 @@ class RequestListChatController extends Controller
             })
             ->orderBy('created_at', 'asc')
             ->get();
- 
-        // 格式化輸出
+
         $formatted = $messages->map(function ($msg) use ($myId) {
             return [
-                'id' => $msg->id,
-                'sender' => ((int) $msg->sender_id === (int) $myId) ? 'me' : 'other',
-                'text' => $msg->body,
-                'time' => $msg->created_at->format('H:i'),
+                'id'      => $msg->id,
+                'sender'  => ((int) $msg->sender_id === (int) $myId) ? 'me' : 'other',
+                'name'    => $msg->sender->name ?? '',
+                'text'    => $msg->body,
+                'time'    => $msg->created_at->format('H:i'),
+                'read_at' => $msg->read_at,
             ];
         });
- 
+
         return response()->json($formatted);
     }
- 
-    // 發送新訊息
+
+    // 標記已讀 API
+    public function markRead(Request $request, RequestList $requestList)
+    {
+        $myId = Auth::id();
+
+        $updated = Message::where('request_list_id', $requestList->id)
+            ->where('receiver_id', $myId)
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+
+        if ($updated > 0) {
+            $lastMsg = Message::where('request_list_id', $requestList->id)
+                ->where('receiver_id', $myId)
+                ->orderByDesc('created_at')
+                ->first();
+            if ($lastMsg) {
+                broadcast(new \App\Events\MessageRead(
+                    $myId, $lastMsg->sender_id, now()->format('H:i'), $requestList->id
+                ))->toOthers();
+            }
+        }
+
+        return response()->json(['ok' => true]);
+    }
+
+    // 發送訊息
     public function send(RequestList $requestList, Request $request)
     {
         $user = Auth::user();
-         $this->ensureChatEnabledStatus($requestList);
+        $this->ensureChatEnabledStatus($requestList);
         $agentId = $this->resolveAgentId($requestList);
- 
+
         $isBuyer = (int) $requestList->user_id === $user->id;
         $eligibleAgentIds = $this->resolveEligibleAgentIds($requestList);
         $isAgent = in_array((int) $user->id, $eligibleAgentIds, true);
- 
+
         if (!$isBuyer && !$isAgent) {
             abort(403);
         }
- 
+
         $request->validate(['body' => 'required|string|max:1000']);
- 
+
         $receiverId = null;
         if ($isBuyer) {
             $requestedReceiverId = (int) $request->input('receiver_id', 0);
@@ -155,17 +180,14 @@ class RequestListChatController extends Controller
         if (!$receiverId) {
             return response()->json(['message' => '目前尚未有可聊天的代購人。'], 422);
         }
- 
+
         $message = Message::create([
             'request_list_id' => $requestList->id,
             'sender_id'       => $user->id,
             'receiver_id'     => $receiverId,
             'body'            => $request->body,
-            'is_read'         => false, // 新訊息預設為未讀
         ]);
- 
-        // 💡 【修正問題一】廣播給對方時，加上 ->toOthers()。
-        // 這樣 Pusher 就不會把訊息再次推回給發送者本人，徹底解決重複兩則訊息的問題！
+
         broadcast(new MessageSent(
             $user->name,
             $request->body,
@@ -175,10 +197,11 @@ class RequestListChatController extends Controller
             $message->created_at->format('H:i'),
             $requestList->id,
         ))->toOthers();
- 
+
         return response()->json([
             'id'     => $message->id,
             'sender' => 'me',
+            'name'   => $user->name,
             'text'   => $message->body,
             'time'   => $message->created_at->format('H:i'),
         ]);
