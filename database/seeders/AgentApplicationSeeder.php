@@ -17,7 +17,7 @@ class AgentApplicationSeeder extends Seeder
             $users = User::factory()->count(20)->create();
         }
 
-        $countries = ['日本', '韓國', '美國', '泰國', '中國'];
+        $countries = ['日本', '韓國', '美國', '英國'];
 
         foreach ($users as $index => $user) {
             // 🎯 【新增核心邏輯】隨機產生該使用者的可代購國家（1 ~ 2 個國家）
