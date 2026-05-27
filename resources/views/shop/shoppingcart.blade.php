@@ -403,24 +403,38 @@
                     {{-- 結帳資訊 --}}
                     {{-- ========================= --}}
                     <div class="row mt-5 border-top pt-4">
-    <div class="col-md-12 text-end">
-        <p class="mb-1">
-            商品小計：NT$ <span id="display_subtotal">0</span>
-        </p>
-        <p class="mb-2">
-            預計運費：NT$ 60
-        </p>
-        <h3 class="text-black">
-            結帳總計：
-            <strong class="text-success h2">
-                NT$ <span id="display_total">0</span>
-            </strong>
-        </h3>
-        
-        <button type="button" class="btn btn-dark w-100" onclick="prepareCheckout()">
-            立即前往支付
-        </button>
-    </div>
+    <div class="col-md-12 text-end mt-4">
+
+    <p class="mb-1">
+        商品小計：
+        <span class="fw-bold">
+            NT$ <span id="display_subtotal">0</span>
+        </span>
+    </p>
+
+    <p class="mb-2">
+        預計運費：
+        <span class="fw-bold">
+            NT$ 60
+        </span>
+    </p>
+
+    <h3 class="text-black mb-3">
+        結帳總計：
+        <strong class="text-success h2">
+            NT$ <span id="display_total">0</span>
+        </strong>
+    </h3>
+
+    <button
+        type="button"
+        class="btn btn-dark w-100 py-3"
+        onclick="prepareCheckout()">
+
+        立即前往支付
+
+    </button>
+
 </div>
 
                 @endif
@@ -504,36 +518,74 @@
 {{-- 2. JS 區塊 --}}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // 1. 初始化賣家鎖定邏輯
-    const container = document.querySelector('.untree_co-section');
-    
+
+    // 更新鎖定與金額
     function updateLockState() {
-        const checkedBoxes = document.querySelectorAll('.item-selector:checked');
-        const activeSellerId = checkedBoxes.length > 0 ? checkedBoxes[0].dataset.sellerId : null;
+
+        const checkedBoxes =
+            document.querySelectorAll('.item-selector:checked');
+
+        const activeSellerId =
+            checkedBoxes.length > 0
+                ? checkedBoxes[0].dataset.sellerId
+                : null;
+
         let subtotal = 0;
 
         document.querySelectorAll('.seller-group').forEach(group => {
-            const isLocked = activeSellerId && group.dataset.sellerId !== activeSellerId;
+
+            const isLocked =
+                activeSellerId &&
+                group.dataset.sellerId !== activeSellerId;
+
             group.classList.toggle('is-locked', isLocked);
+
             group.querySelectorAll('input, button').forEach(el => {
-                if (!el.classList.contains('item-selector')) el.disabled = isLocked;
+
+                if (!el.classList.contains('item-selector')) {
+                    el.disabled = isLocked;
+                }
             });
 
             const checkbox = group.querySelector('.item-selector');
+
             if (checkbox && checkbox.checked) {
-                const priceEl = group.querySelector('.item-price');
-                if (priceEl) subtotal += parseFloat(priceEl.dataset.price || 0);
+
+                subtotal += parseFloat(
+                    checkbox.dataset.price || 0
+                );
             }
         });
 
+        // 運費
         const shipping = subtotal > 0 ? 60 : 0;
+
         const total = subtotal + shipping;
-        document.getElementById('display_subtotal').textContent = subtotal.toLocaleString();
-        document.getElementById('display_total').textContent = total.toLocaleString();
+
+        // 更新畫面
+        const subtotalEl =
+            document.getElementById('display_subtotal');
+
+        const totalEl =
+            document.getElementById('display_total');
+
+        if (subtotalEl) {
+            subtotalEl.textContent =
+                subtotal.toLocaleString();
+        }
+
+        if (totalEl) {
+            totalEl.textContent =
+                total.toLocaleString();
+        }
     }
 
-    container.addEventListener('change', function(e) {
-        if (e.target.classList.contains('item-selector')) updateLockState();
+    // checkbox 勾選事件
+    document.addEventListener('change', function(e) {
+
+        if (e.target.classList.contains('item-selector')) {
+            updateLockState();
+        }
     });
 
     // 2. 移除商品與數量調整邏輯

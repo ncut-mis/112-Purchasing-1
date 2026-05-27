@@ -94,34 +94,82 @@ class CartController extends Controller
     }
 }
     public function processCheckout(Request $request)
-    {
-        $request->validate([
-            'address'        => 'required|string',
-            'logistics_id'   => 'required',
-            'payment_method' => 'required|string',
-        ]);
+{
+    $request->validate([
+        'address'        => 'required|string',
+        'logistics_id'   => 'required',
+        'payment_method' => 'required|string',
+    ]);
 
-        $userId        = Auth::id();
-        $paymentMethod = $request->input('payment_method');
+    $userId        = Auth::id();
+    $paymentMethod = $request->input('payment_method');
 
-        DB::transaction(function () use ($userId, $paymentMethod) {
-            // 將「跟單」狀態改為等待出貨，並記錄付款方式
+    // 勾選的跟單訂單 ID
+    $followOrderIds = array_filter(
+        explode(',', $request->selected_follow_orders)
+    );
+
+    // 勾選的請購單 ID
+    $requestListIds = array_filter(
+        explode(',', $request->selected_request_lists)
+    );
+
+    DB::transaction(function () use (
+        $userId,
+        $paymentMethod,
+        $followOrderIds,
+        $requestListIds
+    ) {
+
+        /*
+        |--------------------------------------------------------------------------
+        | 只更新勾選的跟單
+        |--------------------------------------------------------------------------
+        */
+
+        if (!empty($followOrderIds)) {
+
             Order::where('buyer_id', $userId)
+
+                ->whereIn('id', $followOrderIds)
+
                 ->where('status', 'pending_payment')
+
                 ->update([
+
                     'status'         => 'wait-for-ship',
+
                     'payment_method' => $paymentMethod,
                 ]);
+        }
 
-            // 將「專屬代購報價單」請託清單狀態改為等待出貨
+        /*
+        |--------------------------------------------------------------------------
+        | 只更新勾選的請購單
+        |--------------------------------------------------------------------------
+        */
+
+        if (!empty($requestListIds)) {
+
             DB::table('request_lists')
-                ->where('user_id', $userId)
-                ->where('status', 'matched')
-                ->update(['status' => 'wait-for-ship']);
-        });
 
-        return back()->with('success', '結帳完成！跟單與請託清單狀態已更新為等待出貨。');
-    }
+                ->where('user_id', $userId)
+
+                ->whereIn('id', $requestListIds)
+
+                ->where('status', 'matched')
+
+                ->update([
+                    'status' => 'wait-for-ship'
+                ]);
+        }
+    });
+
+    return back()->with(
+        'success',
+        '已成功結帳勾選商品！'
+    );
+}
 
    public function addFollowOrder(Request $request)
 {

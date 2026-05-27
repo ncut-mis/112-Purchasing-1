@@ -17,7 +17,7 @@ class AgentApplicationSeeder extends Seeder
             $users = User::factory()->count(20)->create();
         }
 
-        $countries = ['日本', '韓國', '美國', '泰國', '中國'];
+        $countries = ['日本', '韓國', '美國', '英國'];
 
         foreach ($users as $index => $user) {
             // 🎯 【新增核心邏輯】隨機產生該使用者的可代購國家（1 ~ 2 個國家）
@@ -32,7 +32,7 @@ class AgentApplicationSeeder extends Seeder
             
             // 🎯 變成中文字串，用逗號隔開（例如："日本,美國"）
             // 如果你的系統習慣用 JSON 字串，也可以改成 json_encode($selectedCountries, JSON_UNESCAPED_UNICODE)
-            $purchasableCountriesString = implode(',', $selectedCountries);
+            $purchasableCountriesString = json_encode($selectedCountries);
 
             // 建立申請紀錄
             AgentApplication::create([
