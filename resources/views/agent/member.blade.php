@@ -654,8 +654,10 @@
                                                 </button>
                                                 <button type="button"
                                                    onclick="openAgentRequestChatModal({{ $requestList->id }})"
-                                                   class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700 transition">
+                                                   class="relative inline-flex items-center rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700 transition">
                                                     聊天
+                                                    <span class="agent-chat-badge hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center"
+                                                          data-request-list-id="{{ $requestList->id }}"></span>
                                                 </button>
                                                 @if($isReturned)
                                                     <button type="button"
@@ -836,42 +838,89 @@
                                         <div class="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
                                             <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4">
                                                 <div>
-                                                    <p class="text-xs text-gray-500">請託單【{{ $requestList->title}}】</p>
-                                                    <h4 class="text-lg font-bold text-gray-800">請託人{{ $requestList->user->name ?? '使用者' }}</h4>
+                                                    <h4 class="text-lg font-bold text-gray-800">{{ $requestList->title }}</h4>
+                                                    <p class="text-xs text-gray-500 mt-0.5">請託人：{{ $requestList->user->name ?? '使用者' }}</p>
                                                 </div>
                                                 <button type="button" class="text-2xl text-gray-500 hover:text-gray-700" onclick="closeAgentRequestChatModal({{ $requestList->id }})" aria-label="關閉聊天室">✕</button>
                                             </div>
 
-                                            <div id="agent-request-chat-messages-{{ $requestList->id }}" class="max-h-[55vh] overflow-y-auto bg-gray-50 px-5 py-4">
-                                                @forelse($agentChatMessages as $message)
-                                                    @php
-                                                        $isMine = (int) $message->sender_id === (int) auth()->id();
-                                                    @endphp
+                                            
+                                            @php
+                                                $agentQuoteItems = $quote->quoteItems->keyBy('request_item_id');
+                                            @endphp
+                                            <div class="border-b border-gray-200 bg-gray-50 px-5 py-3 text-sm text-gray-700">
+                                                @if($quote->quoteItems->isNotEmpty())
+                                                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                                                        <span class="font-semibold text-gray-600">我的報價明細</span>
+                                                        <span class="text-xs text-gray-400">{{ optional($quote->created_at)->format('Y-m-d H:i') }}</span>
+                                                    </div>
+                                                    @foreach($requestList->items as $item)
+                                                        @php
+                                                            $qItem = $agentQuoteItems->get($item->id);
+                                                            $unitPrice = $qItem?->unit_price;
+                                                            $subtotal = $unitPrice !== null ? $unitPrice * $item->quantity : null;
+                                                        @endphp
+                                                        <div class="flex items-center justify-between py-1 border-b border-gray-100 last:border-0">
+                                                            <span class="text-gray-700">{{ $item->name }} × {{ $item->quantity }}</span>
+                                                            <span class="text-gray-500 text-xs">
+                                                                @if($unitPrice !== null)
+                                                                    NT${{ number_format($unitPrice, 0) }} × {{ $item->quantity }} =
+                                                                    <span class="font-semibold text-indigo-600">NT${{ number_format($subtotal, 0) }}</span>
+                                                                @else
+                                                                    <span class="text-gray-400">未填寫</span>
+                                                                @endif
+                                                            </span>
+                                                        </div>
+                                                    @endforeach
+                                                    <div class="mt-2 flex justify-end">
+                                                        <span class="text-xs text-gray-500">總價：</span>
+                                                        <span class="ml-1 font-bold text-indigo-600">
+                                                            NT${{ number_format((float)($quote->price ?? $quote->agent_quote_total ?? 0), 0) }}
+                                                        </span>
+                                                    </div>
+                                                @else
+                                                    <span class="text-gray-400">尚未填寫報價明細</span>
+                                                @endif
+                                            </div>
+
+                                            
+                                            <div id="agent-request-chat-messages-{{ $requestList->id }}" class="max-h-[45vh] overflow-y-auto bg-gray-50 px-5 py-4">
+                                                @forelse($agentChatMessages as $agentMsg)
+                                                    @php $isMine = (int) $agentMsg->sender_id === (int) auth()->id(); @endphp
                                                     <div class="mb-3 flex {{ $isMine ? 'justify-end' : 'justify-start' }}">
                                                         <div class="max-w-[75%]">
                                                             <div class="rounded-xl border px-3 py-2 {{ $isMine ? 'bg-indigo-100 border-indigo-200' : 'bg-white border-gray-200' }}">
-                                                                <p class="text-xs text-gray-500">{{ $message->sender->name ?? '使用者' }}</p>
-                                                                <p class="mt-1 text-sm text-gray-800 break-words">{{ $message->body }}</p>
+                                                                <p class="text-xs text-gray-500">{{ $agentMsg->sender->name ?? '使用者' }}</p>
+                                                                <p class="mt-1 text-sm text-gray-800 break-words">{{ $agentMsg->body }}</p>
                                                             </div>
-                                                            <p class="mt-1 text-xs text-gray-500 {{ $isMine ? 'text-right' : 'text-left' }}">
-                                                                {{ optional($message->created_at)->format('Y-m-d H:i') }}
+                                                            <p class="mt-1 text-xs text-gray-500 flex items-center gap-1 {{ $isMine ? 'justify-end' : 'justify-start' }}">
+                                                                <span>{{ optional($agentMsg->created_at)->format('Y-m-d H:i') }}</span>
+                                                                @if($isMine)
+                                                                    <span class="agent-msg-read-status" style="color: {{ $agentMsg->read_at ? '#6366f1' : '#94a3b8' }}">
+                                                                        {{ $agentMsg->read_at ? '已讀' : '未讀' }}
+                                                                    </span>
+                                                                @endif
                                                             </p>
                                                         </div>
                                                     </div>
                                                 @empty
-                                                    <p class="agent-request-chat-empty py-12 text-center text-sm text-gray-400">目前尚無訊息，開始第一句對話吧。</p>
+                                                    <p class="agent-request-chat-empty py-12 text-center text-sm text-gray-400" id="agent-empty-tip-{{ $requestList->id }}">目前尚無訊息，開始第一句對話吧。</p>
                                                 @endforelse
                                             </div>
 
-                                            <form method="POST"
-                                                  action="{{ route('request-list.chat.send', $requestList) }}"
-                                                  class="agent-request-chat-form flex items-center gap-2 border-t border-gray-200 px-4 py-3"
-                                                  data-request-list-id="{{ $requestList->id }}">
-                                                @csrf
-                                                <input type="hidden" name="receiver_id" value="{{ $requestList->user_id }}">
-                                                <input type="text" name="body" class="w-full rounded-full border-gray-300 px-4 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="輸入訊息..." maxlength="2000" required>
-                                                <button type="submit" class="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">送出</button>
-                                            </form>
+                                            
+                                            <div class="flex items-center gap-2 border-t border-gray-200 px-4 py-3">
+                                                <input type="text"
+                                                    class="agent-request-chat-input w-full rounded-full border-gray-300 px-4 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                    placeholder="輸入訊息..."
+                                                    maxlength="2000"
+                                                    data-request-list-id="{{ $requestList->id }}"
+                                                    data-receiver-id="{{ $requestList->user_id }}"
+                                                    data-send-url="{{ route('request-list.chat.send', $requestList) }}">
+                                                <button type="button"
+                                                    class="agent-request-chat-send-btn rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                                                    data-request-list-id="{{ $requestList->id }}">送出</button>
+                                            </div>
                                         </div>
                                     </div>
                                 @empty
@@ -917,8 +966,10 @@
                                                 </button>
                                                 <button type="button"
                                                    onclick="openAgentRequestChatModal({{ $requestList->id }})"
-                                                   class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700 transition">
+                                                   class="relative inline-flex items-center rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700 transition">
                                                     聊天
+                                                    <span class="agent-chat-badge hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center"
+                                                          data-request-list-id="{{ $requestList->id }}"></span>
                                                 </button>
                                                 <form method="POST" action="{{ route('quotes.ship', $quote->id) }}" onsubmit="return confirm('確認將此訂單標記為已出貨？')">
                                                     @csrf
@@ -1000,36 +1051,83 @@
                                         <div class="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
                                             <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4">
                                                 <div>
-                                                    <p class="text-xs text-gray-500">請託單【{{ $requestList->title}}】</p>
-                                                    <h4 class="text-lg font-bold text-gray-800">請託人{{ $requestList->user->name ?? '使用者' }}</h4>
+                                                    <h4 class="text-lg font-bold text-gray-800">{{ $requestList->title }}</h4>
+                                                    <p class="text-xs text-gray-500 mt-0.5">請託人：{{ $requestList->user->name ?? '使用者' }}</p>
                                                 </div>
                                                 <button type="button" class="text-2xl text-gray-500 hover:text-gray-700" onclick="closeAgentRequestChatModal({{ $requestList->id }})" aria-label="關閉聊天室">✕</button>
                                             </div>
-                                            <div id="agent-request-chat-messages-{{ $requestList->id }}" class="max-h-[55vh] overflow-y-auto bg-gray-50 px-5 py-4">
-                                                @forelse($agentChatMessages as $message)
-                                                    @php $isMine = (int) $message->sender_id === (int) auth()->id(); @endphp
+                                            @php
+                                                $agentQuoteItems = $quote->quoteItems->keyBy('request_item_id');
+                                            @endphp
+                                            <div class="border-b border-gray-200 bg-gray-50 px-5 py-3 text-sm text-gray-700">
+                                                @if($quote->quoteItems->isNotEmpty())
+                                                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                                                        <span class="font-semibold text-gray-600">我的報價明細</span>
+                                                        <span class="text-xs text-gray-400">{{ optional($quote->created_at)->format('Y-m-d H:i') }}</span>
+                                                    </div>
+                                                    @foreach($requestList->items as $item)
+                                                        @php
+                                                            $qItem = $agentQuoteItems->get($item->id);
+                                                            $unitPrice = $qItem?->unit_price;
+                                                            $subtotal = $unitPrice !== null ? $unitPrice * $item->quantity : null;
+                                                        @endphp
+                                                        <div class="flex items-center justify-between py-1 border-b border-gray-100 last:border-0">
+                                                            <span class="text-gray-700">{{ $item->name }} × {{ $item->quantity }}</span>
+                                                            <span class="text-gray-500 text-xs">
+                                                                @if($unitPrice !== null)
+                                                                    NT${{ number_format($unitPrice, 0) }} × {{ $item->quantity }} =
+                                                                    <span class="font-semibold text-indigo-600">NT${{ number_format($subtotal, 0) }}</span>
+                                                                @else
+                                                                    <span class="text-gray-400">未填寫</span>
+                                                                @endif
+                                                            </span>
+                                                        </div>
+                                                    @endforeach
+                                                    <div class="mt-2 flex justify-end">
+                                                        <span class="text-xs text-gray-500">總價：</span>
+                                                        <span class="ml-1 font-bold text-indigo-600">
+                                                            NT${{ number_format((float)($quote->price ?? $quote->agent_quote_total ?? 0), 0) }}
+                                                        </span>
+                                                    </div>
+                                                @else
+                                                    <span class="text-gray-400">尚未填寫報價明細</span>
+                                                @endif
+                                            </div>
+                                            <div id="agent-request-chat-messages-{{ $requestList->id }}" class="max-h-[45vh] overflow-y-auto bg-gray-50 px-5 py-4">
+                                                @forelse($agentChatMessages as $agentMsg)
+                                                    @php $isMine = (int) $agentMsg->sender_id === (int) auth()->id(); @endphp
                                                     <div class="mb-3 flex {{ $isMine ? 'justify-end' : 'justify-start' }}">
                                                         <div class="max-w-[75%]">
                                                             <div class="rounded-xl border px-3 py-2 {{ $isMine ? 'bg-indigo-100 border-indigo-200' : 'bg-white border-gray-200' }}">
-                                                                <p class="text-xs text-gray-500">{{ $message->sender->name ?? '使用者' }}</p>
-                                                                <p class="mt-1 text-sm text-gray-800 break-words">{{ $message->body }}</p>
+                                                                <p class="text-xs text-gray-500">{{ $agentMsg->sender->name ?? '使用者' }}</p>
+                                                                <p class="mt-1 text-sm text-gray-800 break-words">{{ $agentMsg->body }}</p>
                                                             </div>
-                                                            <p class="mt-1 text-xs text-gray-500 {{ $isMine ? 'text-right' : 'text-left' }}">{{ optional($message->created_at)->format('Y-m-d H:i') }}</p>
+                                                            <p class="mt-1 text-xs text-gray-500 flex items-center gap-1 {{ $isMine ? 'justify-end' : 'justify-start' }}">
+                                                                <span>{{ optional($agentMsg->created_at)->format('Y-m-d H:i') }}</span>
+                                                                @if($isMine)
+                                                                    <span class="agent-msg-read-status" style="color: {{ $agentMsg->read_at ? '#6366f1' : '#94a3b8' }}">
+                                                                        {{ $agentMsg->read_at ? '已讀' : '未讀' }}
+                                                                    </span>
+                                                                @endif
+                                                            </p>
                                                         </div>
                                                     </div>
                                                 @empty
-                                                    <p class="agent-request-chat-empty py-12 text-center text-sm text-gray-400">目前尚無訊息，開始第一句對話吧。</p>
+                                                    <p class="agent-request-chat-empty py-12 text-center text-sm text-gray-400" id="agent-empty-tip-{{ $requestList->id }}">目前尚無訊息，開始第一句對話吧。</p>
                                                 @endforelse
                                             </div>
-                                            <form method="POST"
-                                                  action="{{ route('request-list.chat.send', $requestList) }}"
-                                                  class="agent-request-chat-form flex items-center gap-2 border-t border-gray-200 px-4 py-3"
-                                                  data-request-list-id="{{ $requestList->id }}">
-                                                @csrf
-                                                <input type="hidden" name="receiver_id" value="{{ $requestList->user_id }}">
-                                                <input type="text" name="body" class="w-full rounded-full border-gray-300 px-4 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="輸入訊息..." maxlength="2000" required>
-                                                <button type="submit" class="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">送出</button>
-                                            </form>
+                                            <div class="flex items-center gap-2 border-t border-gray-200 px-4 py-3">
+                                                <input type="text"
+                                                    class="agent-request-chat-input w-full rounded-full border-gray-300 px-4 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                    placeholder="輸入訊息..."
+                                                    maxlength="2000"
+                                                    data-request-list-id="{{ $requestList->id }}"
+                                                    data-receiver-id="{{ $requestList->user_id }}"
+                                                    data-send-url="{{ route('request-list.chat.send', $requestList) }}">
+                                                <button type="button"
+                                                    class="agent-request-chat-send-btn rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                                                    data-request-list-id="{{ $requestList->id }}">送出</button>
+                                            </div>
                                         </div>
                                     </div>
                                 @empty
@@ -1077,8 +1175,10 @@
                                                 </button>
                                                 <button type="button"
                                                    onclick="openAgentRequestChatModal({{ $requestList->id }})"
-                                                   class="inline-flex items-center rounded-lg bg-gray-500 px-3 py-2 text-xs font-bold text-white hover:bg-gray-600 transition">
+                                                   class="relative inline-flex items-center rounded-lg bg-gray-500 px-3 py-2 text-xs font-bold text-white hover:bg-gray-600 transition">
                                                     聊天
+                                                    <span class="agent-chat-badge hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center"
+                                                          data-request-list-id="{{ $requestList->id }}"></span>
                                                 </button>
                                             </div>
                                         </div>
@@ -1727,6 +1827,23 @@
             if (messagesBox) {
                 messagesBox.scrollTop = messagesBox.scrollHeight;
             }
+
+            // 點進聊天室才標記已讀，並廣播給對方
+            fetch(`/request-list/${id}/chat/read`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': AGENT_CSRF, 'Accept': 'application/json' }
+            }).catch(() => {});
+
+            // 清除這個聊天室按鈕的未讀紅點
+            clearAgentChatBadge(id);
+
+            // 把聊天室內現有的「未讀」標示全部更新成「已讀」
+            if (messagesBox) {
+                messagesBox.querySelectorAll('.agent-msg-read-status').forEach(el => {
+                    el.style.color = '#6366f1';
+                    el.textContent = '已讀';
+                });
+            }
         }
 
         function closeAgentRequestChatModal(id) {
@@ -1840,22 +1957,65 @@
             });
         });
 
-        // ── Pusher 即時接收訊息 ───────────────────────────────
+        // ── Pusher 即時聊天（代購人請託單聊天室）────────────────
+        const AGENT_MY_ID = {{ Auth::id() }};
+        const AGENT_CSRF  = document.querySelector('meta[name=csrf-token]').getAttribute('content');
+
+        // 初始化未讀數（頁面載入時顯示既有未讀）
+        @php
+            $agentInitUnread = \App\Models\Message::where('receiver_id', Auth::id())
+                ->whereNotNull('request_list_id')
+                ->whereNull('read_at')
+                ->selectRaw('request_list_id, count(*) as cnt')
+                ->groupBy('request_list_id')
+                ->pluck('cnt', 'request_list_id');
+        @endphp
+        const agentInitUnreadData = @json($agentInitUnread);
+
         const pusher = new Pusher('{{ config("broadcasting.connections.pusher.key") }}', {
             cluster: '{{ config("broadcasting.connections.pusher.options.cluster") }}',
             forceTLS: true,
             authEndpoint: '/broadcasting/auth',
-            auth: {
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content')
-                }
-            }
+            auth: { headers: { 'X-CSRF-TOKEN': AGENT_CSRF } }
         });
 
-        const myChannel = pusher.subscribe('private-chat.{{ Auth::id() }}');
+        const myChannel = pusher.subscribe('private-chat.' + AGENT_MY_ID);
+
+        // 未讀徽章管理
+        const agentUnreadCounts = {};
+
+        // 頁面載入時初始化既有未讀紅點
+        Object.entries(agentInitUnreadData).forEach(([id, count]) => {
+            setTimeout(() => setAgentChatBadge(parseInt(id), count), 100);
+        });
+
+        function setAgentChatBadge(requestListId, count) {
+            agentUnreadCounts[requestListId] = count;
+            // 更新所有對應這個 requestList 的聊天按鈕
+            document.querySelectorAll(`.agent-chat-badge[data-request-list-id="${requestListId}"]`).forEach(badge => {
+                if (count > 0) {
+                    badge.textContent = count > 99 ? '99+' : count;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            });
+        }
+
+        function clearAgentChatBadge(requestListId) {
+            setAgentChatBadge(requestListId, 0);
+        }
+
+        // 收到新訊息
         myChannel.bind('message.sent', function (data) {
+            if (!data.requestListId) return;
+            // 自己發的訊息已由 sendAgentRequestChat() 即時追加，不再重複處理
+            if (data.senderId === AGENT_MY_ID) return;
             const box = document.getElementById(`agent-request-chat-messages-${data.requestListId}`);
             if (!box) return;
+
+            const emptyTip = document.getElementById(`agent-empty-tip-${data.requestListId}`);
+            if (emptyTip) emptyTip.remove();
 
             const row = document.createElement('div');
             row.className = 'mb-3 flex justify-start';
@@ -1865,17 +2025,134 @@
                         <p class="text-xs text-gray-500">${data.userName}</p>
                         <p class="mt-1 text-sm text-gray-800 break-words"></p>
                     </div>
-                    <p class="mt-1 text-xs text-gray-500 text-left">${data.time}</p>
-                </div>
-            `;
+                    <p class="mt-1 text-xs text-gray-500 flex items-center gap-1 justify-start">${data.time}</p>
+                </div>`;
             row.querySelector('.break-words').textContent = data.messageContent;
-
-            const empty = box.querySelector('.agent-request-chat-empty');
-            if (empty) empty.remove();
-
             box.appendChild(row);
             box.scrollTop = box.scrollHeight;
+
+            // 若聊天室是開著的，立即標記已讀並清除紅點
+            const modal = document.getElementById(`agent-request-chat-modal-${data.requestListId}`);
+            if (modal && !modal.classList.contains('hidden')) {
+                fetch(`/request-list/${data.requestListId}/chat/read`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': AGENT_CSRF, 'Accept': 'application/json' }
+                }).catch(() => {});
+                clearAgentChatBadge(data.requestListId);
+            } else {
+                // 聊天室是關閉的，顯示未讀紅點
+                const current = agentUnreadCounts[data.requestListId] || 0;
+                setAgentChatBadge(data.requestListId, current + 1);
+            }
+        });
+
+        // 對方已讀 → 更新最新訊息的已讀狀態
+        myChannel.bind('message.read', function (data) {
+            if (!data.requestListId) return;
+            const box = document.getElementById(`agent-request-chat-messages-${data.requestListId}`);
+            if (!box) return;
+            box.querySelectorAll('.agent-msg-read-status').forEach(el => {
+                el.style.color = '#6366f1';
+                el.textContent = '已讀';
+            });
+        });
+
+        // ── fetch 即時送出 ────────────────────────────────────
+        function sendAgentRequestChat(input, btn) {
+            const text = input.value.trim();
+            if (!text) return;
+            const requestListId = input.dataset.requestListId;
+            const receiverId    = input.dataset.receiverId;
+            const sendUrl       = input.dataset.sendUrl;
+            input.value = '';
+            btn.disabled = true;
+
+            fetch(sendUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': AGENT_CSRF,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ body: text, receiver_id: parseInt(receiverId) }),
+            })
+            .then(r => r.json())
+            .then(msg => {
+                const box = document.getElementById(`agent-request-chat-messages-${requestListId}`);
+                if (!box) return;
+                const emptyTip = document.getElementById(`agent-empty-tip-${requestListId}`);
+                if (emptyTip) emptyTip.remove();
+                box.querySelectorAll('.agent-msg-read-status').forEach(el => el.remove());
+                const row = document.createElement('div');
+                row.className = 'mb-3 flex justify-end';
+                row.innerHTML = `
+                    <div class="max-w-[75%]">
+                        <div class="rounded-xl border px-3 py-2 bg-indigo-100 border-indigo-200">
+                            <p class="text-xs text-gray-500">${msg.name}</p>
+                            <p class="mt-1 text-sm text-gray-800 break-words"></p>
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500 flex items-center gap-1 justify-end">
+                            <span>${msg.time}</span>
+                            <span class="agent-msg-read-status" style="color:#94a3b8">未讀</span>
+                        </p>
+                    </div>`;
+                row.querySelector('.break-words').textContent = msg.text;
+                box.appendChild(row);
+                box.scrollTop = box.scrollHeight;
+                btn.disabled = false;
+                input.focus();
+            })
+            .catch(() => { btn.disabled = false; });
+        }
+
+        document.querySelectorAll('.agent-request-chat-send-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const input = document.querySelector(
+                    `.agent-request-chat-input[data-request-list-id="${this.dataset.requestListId}"]`
+                );
+                if (input) sendAgentRequestChat(input, this);
+            });
+        });
+
+        document.querySelectorAll('.agent-request-chat-input').forEach(input => {
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    const btn = document.querySelector(
+                        `.agent-request-chat-send-btn[data-request-list-id="${this.dataset.requestListId}"]`
+                    );
+                    if (btn) sendAgentRequestChat(this, btn);
+                }
+            });
+        });
+
+        // modal 開啟時捲到底
+        document.querySelectorAll('.agent-request-chat-modal').forEach(modal => {
+            const observer = new MutationObserver(() => {
+                modal.querySelectorAll('[id^="agent-request-chat-messages-"]').forEach(box => {
+                    box.scrollTop = box.scrollHeight;
+                });
+            });
+            observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
         });
 
     </script>
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('click', function(e) {
+        // 尋找點擊目標是不是開啟代購聊天 Modal 的按鈕
+        // 🚨 如果你開啟 Modal 的按鈕 class 不是 .agent-request-chat-btn，請換成你的按鈕 class
+        const btn = e.target.closest('.agent-request-chat-btn') || e.target.closest('.agent-request-chat-send-btn');
+        if (btn) {
+            const listId = btn.dataset.requestListId;
+            
+            // 尋找代購單列表旁的未讀紅點並立刻隱藏
+            const badge = document.querySelector(`.unread-badge-buyer[data-request-list-id="${listId}"]`);
+            if (badge) {
+                badge.style.display = 'none';
+            }
+        }
+    });
+});
+</script>
 </x-app-layout>

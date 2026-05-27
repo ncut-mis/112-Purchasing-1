@@ -44,69 +44,77 @@ class RequestListChatController extends Controller
         $isAgent = in_array((int) $user->id, $eligibleAgentIds, true);
  
         if (!$isBuyer && !$isAgent) {
-            abort(403, '您沒有權限查看此聊天室。');
+            abort(403);
         }
  
-        // 對方是誰
-        $partner = $isBuyer
-            ? $requestList->agent   // 我是請託人，對方是代購人
-            : $requestList->user;   // 我是代購人，對方是請託人
- 
-        if (!$partner) {
-            abort(404, '找不到聊天對象。');
-        }
- 
-        // 載入歷史訊息
-        $messages = Message::with('sender')
-            ->where('request_list_id', $requestList->id)
-            ->orderBy('created_at')
-            ->get()
-            ->map(fn($m) => [
-                'id'     => $m->id,
-                'sender' => $m->sender_id === $user->id ? 'me' : 'other',
-                'name'   => $m->sender->name,
-                'text'   => $m->body,
-                'time'   => $m->created_at->format('H:i'),
-            ]);
- 
-        // 標記已讀
-        Message::where('request_list_id', $requestList->id)
-            ->where('receiver_id', $user->id)
-            ->whereNull('read_at')
-            ->update(['read_at' => now()]);
- 
-        return view('messages.chat', compact('requestList', 'partner', 'messages', 'isBuyer'));
+        return view('request_lists.chat', compact('requestList', 'isBuyer', 'agentId', 'eligibleAgentIds'));
     }
  
-    // 標記已讀（請託單聊天）
-    public function markRead(Request $request, RequestList $requestList)
+    // 取得歷史訊息（點開對話框時觸發）
+    public function history(RequestList $requestList, Request $request)
     {
         $user = Auth::user();
+        $agentId = $this->resolveAgentId($requestList);
+ 
+        $isBuyer = (int) $requestList->user_id === $user->id;
+        $eligibleAgentIds = $this->resolveEligibleAgentIds($requestList);
+        $isAgent = in_array((int) $user->id, $eligibleAgentIds, true);
+ 
+        if (!$isBuyer && !$isAgent) {
+            abort(403);
+        }
+ 
+        // 定義這場對話的參與者
         $myId = $user->id;
-
-        $updated = Message::where('request_list_id', $requestList->id)
-            ->where('receiver_id', $myId)
-            ->whereNull('read_at')
-            ->update(['read_at' => now()]);
-
-        if ($updated > 0) {
-            // 找出最後一筆訊息的發送者，廣播已讀
-            $lastMsg = Message::where('request_list_id', $requestList->id)
-                ->where('receiver_id', $myId)
-                ->orderByDesc('created_at')
-                ->first();
-            if ($lastMsg) {
-                broadcast(new \App\Events\MessageRead(
-                    $myId, $lastMsg->sender_id, now()->format('H:i'), $requestList->id
-                ))->toOthers();
-            }
+        $chatPartnerId = null;
+ 
+        if ($isBuyer) {
+            $requestedAgentId = (int) $request->input('agent_id', 0);
+            $chatPartnerId = in_array($requestedAgentId, $eligibleAgentIds, true)
+                ? $requestedAgentId
+                : $agentId;
+        } else {
+            $chatPartnerId = $requestList->user_id;
         }
 
-        return response()->json(['ok' => true]);
-    }
+        if (!$chatPartnerId) {
+            return response()->json([]);
+        }
 
-    // 傳送訊息
-    public function send(Request $request, RequestList $requestList)
+        // 💡 【修正問題二、三】當使用者點開聊天室讀取歷史訊息時，將對方傳給我的未讀訊息全部更新為「已讀」
+        // 這會讓當下的「未讀」變「已讀」，同時因為資料庫變更，通知中心的紅點與計數也會自動扣除！
+        Message::where('request_list_id', $requestList->id)
+            ->where('sender_id', $chatPartnerId)
+            ->where('receiver_id', $myId)
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
+ 
+        // 撈取兩人的對話紀錄
+        $messages = Message::where('request_list_id', $requestList->id)
+            ->where(function ($q) use ($myId, $chatPartnerId) {
+                $q->where('sender_id', $myId)->where('receiver_id', $chatPartnerId);
+            })
+            ->orWhere(function ($q) use ($myId, $chatPartnerId) {
+                $q->where('sender_id', $chatPartnerId)->where('receiver_id', $myId);
+            })
+            ->orderBy('created_at', 'asc')
+            ->get();
+ 
+        // 格式化輸出
+        $formatted = $messages->map(function ($msg) use ($myId) {
+            return [
+                'id' => $msg->id,
+                'sender' => ((int) $msg->sender_id === (int) $myId) ? 'me' : 'other',
+                'text' => $msg->body,
+                'time' => $msg->created_at->format('H:i'),
+            ];
+        });
+ 
+        return response()->json($formatted);
+    }
+ 
+    // 發送新訊息
+    public function send(RequestList $requestList, Request $request)
     {
         $user = Auth::user();
         $agentId = $this->resolveAgentId($requestList);
@@ -140,9 +148,11 @@ class RequestListChatController extends Controller
             'sender_id'       => $user->id,
             'receiver_id'     => $receiverId,
             'body'            => $request->body,
+            'is_read'         => false, // 新訊息預設為未讀
         ]);
  
-        // 廣播給對方
+        // 💡 【修正問題一】廣播給對方時，加上 ->toOthers()。
+        // 這樣 Pusher 就不會把訊息再次推回給發送者本人，徹底解決重複兩則訊息的問題！
         broadcast(new MessageSent(
             $user->name,
             $request->body,
@@ -156,7 +166,6 @@ class RequestListChatController extends Controller
         return response()->json([
             'id'     => $message->id,
             'sender' => 'me',
-            'name'   => $user->name,
             'text'   => $message->body,
             'time'   => $message->created_at->format('H:i'),
         ]);

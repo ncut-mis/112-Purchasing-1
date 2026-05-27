@@ -898,6 +898,22 @@
 
         // ── 請購單內嵌聊天 JS ─────────────────────────────────
 
+        const requestChatRenderedMessageIds = new Set();
+
+        function markRequestChatAsRead(requestListId) {
+            const token = document.querySelector('meta[name=csrf-token]')?.getAttribute('content');
+            if (!token || !requestListId) return;
+
+            fetch(`/request-list/${requestListId}/chat/read`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': token,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            }).catch(() => {});
+        }
+
         function openRequestChatModal(id, agentId = null) {
             const modal = document.getElementById(`request-chat-modal-${id}`);
             if (!modal) return;
@@ -918,6 +934,13 @@
                     const isTarget = String(panel.dataset.agentId) === String(agentId);
                     panel.classList.toggle('hidden', !isTarget);
                 });
+
+                // 更新 header 的代購人名字（指定代購人）
+                const targetTab = modal.querySelector(`.request-chat-agent-tab[data-agent-id="${agentId}"]`);
+                const nameEl = modal.querySelector(`.request-chat-agent-name-${id}`);
+                if (nameEl && targetTab) {
+                    nameEl.textContent = targetTab.dataset.agentName || targetTab.querySelector('p.font-semibold')?.textContent || '';
+                }
             } else {
                 // 顯示左側列表
                 if (sidebar) sidebar.style.display = '';
@@ -927,12 +950,20 @@
                 modal.querySelectorAll('.request-chat-agent-panel').forEach((panel, idx) => {
                     panel.classList.toggle('hidden', idx !== 0);
                 });
+
+                // 更新 header 的代購人名字（第一個 tab）
+                const firstTab = modal.querySelector('.request-chat-agent-tab');
+                const nameEl = modal.querySelector(`.request-chat-agent-name-${id}`);
+                if (nameEl && firstTab) {
+                    nameEl.textContent = firstTab.dataset.agentName || firstTab.querySelector('p.font-semibold')?.textContent || '';
+                }
             }
 
             // 捲到最底
             const targetAgentId = agentId || modal.querySelector('.request-chat-agent-panel')?.dataset?.agentId;
             const box = document.getElementById(`request-chat-messages-${id}-${targetAgentId}`);
             if (box) box.scrollTop = box.scrollHeight;
+            markRequestChatAsRead(id);
         }
 
         function closeRequestChatModal(id) {
@@ -1079,8 +1110,16 @@
             const empty = box.querySelector('p.py-12');
             if (empty) empty.remove();
 
+             if (data.messageId && requestChatRenderedMessageIds.has(data.messageId)) return;
+            if (data.messageId) requestChatRenderedMessageIds.add(data.messageId);
+
             box.appendChild(row);
             box.scrollTop = box.scrollHeight;
+
+            const modal = document.getElementById(`request-chat-modal-${data.requestListId}`);
+            if (modal && !modal.classList.contains('hidden')) {
+                markRequestChatAsRead(data.requestListId);
+            }
         });
 
     </script>

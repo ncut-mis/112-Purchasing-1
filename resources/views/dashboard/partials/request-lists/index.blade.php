@@ -266,7 +266,10 @@
                                                     @if($requestList->status === 'arrivaled')
                                                         {{-- 商品已到貨：完成按鈕可按 --}}
                                                         <button type="button" class="inline-flex items-center rounded-lg bg-blue-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-600" onclick="openRequestDetailModal({{ $requestList->id }})">檢視</button>
-                                                        <button type="button" class="inline-flex items-center rounded-lg bg-green-400 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-green-500" onclick="openRequestChatModal({{ $requestList->id }}, {{ $requestList->people ?? 'null' }})">聊天</button>
+                                                        <button type="button" class="relative inline-flex items-center rounded-lg bg-green-400 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-green-500" onclick="openRequestChatModal({{ $requestList->id }}, {{ $requestList->people ?? 'null' }}); openRequestChatModalAndClear({{ $requestList->id }}, {{ $requestList->people ?? $latestActiveQuoteUserId ?? 'null' }});">
+                                                            聊天
+                                                            <span class="buyer-chat-badge hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center" data-request-list-id="{{ $requestList->id }}"></span>
+                                                        </button>
                                                         <form method="POST" action="{{ route('request-list.complete', $requestList) }}" onsubmit="return confirm('確認商品已收到，完成此訂單？');">
                                                             @csrf
                                                             @method('PATCH')
@@ -275,7 +278,10 @@
                                                     @elseif(in_array($requestList->status, ['matched', 'wait-for-ship', 'shipped'], true))
                                                         {{-- 已確認/等待出貨/已出貨：完成按鈕禁用（尚未到貨）--}}
                                                         <button type="button" class="inline-flex items-center rounded-lg bg-blue-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-600" onclick="openRequestDetailModal({{ $requestList->id }})">檢視</button>
-                                                        <button type="button" class="inline-flex items-center rounded-lg bg-green-400 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-green-500" onclick="openRequestChatModal({{ $requestList->id }}, {{ $requestList->people ?? 'null' }})">聊天</button>
+                                                        <button type="button" class="relative inline-flex items-center rounded-lg bg-green-400 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-green-500" onclick="openRequestChatModal({{ $requestList->id }}, {{ $requestList->people ?? 'null' }}); openRequestChatModalAndClear({{ $requestList->id }}, {{ $requestList->people ?? $latestActiveQuoteUserId ?? 'null' }});">
+                                                            聊天
+                                                            <span class="buyer-chat-badge hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center" data-request-list-id="{{ $requestList->id }}"></span>
+                                                        </button>
                                                         <button type="button" class="inline-flex items-center rounded-lg bg-gray-300 px-4 py-2 text-xs font-semibold text-white cursor-not-allowed" disabled title="商品尚未到貨，無法完成">完成</button>
                                                     @elseif($requestList->status === 'editing')
                                                         <button type="button" class="text-blue-500 hover:underline" onclick="openEditModal({{ $requestList->id }})">編輯</button>
@@ -293,26 +299,10 @@
                                                         </form>
                                                     @elseif(in_array($requestList->status, ['pending', 'offered'], true))
                                                         {{-- 等待報價/已報價：完成按鈕顯示但禁用 --}}
-                                                        @php
-                                                            $pendingQuoteCount = $requestList->quotes->where('status', 'pending')->count();
-                                                            $seenQuoteCount = (int) ($requestList->quote_notice_seen_count ?? 0);
-                                                            $unreadQuoteCount = max($pendingQuoteCount - $seenQuoteCount, 0);
-                                                        @endphp
                                                         <button type="button" class="inline-flex items-center rounded-lg bg-blue-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-600" onclick="openRequestDetailModal({{ $requestList->id }})">檢視</button>
                                                         <button type="button" class="inline-flex items-center rounded-lg bg-gray-300 px-4 py-2 text-xs font-semibold text-white cursor-not-allowed" disabled title="尚未接受報價，無法聊天">聊天</button>
                                                         <button type="button" class="inline-flex items-center rounded-lg bg-gray-300 px-4 py-2 text-xs font-semibold text-white cursor-not-allowed" disabled title="商品尚未到貨，無法完成">完成</button>
-                                                        <button
-                                                            id="request-notice-btn-{{ $requestList->id }}"
-                                                            type="button"
-                                                            class="relative inline-flex h-9 w-9 items-center justify-center rounded-lg border border-amber-200 bg-amber-100 text-amber-600 shadow-sm transition hover:bg-amber-200"
-                                                            title="通知中心"
-                                                            aria-label="通知中心"
-                                                            onclick="openRequestNoticeModal({{ $requestList->id }})">
-                                                            @if($unreadQuoteCount > 0)
-                                                                <span id="request-notice-unread-{{ $requestList->id }}" class="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] leading-[18px] text-center font-bold">
-                                                                    {{ $unreadQuoteCount }}
-                                                                </span>
-                                                            @endif
+                                                        <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-amber-200 bg-amber-100 text-amber-600 shadow-sm transition hover:bg-amber-200" title="通知中心" aria-label="通知中心" onclick="openRequestNoticeModal({{ $requestList->id }})">
                                                             🔔
                                                         </button>
                                                     @endif
@@ -632,8 +622,8 @@
                                         <div class="w-full max-w-5xl rounded-2xl bg-white shadow-2xl overflow-hidden">
                                             <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
                                                 <div>
-                                                    <h4 class="text-lg font-bold text-slate-800">請購單聊天室</h4>
-                                                    <p class="text-sm text-slate-500">{{ $requestList->title }}</p>
+                                                    <h4 class="text-lg font-bold text-slate-800">{{ $requestList->title }}</h4>
+                                                    <p class="text-xs text-slate-500 mt-0.5">代購人：<span class="request-chat-agent-name-{{ $requestList->id }}">請選擇代購人</span></p>
                                                 </div>
                                                 <button type="button" class="text-slate-500 text-2xl leading-none hover:text-slate-700" onclick="closeRequestChatModal({{ $requestList->id }})" aria-label="關閉聊天室">✕</button>
                                             </div>
@@ -666,7 +656,8 @@
                                                                 class="request-chat-agent-tab w-full px-4 py-3 text-left text-sm transition {{ $activeClass }}"
                                                                 data-request-list-id="{{ $requestList->id }}"
                                                                 data-agent-id="{{ $chatAgent->id }}"
-                                                                onclick="switchRequestChatAgent({{ $requestList->id }}, {{ $chatAgent->id }})"
+                                                                data-agent-name="{{ $chatAgent->name }}"
+                                                                onclick="switchRequestChatAgent({{ $requestList->id }}, {{ $chatAgent->id }}); document.querySelector('.request-chat-agent-name-{{ $requestList->id }}').textContent = '{{ addslashes($chatAgent->name) }}';"
                                                             >
                                                                 <p class="font-semibold">{{ $chatAgent->name }}</p>
                                                                 <p class="mt-1 text-xs text-slate-500">
@@ -712,41 +703,85 @@
                                                         ->get();
                                                 @endphp
                                                 <div class="request-chat-agent-panel {{ $idx === 0 ? '' : 'hidden' }}" data-request-list-id="{{ $requestList->id }}" data-agent-id="{{ $chatAgent->id }}">
+                                                    {{-- 報價明細區塊 --}}
                                                     <div class="border-b border-slate-200 bg-slate-50 px-5 py-3 text-sm text-slate-700">
-                                                        該代購人填寫之單價：
-                                                        <span class="font-bold text-emerald-600">
-                                                            NT${{ $agentUnitPrices->isNotEmpty() ? $agentUnitPrices->implode('/NT$') : '-' }}
-                                                        </span>
+                                                        @if($agentQuote)
+                                                            <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                                                                <span class="font-semibold text-slate-600">代購人報價明細</span>
+                                                                <span class="text-xs text-slate-400">{{ optional($agentQuote->created_at)->format('Y-m-d H:i') }}</span>
+                                                            </div>
+                                                            @foreach($requestList->items as $item)
+                                                                @php
+                                                                    $qItem = $quoteItemPrices->get($item->id);
+                                                                    $unitPrice = $qItem?->unit_price;
+                                                                    $subtotal = $unitPrice !== null ? $unitPrice * $item->quantity : null;
+                                                                @endphp
+                                                                <div class="flex items-center justify-between py-1 border-b border-slate-100 last:border-0">
+                                                                    <span class="text-slate-700">{{ $item->name }} × {{ $item->quantity }}</span>
+                                                                    <span class="text-slate-500 text-xs">
+                                                                        @if($unitPrice !== null)
+                                                                            NT${{ number_format($unitPrice, 0) }} × {{ $item->quantity }} =
+                                                                            <span class="font-semibold text-emerald-600">NT${{ number_format($subtotal, 0) }}</span>
+                                                                        @else
+                                                                            <span class="text-slate-400">未填寫</span>
+                                                                        @endif
+                                                                    </span>
+                                                                </div>
+                                                            @endforeach
+                                                            <div class="mt-2 flex justify-end">
+                                                                <span class="text-xs text-slate-500">總價：</span>
+                                                                <span class="ml-1 font-bold text-emerald-600">
+                                                                    NT${{ number_format((float)($agentQuote->price ?? $agentQuote->agent_quote_total ?? 0), 0) }}
+                                                                </span>
+                                                            </div>
+                                                        @else
+                                                            <span class="text-slate-400">代購人尚未填寫報價</span>
+                                                        @endif
                                                     </div>
 
-                                                    <div id="request-chat-messages-{{ $requestList->id }}-{{ $chatAgent->id }}" class="max-h-[55vh] overflow-y-auto bg-slate-50 px-5 py-4">
-                                                        @forelse($chatMessages as $message)
-                                                            @php($isMine = (int) $message->sender_id === (int) auth()->id())
+                                                    {{-- 訊息區 --}}
+                                                    <div id="request-chat-messages-{{ $requestList->id }}-{{ $chatAgent->id }}" class="max-h-[45vh] overflow-y-auto bg-slate-50 px-5 py-4">
+                                                        @forelse($chatMessages as $chatMsg)
+                                                            @php
+                                                                $isMine = (int) $chatMsg->sender_id === (int) auth()->id();
+                                                                $isLast = $loop->last && $isMine;
+                                                            @endphp
                                                             <div class="mb-3 flex {{ $isMine ? 'justify-end' : 'justify-start' }}">
                                                                 <div class="max-w-[75%]">
                                                                     <div class="rounded-xl border px-3 py-2 {{ $isMine ? 'bg-emerald-100 border-emerald-200' : 'bg-white border-slate-200' }}">
-                                                                        <p class="text-xs text-slate-500">{{ $message->sender->name ?? '使用者' }}</p>
-                                                                        <p class="mt-1 text-sm text-slate-800 break-words">{{ $message->body }}</p>
+                                                                        <p class="text-xs text-slate-500">{{ $chatMsg->sender->name ?? '使用者' }}</p>
+                                                                        <p class="mt-1 text-sm text-slate-800 break-words">{{ $chatMsg->body }}</p>
                                                                     </div>
-                                                                    <p class="mt-1 text-xs text-slate-500 {{ $isMine ? 'text-right' : 'text-left' }}">
-                                                                        {{ optional($message->created_at)->format('Y-m-d H:i') }}
+                                                                    <p class="mt-1 text-xs text-slate-500 flex items-center gap-1 {{ $isMine ? 'justify-end' : 'justify-start' }}">
+                                                                        <span>{{ optional($chatMsg->created_at)->format('Y-m-d H:i') }}</span>
+                                                                        @if($isMine)
+                                                                            <span class="msg-read-status" style="color: {{ $chatMsg->read_at ? '#10b981' : '#94a3b8' }}">
+                                                                                {{ $chatMsg->read_at ? '已讀' : '未讀' }}
+                                                                            </span>
+                                                                        @endif
                                                                     </p>
                                                                 </div>
                                                             </div>
                                                         @empty
-                                                            <p class="py-12 text-center text-sm text-slate-400">目前尚無訊息，開始第一句對話吧。</p>
+                                                            <p class="py-12 text-center text-sm text-slate-400" id="empty-tip-{{ $requestList->id }}-{{ $chatAgent->id }}">目前尚無訊息，開始第一句對話吧。</p>
                                                         @endforelse
                                                     </div>
 
-                                                    <form method="POST"
-                                                        action="{{ route('request-list.chat.send', $requestList) }}"
-                                                        class="request-chat-form flex items-center gap-2 border-t border-slate-200 px-4 py-3"
-                                                        data-request-list-id="{{ $requestList->id }}">
-                                                        @csrf
-                                                        <input type="hidden" name="receiver_id" value="{{ $chatAgent->id }}">
-                                                        <input type="text" name="body" class="w-full rounded-full border-slate-300 px-4 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" placeholder="輸入訊息..." maxlength="2000" required>
-                                                        <button type="submit" class="rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600">送出</button>
-                                                    </form>
+                                                    {{-- 輸入區（改為 fetch 即時送出）--}}
+                                                    <div class="flex items-center gap-2 border-t border-slate-200 px-4 py-3">
+                                                        <input type="text"
+                                                            class="request-chat-input w-full rounded-full border-slate-300 px-4 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                                                            placeholder="輸入訊息..."
+                                                            maxlength="2000"
+                                                            data-request-list-id="{{ $requestList->id }}"
+                                                            data-agent-id="{{ $chatAgent->id }}"
+                                                            data-send-url="{{ route('request-list.chat.send', $requestList) }}"
+                                                            data-receiver-id="{{ $chatAgent->id }}">
+                                                        <button type="button"
+                                                            class="request-chat-send-btn rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600"
+                                                            data-request-list-id="{{ $requestList->id }}"
+                                                            data-agent-id="{{ $chatAgent->id }}">送出</button>
+                                                    </div>
                                                 </div>
                                             @endforeach
                                                 </div>
@@ -1000,27 +1035,6 @@
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             document.body.style.overflow = 'hidden';
-
-            const unreadDot = document.getElementById(`request-notice-unread-${requestListId}`);
-            if (unreadDot) {
-                unreadDot.remove();
-            }
-
-            const urlTemplate = "{{ route('dashboard.quote-notices.read', ['requestList' => '__ID__']) }}";
-            const readUrl = urlTemplate.replace('__ID__', String(requestListId));
-
-            fetch(readUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': "{{ csrf_token() }}",
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({}),
-            }).catch(() => {
-                // 忽略失敗，避免影響彈窗體驗
-            });
         }
 
         function closeRequestNoticeModal(requestListId) {
@@ -1059,4 +1073,246 @@
             }
         }
     </script>
+@endonce
+@once
+<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const MY_ID = {{ Auth::id() }};
+    const CSRF  = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+
+    // ── 請託人聊天未讀 badge 管理 ────────────────────────────────
+    @php
+        $buyerInitUnread = \App\Models\Message::where('receiver_id', Auth::id())
+            ->whereNotNull('request_list_id')
+            ->whereNull('read_at')
+            ->selectRaw('request_list_id, count(*) as cnt')
+            ->groupBy('request_list_id')
+            ->pluck('cnt', 'request_list_id');
+    @endphp
+    const buyerInitUnreadData = @json($buyerInitUnread);
+    const buyerUnreadCounts = {};
+
+    function setBuyerChatBadge(requestListId, count) {
+        buyerUnreadCounts[requestListId] = count;
+        document.querySelectorAll(`.buyer-chat-badge[data-request-list-id="${requestListId}"]`).forEach(badge => {
+            if (count > 0) {
+                badge.textContent = count > 99 ? '99+' : count;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        });
+    }
+
+    function clearBuyerChatBadge(requestListId) {
+        setBuyerChatBadge(requestListId, 0);
+    }
+
+    // 頁面載入時初始化
+    Object.entries(buyerInitUnreadData).forEach(([id, count]) => {
+        setTimeout(() => setBuyerChatBadge(parseInt(id), count), 100);
+    });
+
+    // ── Pusher 連線（請託單聊天用）────────────────────────────────
+    const pusher = new Pusher('{{ config("broadcasting.connections.pusher.key") }}', {
+        cluster: '{{ config("broadcasting.connections.pusher.options.cluster") }}',
+        forceTLS: true,
+        authEndpoint: '/broadcasting/auth',
+        auth: { headers: { 'X-CSRF-TOKEN': CSRF } }
+    });
+
+    const channel = pusher.subscribe('private-chat.' + MY_ID);
+
+    // 收到新訊息（請託單聊天）
+    channel.bind('message.sent', function (data) {
+        if (!data.requestListId) return; // 一般聊天不處理
+        // 自己發的訊息已由 sendRequestChat() 即時追加，不再重複處理
+        if (data.senderId === MY_ID) return;
+        const boxId = `request-chat-messages-${data.requestListId}-${data.senderId}`;
+        const box = document.getElementById(boxId);
+        if (!box) return;
+
+        // 移除空訊息提示
+        const emptyTip = document.getElementById(`empty-tip-${data.requestListId}-${data.senderId}`);
+        if (emptyTip) emptyTip.remove();
+
+        const row = document.createElement('div');
+        row.className = 'mb-3 flex justify-start';
+        row.innerHTML = `
+            <div class="max-w-[75%]">
+                <div class="rounded-xl border px-3 py-2 bg-white border-slate-200">
+                    <p class="text-xs text-slate-500"></p>
+                    <p class="mt-1 text-sm text-slate-800 break-words"></p>
+                </div>
+                <p class="mt-1 text-xs text-slate-500"></p>
+            </div>`;
+        row.querySelector('.text-xs.text-slate-500').textContent = data.userName;
+        row.querySelector('.break-words').textContent = data.messageContent;
+        row.querySelectorAll('p')[2].textContent = data.time;
+        box.appendChild(row);
+        box.scrollTop = box.scrollHeight;
+
+        // 判斷聊天室是否開著
+        const modal = document.getElementById(`request-chat-modal-${data.requestListId}`);
+        const isOpen = modal && !modal.classList.contains('hidden');
+
+        if (isOpen) {
+            // 聊天室是開著的，立即標記已讀
+            fetch(`/request-list/${data.requestListId}/chat/read`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
+            }).catch(() => {});
+            clearBuyerChatBadge(data.requestListId);
+        } else {
+            // 聊天室是關閉的，顯示未讀紅點
+            const current = buyerUnreadCounts[data.requestListId] || 0;
+            setBuyerChatBadge(data.requestListId, current + 1);
+        }
+    });
+
+    // 收到已讀通知
+    channel.bind('message.read', function (data) {
+        if (!data.requestListId) return;
+        const boxId = `request-chat-messages-${data.requestListId}-${data.readerId}`;
+        const box = document.getElementById(boxId);
+        if (!box) return;
+        box.querySelectorAll('.msg-read-status').forEach(el => {
+            el.style.color = '#10b981';
+            el.textContent = '已讀';
+        });
+    });
+
+    // 請託人開啟聊天室時清除 badge 並標記已讀
+    function openRequestChatModalAndClear(requestListId, agentId) {
+        clearBuyerChatBadge(requestListId);
+        fetch(`/request-list/${requestListId}/chat/read`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
+        }).catch(() => {});
+        // 把聊天室內現有的「未讀」標示全部更新成「已讀」
+        const box = document.getElementById(`request-chat-messages-${requestListId}-${agentId}`);
+        if (box) {
+            box.querySelectorAll('.msg-read-status').forEach(el => {
+                el.style.color = '#10b981';
+                el.textContent = '已讀';
+            });
+        }
+    }
+
+    // ── 送出訊息（fetch 即時）────────────────────────────────────
+    function sendRequestChat(input, btn) {
+        const text = input.value.trim();
+        if (!text) return;
+
+        const requestListId = input.dataset.requestListId;
+        const agentId       = input.dataset.agentId;
+        const sendUrl       = input.dataset.sendUrl;
+        const receiverId    = input.dataset.receiverId;
+
+        input.value = '';
+        btn.disabled = true;
+
+        fetch(sendUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': CSRF,
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({ body: text, receiver_id: parseInt(receiverId) }),
+        })
+        .then(r => r.json())
+        .then(msg => {
+            const box = document.getElementById(`request-chat-messages-${requestListId}-${agentId}`);
+            if (!box) return;
+
+            const emptyTip = document.getElementById(`empty-tip-${requestListId}-${agentId}`);
+            if (emptyTip) emptyTip.remove();
+
+            // 舊的已讀標示全部移除
+            box.querySelectorAll('.msg-read-status').forEach(el => el.remove());
+
+            const row = document.createElement('div');
+            row.className = 'mb-3 flex justify-end';
+            row.innerHTML = `
+                <div class="max-w-[75%]">
+                    <div class="rounded-xl border px-3 py-2 bg-emerald-100 border-emerald-200">
+                        <p class="text-xs text-slate-500">${msg.name}</p>
+                        <p class="mt-1 text-sm text-slate-800 break-words">${msg.text}</p>
+                    </div>
+                    <p class="mt-1 text-xs text-slate-500 flex items-center gap-1 justify-end">
+                        <span>${msg.time}</span>
+                        <span class="msg-read-status" style="color:#94a3b8">未讀</span>
+                    </p>
+                </div>`;
+            box.appendChild(row);
+            box.scrollTop = box.scrollHeight;
+            btn.disabled = false;
+            input.focus();
+        })
+        .catch(() => { btn.disabled = false; });
+    }
+
+    // 綁定送出按鈕與 Enter 鍵
+    document.querySelectorAll('.request-chat-send-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const listId  = this.dataset.requestListId;
+            const agentId = this.dataset.agentId;
+            const input   = document.querySelector(
+                `.request-chat-input[data-request-list-id="${listId}"][data-agent-id="${agentId}"]`
+            );
+            if (input) sendRequestChat(input, this);
+        });
+    });
+
+    document.querySelectorAll('.request-chat-input').forEach(input => {
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                const listId  = this.dataset.requestListId;
+                const agentId = this.dataset.agentId;
+                const btn     = document.querySelector(
+                    `.request-chat-send-btn[data-request-list-id="${listId}"][data-agent-id="${agentId}"]`
+                );
+                if (btn) sendRequestChat(this, btn);
+            }
+        });
+
+        // 開 modal 時捲到底
+        input.closest('.request-chat-agent-panel')?.querySelectorAll('[id^="request-chat-messages-"]').forEach(box => {
+            box.scrollTop = box.scrollHeight;
+        });
+    });
+
+    // modal 開啟時捲到訊息底部
+    document.querySelectorAll('.request-chat-modal').forEach(modal => {
+        const observer = new MutationObserver(() => {
+            modal.querySelectorAll('[id^="request-chat-messages-"]').forEach(box => {
+                box.scrollTop = box.scrollHeight;
+            });
+        });
+        observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
+    });
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 監聽整個網頁的點擊動作
+    document.addEventListener('click', function(e) {
+        // 尋找看看使用者是不是點到了切換聊天室的按鈕 (包含它裡面的子元素)
+        const btn = e.target.closest('.agent-tab-btn');
+        if (btn) {
+            const listId  = btn.dataset.requestListId;
+            const agentId = btn.dataset.agentId;
+            
+            // 尋找畫面上帶有對應資料屬性的未讀紅點並立刻隱藏
+            const badge = document.querySelector(`.unread-badge-agent[data-request-list-id="${listId}"][data-agent-id="${agentId}"]`);
+            if (badge) {
+                badge.style.display = 'none';
+            }
+        }
+    });
+});
+</script>
 @endonce

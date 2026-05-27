@@ -25,6 +25,12 @@
                             $quoteItemPrices = method_exists($quote, 'quoteItems')
                                 ? $quote->quoteItems->keyBy('request_item_id')
                                 : collect();
+                            $unreadChatCount = \App\Models\Message::query()
+                                ->where('request_list_id', $requestList->id)
+                                ->where('sender_id', $quote->user_id)
+                                ->where('receiver_id', $requestList->user_id)
+                                ->whereNull('read_at')
+                                ->count();
                         @endphp
                         <div class="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                             <div class="flex items-center space-x-5">
@@ -44,7 +50,7 @@
                             </div>
 
                             <div class="flex items-center space-x-3">
-                                <button type="button" onclick="openRequestChatModal({{ $requestList->id }}, {{ $quote->user->id }})" class="rounded-xl px-4 py-2 text-sm font-bold bg-green-50 text-green-600 border border-green-200 hover:bg-green-500 hover:text-white transition-all shadow-sm">聊天</button>
+                                <button type="button" onclick="openRequestChatModal({{ $requestList->id }}, {{ $quote->user->id }})" class="relative rounded-xl px-4 py-2 text-sm font-bold bg-green-50 text-green-600 border border-green-200 hover:bg-green-500 hover:text-white transition-all shadow-sm">聊天@if($unreadChatCount > 0)<span class="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] leading-[18px] text-center font-bold">{{ $unreadChatCount }}</span>@endif</button>
                                 <button type="button" onclick="openQuoteDetailModal({{ $quote->id }})" class="rounded-xl px-4 py-2 text-sm font-bold bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-500 hover:text-white transition-all shadow-sm">查看詳細</button>
 
                                 <form action="{{ route('quotes.accept', $quote->id) }}" method="POST" onsubmit="return confirm('確定要接受此報價嗎？')">

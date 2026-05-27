@@ -281,7 +281,7 @@ Route::middleware('auth')->group(function () {
 });
 
 
-
+Route::post('/request-list/{requestList}/chat-read', [RequestListChatController::class, 'markAsRead'])->name('request-list.chat.read');
 
 
 
