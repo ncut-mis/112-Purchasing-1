@@ -554,35 +554,37 @@
                             </div>
 
                             @php
-                                // 確認中：quote status = pending 或 returned
-                              $pendingQuotes = \App\Models\Quote::with(['requestList.user:id,name', 'requestList.items:id,request_list_id,name,quantity', 'quoteItems:id,quote_id,request_item_id,unit_price'])
+                                // 一次查出所有 quote，避免 N+1
+                                $allMyQuotes = \App\Models\Quote::with([
+                                        'requestList.user:id,name',
+                                        'requestList.items:id,request_list_id,name,quantity',
+                                        'quoteItems:id,quote_id,request_item_id,unit_price'
+                                    ])
                                     ->where('user_id', Auth::id())
-                                    ->whereIn('status', ['pending', 'returned'])
                                     ->latest('updated_at')
                                     ->get();
 
-                                // 已接單：quote status = accepted
-                                $acceptedQuotes = \App\Models\Quote::with(['requestList.user:id,name', 'requestList.items:id,request_list_id,name,quantity', 'quoteItems:id,quote_id,request_item_id,unit_price'])
-                                    ->where('user_id', Auth::id())
-                                    ->where('status', 'accepted')
-                                    ->latest('updated_at')
-                                    ->get();
-
-                                // 已拒絕：quote status = rejected
-                              $rejectedQuotes = \App\Models\Quote::with(['requestList.user:id,name', 'requestList.items:id,request_list_id,name,quantity', 'quoteItems:id,quote_id,request_item_id,unit_price'])
-                                    ->where('user_id', Auth::id())
-                                    ->where('status', 'rejected')
-                                    ->latest('updated_at')
-                                    ->get();
+                                $pendingQuotes  = $allMyQuotes->whereIn('status', ['pending', 'returned'])->values();
+                                $acceptedQuotes = $allMyQuotes->where('status', 'accepted')->values();
+                                $rejectedQuotes = $allMyQuotes->where('status', 'rejected')->values();
+                                $shippedQuotes  = $allMyQuotes->where('status', 'shipped')->values();
 
                                 $myQuotes = $pendingQuotes; // 保留相容性
 
-                                // 已出貨：quote status = shipped
-                               $shippedQuotes = \App\Models\Quote::with(['requestList.user:id,name', 'requestList.items:id,request_list_id,name,quantity', 'quoteItems:id,quote_id,request_item_id,unit_price'])
-                                    ->where('user_id', Auth::id())
-                                    ->where('status', 'shipped')
-                                    ->latest('updated_at')
-                                    ->get();
+                                // 一次查出所有相關 request_list_id
+                                $allRequestListIds = $allMyQuotes->pluck('request_list_id')->unique()->filter()->values()->all();
+
+                                // 一次查出所有聊天訊息，依 request_list_id 分組，避免 N+1
+                                $myAgentId = Auth::id();
+                                $allChatMessagesGrouped = \App\Models\Message::with(['sender:id,name'])
+                                    ->whereIn('request_list_id', $allRequestListIds)
+                                    ->where(function ($q) use ($myAgentId) {
+                                        $q->where('sender_id', $myAgentId)
+                                          ->orWhere('receiver_id', $myAgentId);
+                                    })
+                                    ->orderBy('created_at')
+                                    ->get()
+                                    ->groupBy('request_list_id');
 
                                 $statusLabelMap = [
                                     'pending'   => '請託人確認中...',
@@ -818,21 +820,8 @@
                                     </div>
 
                                     @php
-                                        $myAgentId = Auth::id();
-                                        $agentChatMessages = \App\Models\Message::query()
-                                            ->where('request_list_id', $requestList->id)
-                                            ->where(function ($query) use ($requestList, $myAgentId) {
-                                                $query->where(function ($inner) use ($requestList, $myAgentId) {
-                                                    $inner->where('sender_id', $requestList->user_id)
-                                                        ->where('receiver_id', $myAgentId);
-                                                })->orWhere(function ($inner) use ($requestList, $myAgentId) {
-                                                    $inner->where('sender_id', $myAgentId)
-                                                        ->where('receiver_id', $requestList->user_id);
-                                                });
-                                            })
-                                            ->with(['sender:id,name'])
-                                            ->orderBy('created_at')
-                                            ->get();
+                                        // 直接從已分組的資料取，不再打資料庫
+                                        $agentChatMessages = $allChatMessagesGrouped->get($requestList->id, collect());
                                     @endphp
                                     <div id="agent-request-chat-modal-{{ $requestList->id }}" class="agent-request-chat-modal fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4" onclick="handleAgentRequestChatBackdrop(event, {{ $requestList->id }})">
                                         <div class="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
@@ -1031,21 +1020,7 @@
                                         </div>
                                     </div>
                                     @php
-                                        $myAgentId = Auth::id();
-                                        $agentChatMessages = \App\Models\Message::query()
-                                            ->where('request_list_id', $requestList->id)
-                                            ->where(function ($query) use ($requestList, $myAgentId) {
-                                                $query->where(function ($inner) use ($requestList, $myAgentId) {
-                                                    $inner->where('sender_id', $requestList->user_id)
-                                                        ->where('receiver_id', $myAgentId);
-                                                })->orWhere(function ($inner) use ($requestList, $myAgentId) {
-                                                    $inner->where('sender_id', $myAgentId)
-                                                        ->where('receiver_id', $requestList->user_id);
-                                                });
-                                            })
-                                            ->with(['sender:id,name'])
-                                            ->orderBy('created_at')
-                                            ->get();
+                                        $agentChatMessages = $allChatMessagesGrouped->get($requestList->id, collect());
                                     @endphp
                                     <div id="agent-request-chat-modal-{{ $requestList->id }}" class="agent-request-chat-modal fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4" onclick="handleAgentRequestChatBackdrop(event, {{ $requestList->id }})">
                                         <div class="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
@@ -1385,42 +1360,63 @@
                     <p class="mt-1 text-xs text-amber-500">當您自己發布的代購貼文結束或結案後，紀錄將會顯示於此。</p>
                 </div>
             @else
-                <div class="grid gap-4">
+                <div class="space-y-4">
                     @foreach($completedPosts as $post)
-                        <article class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm hover:border-amber-200 transition">
-                            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                                <div class="min-w-0">
-                                    <h4 class="text-base font-bold text-gray-800 truncate">{{ $post->title }}</h4>
-                                    <p class="text-xs text-gray-500 mt-1">
-                                        開團日期：{{ $post->created_at->format('Y-m-d') }} ・ 結束結案：{{ $post->updated_at->format('Y-m-d') }}
-                                    </p>
+                        <div class="p-4 bg-amber-50 rounded-xl border border-amber-100 space-y-3" x-data="{ showPostDetails: false }">
+                            <div class="flex flex-wrap items-center justify-between gap-3">
+                                <div>
+                                    <div class="font-bold text-gray-800">
+                                        {{ $post->country ? '【'.$post->country.'】' : '' }}{{ $post->title ?? '未命名貼文' }}
+                                    </div>
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        代購期間：{{ optional($post->start_date)->format('Y/m/d') ?? '-' }} - {{ optional($post->end_date)->format('Y/m/d') ?? '-' }}
+                                        ・ 完成日期：{{ $post->updated_at->format('Y-m-d') }}
+                                    </div>
                                 </div>
-                                <div class="flex flex-wrap items-center gap-3">
-                                    <span class="rounded-full bg-purple-50 px-3 py-1 text-xs font-bold text-purple-700">開團已結束</span>
+                                <div class="flex items-center gap-2 flex-wrap justify-end">
+                                    <span class="inline-flex text-[10px] font-bold px-2 py-0.5 rounded bg-purple-50 text-purple-700">已完成</span>
+                                    <button type="button"
+                                        class="inline-flex items-center px-3 py-1.5 text-xs font-bold text-amber-600 bg-white border border-amber-200 rounded-lg hover:bg-amber-50 transition"
+                                        @click="showPostDetails = !showPostDetails"
+                                        x-text="showPostDetails ? '收合檢視' : '檢視貼文'">
+                                    </button>
                                 </div>
                             </div>
 
-                            <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-gray-600">
-                                <div class="rounded-2xl bg-gray-50 p-3">
-                                    <p class="text-[11px] text-gray-400">包含商品品項</p>
-                                    <p class="font-semibold text-gray-800 mt-0.5">
-                                        {{ $post->postProducts ? $post->postProducts->count() : 0 }} 個商品
+                            {{-- 展開檢視 --}}
+                            <div x-show="showPostDetails" x-transition class="space-y-3">
+                                <div class="rounded-lg border border-amber-100 bg-white/80 px-4 py-3">
+                                    <p class="text-sm text-gray-700 leading-relaxed">
+                                        {{ $post->description ?: '此貼文尚未填寫詳細說明。' }}
+                                    </p>
+                                    <p class="text-xs text-gray-500 mt-2">
+                                        地區：{{ $post->country ?? '-' }}{{ $post->city ? '・'.$post->city : '' }}
                                     </p>
                                 </div>
-                                <div class="rounded-2xl bg-gray-50 p-3">
-                                    <p class="text-[11px] text-gray-400">總收單筆數</p>
-                                    <p class="font-semibold text-gray-800 mt-0.5">
-                                        {{ $post->requestLists ? $post->requestLists->count() : 0 }} 筆請購委託
-                                    </p>
-                                </div>
-                                <div class="rounded-2xl bg-gray-50 p-3">
-                                    <p class="text-[11px] text-gray-400">國家/來源</p>
-                                    <p class="font-semibold text-gray-800 mt-0.5">
-                                        {{ $post->country ?? '未標記區域' }}
-                                    </p>
+                                <div class="space-y-2">
+                                    @forelse($post->products as $product)
+                                        <div class="flex items-center gap-3 p-3 rounded-lg border border-amber-100 bg-white/80">
+                                            <div class="w-14 h-14 rounded-lg bg-white border border-amber-100 overflow-hidden flex items-center justify-center text-amber-200 shrink-0">
+                                                @if($product->display_image_url)
+                                                    <img src="{{ $product->display_image_url }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
+                                                @else
+                                                    <i class="bi bi-image text-xl"></i>
+                                                @endif
+                                            </div>
+                                            <div class="min-w-0 flex-1">
+                                                <div class="font-bold text-gray-800 truncate">{{ $product->name }}</div>
+                                                <div class="text-xs text-gray-500 mt-1">
+                                                    單價：NT$ {{ number_format((float) $product->price, 0) }}
+                                                    ・ 上限：{{ $product->max_quantity ?? '無限制' }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @empty
+                                        <p class="text-xs text-gray-400 py-2">此貼文無商品資料。</p>
+                                    @endforelse
                                 </div>
                             </div>
-                        </article>
+                        </div>
                     @endforeach
                 </div>
             @endif
@@ -1432,7 +1428,7 @@
                     <!-- 分頁三：代購商品管理 -->
                     <div x-show="activeTab === 'product-management'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4">
                         <section id="product-management" class="bg-white rounded-2xl shadow-sm border border-blue-100 p-6">
-                            <h3 class="text-lg font-bold text-blue-600 mb-6">【代購貼文】代購商品管理</h3>
+                            <h3 class="text-lg font-bold text-blue-600 mb-6">代購團管理</h3>
                             @php
                                 $managedProducts = \App\Models\PostProduct::query()
                                     ->whereHas('post', function ($query) {
@@ -1458,6 +1454,8 @@
                                     })
                                     ->values();
 
+                                $shippedPostIds = collect();
+
                                 if ($managedPostIds->isNotEmpty()) {
                                     $relatedOrders = \App\Models\Order::query()
                                         ->where('seller_id', Auth::id())
@@ -1470,6 +1468,12 @@
                                         ])
                                         ->latest('id')
                                         ->get();
+                                    $shippedPostIds = $relatedOrders
+                                        ->where('status', 'shipped')
+                                        ->pluck('source_id')
+                                        ->map(fn($id) => (int) $id)
+                                        ->unique()
+                                        ->values();
 
                                     $productFollowRows = $relatedOrders
                                         ->flatMap(function ($order) {
@@ -1509,15 +1513,44 @@
                                                 ->values();
                                         });
                                 }
+                            $managedPostGroupsInProgress = $managedPostGroups
+                                    ->filter(function ($products, $postId) use ($shippedPostIds) {
+                                        $post = optional($products->first())->post;
+                                        $status = optional($post)->status;
+                                        return ! $shippedPostIds->contains((int) $postId)
+                                            && $status !== 'shipped'
+                                            && $status !== 'completed';
+                                    });
+                                $managedPostGroupsShipped = $managedPostGroups
+                                    ->filter(function ($products, $postId) use ($shippedPostIds) {
+                                        $post = optional($products->first())->post;
+                                        $status = optional($post)->status;
+                                        return ($shippedPostIds->contains((int) $postId) || $status === 'shipped')
+                                            && $status !== 'completed';
+                                    });
                             @endphp
 
-                            <div class="space-y-4">
-                                @forelse($managedPostGroups as $products)
+                            <div x-data="{ productTab: 'in-progress' }">
+                                <div class="mb-5 flex flex-wrap items-center gap-3">
+                                    <button type="button" @click="productTab = 'in-progress'"
+                                        :class="productTab === 'in-progress' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'"
+                                        class="inline-flex items-center rounded-full border px-5 py-2 text-sm font-bold transition">進行中 ({{ $managedPostGroupsInProgress->count() }})</button>
+                                    <button type="button" @click="productTab = 'shipped'"
+                                        :class="productTab === 'shipped' ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'"
+                                        class="inline-flex items-center rounded-full border px-5 py-2 text-sm font-bold transition">已出貨 ({{ $managedPostGroupsShipped->count() }})</button>
+                                </div>
+
+                            <div class="space-y-4" x-show="productTab === 'in-progress'">
+                                @forelse($managedPostGroupsInProgress as $products)
                                     @php
                                         $post = optional($products->first())->post;
                                         $postStatus = optional($post)->status;
-                                        $statusLabel = $postStatus === 'draft' ? '編輯中' : ($postStatus === 'open' ? '進行中' : ($postStatus ?? '未知'));
-                                        $statusClasses = $postStatus === 'draft' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600';
+                                        $statusLabel = $postStatus === 'draft'
+                                            ? '編輯中'
+                                            : ($postStatus === 'open' ? '進行中' : ($postStatus === 'shipped' ? '已出貨' : ($postStatus ?? '未知')));
+                                        $statusClasses = $postStatus === 'draft'
+                                            ? 'bg-amber-50 text-amber-600'
+                                            : ($postStatus === 'shipped' ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600');
                                     @endphp
                                     <div class="p-4 bg-blue-50 rounded-xl border border-blue-100 space-y-3" x-data="{ showPostDetails: false }">
                                         <div class="flex flex-wrap items-center justify-between gap-3">
@@ -1607,7 +1640,7 @@
                                                                         @endif
                                                                     </div>
                                                                 @empty
-                                                                    <div class="text-gray-400">目前尚無人跟單</div>
+                                                                    <div class="text-gray-400">目前尚無人跟團</div>
                                                                 @endforelse
                                                             </div>
                                                         </div>
@@ -1668,16 +1701,117 @@
                                                     @endif
                                                 @endforeach
                                                 @if($managedPostGroups->get($post->id ?? 0, collect())->every(fn($p) => $productFollowers->get((int)$p->id, collect())->count() === 0))
-                                                    <p class="text-gray-400 text-sm text-center py-6">目前尚無人跟單。</p>
+                                                    <p class="text-gray-400 text-sm text-center py-6">目前尚無人跟團。</p>
                                                 @endif
                                             </div>
                                         </div>
                                     </div>
                                 @empty
                                     <div class="text-gray-400 text-sm text-center py-8 border border-dashed border-blue-200 rounded-xl">
-                                        尚未建立任何代購商品，請先到「我的代購貼文」新增商品。
+                                        目前沒有進行中的代購貼文商品管理資料。
                                     </div>
                                 @endforelse
+                            </div>
+
+                            <div class="space-y-4" x-show="productTab === 'shipped'" x-cloak>
+                                @forelse($managedPostGroupsShipped as $products)
+                                    @php
+                                        $post = optional($products->first())->post;
+                                        $postStatus = optional($post)->status;
+                                        $statusLabel = $postStatus === 'draft'
+                                            ? '編輯中'
+                                            : ($postStatus === 'open' ? '進行中' : ($postStatus === 'shipped' ? '已出貨' : ($postStatus ?? '未知')));
+                                        $statusClasses = $postStatus === 'draft'
+                                            ? 'bg-amber-50 text-amber-600'
+                                            : ($postStatus === 'shipped' ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600');
+                                    @endphp
+                                    <div class="p-4 bg-blue-50 rounded-xl border border-blue-100 space-y-3" x-data="{ showPostDetails: false }">
+                                        <div class="flex flex-wrap items-center justify-between gap-3">
+                                            <div>
+                                                <div class="font-bold text-gray-800">
+                                                    {{ optional($post)->country ? '【'.optional($post)->country.'】' : '' }}{{ optional($post)->title ?? '未命名貼文' }}
+                                                </div>
+                                                <div class="text-xs text-gray-500 mt-1">
+                                                    代購期間：{{ optional(optional($post)->start_date)->format('Y/m/d') ?? '-' }} - {{ optional(optional($post)->end_date)->format('Y/m/d') ?? '-' }}
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center gap-2 flex-wrap justify-end">
+                                                <span class="inline-flex text-[10px] font-bold px-2 py-0.5 rounded {{ $statusClasses }}">{{ $statusLabel }}</span>
+                                                <button type="button"
+                                                    class="inline-flex items-center px-3 py-1.5 text-xs font-bold text-blue-600 bg-white border border-blue-200 rounded-lg hover:bg-blue-100 transition"
+                                                    @click="showPostDetails = !showPostDetails"
+                                                    x-text="showPostDetails ? '收合檢視' : '檢視貼文'">
+                                                </button>
+                                                <form method="POST" action="{{ route('agent.posts.complete', $post->id) }}" class="inline" onsubmit="return confirm('確定完成此代購貼文？完成後將移至歷史紀錄。')">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button type="submit"
+                                                        class="inline-flex items-center px-3 py-1.5 text-xs font-bold text-white bg-emerald-500 border border-emerald-500 rounded-lg hover:bg-emerald-600 transition">
+                                                        完成
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+
+                                        {{-- 展開內容 --}}
+                                        <div x-show="showPostDetails" x-transition class="space-y-3">
+                                            <div class="rounded-lg border border-blue-100 bg-white/80 px-4 py-3">
+                                                <p class="text-sm text-gray-700 leading-relaxed">
+                                                    {{ optional($post)->description ?: '此貼文尚未填寫詳細說明。' }}
+                                                </p>
+                                                <p class="text-xs text-gray-500 mt-2">
+                                                    地區：{{ optional($post)->country ?? '-' }}{{ optional($post)->city ? '・'.optional($post)->city : '' }}
+                                                </p>
+                                            </div>
+                                            <div class="space-y-2">
+                                                @foreach($products as $product)
+                                                    <div class="flex items-center gap-3 p-3 rounded-lg border border-blue-100 bg-white/80">
+                                                        <div class="w-14 h-14 rounded-lg bg-white border border-blue-100 overflow-hidden flex items-center justify-center text-blue-200 shrink-0">
+                                                            @if($product->display_image_url)
+                                                                <img src="{{ $product->display_image_url }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
+                                                            @else
+                                                                <i class="bi bi-image text-xl"></i>
+                                                            @endif
+                                                        </div>
+                                                        <div class="min-w-0 flex-1">
+                                                            <div class="font-bold text-gray-800 truncate">{{ $product->name }}</div>
+                                                            @php
+                                                                $orderedTotal = (int) $productOrderedTotals->get((int) $product->id, 0);
+                                                                $followers    = $productFollowers->get((int) $product->id, collect());
+                                                                $totalOrdered = $followers->sum(function($f) { return $f['quantity']; });
+                                                            @endphp
+                                                            <div class="text-xs text-gray-500 mt-1">
+                                                                單價：NT$ {{ number_format((float) $product->price, 0) }}
+                                                                ・ 上限：{{ $product->max_quantity ?? '無限制' }}
+                                                                ・ 跟單總數：<span class="text-indigo-600 font-bold">{{ $totalOrdered }}</span>
+                                                            </div>
+                                                            <div class="mt-2 text-xs text-gray-600">
+                                                                @forelse($followers as $follower)
+                                                                    <div class="flex items-center gap-2 py-0.5">
+                                                                        <span>{{ $follower['buyer_name'] }}</span>
+                                                                        <span class="text-gray-400">{{ $follower['quantity'] }} 件</span>
+                                                                        @if(!empty($follower['paid_at']))
+                                                                            <span class="inline-flex items-center rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5 text-[10px] font-bold">已付款</span>
+                                                                        @else
+                                                                            <span class="inline-flex items-center rounded-full bg-red-50 text-red-500 px-2 py-0.5 text-[10px] font-bold">未付款</span>
+                                                                        @endif
+                                                                    </div>
+                                                                @empty
+                                                                    <div class="text-gray-400">目前尚無人跟團</div>
+                                                                @endforelse
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="text-gray-400 text-sm text-center py-8 border border-dashed border-blue-200 rounded-xl">
+                                        目前沒有已出貨的代購貼文商品管理資料。
+                                    </div>
+                                @endforelse
+                            </div>
                             </div>
                         </section>
                     </div>

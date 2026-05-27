@@ -81,7 +81,7 @@ Route::get('/admin/request-items/{requestItem}/image', [AdminAuthController::cla
 
 Route::delete('/admin/request-lists/{requestList}', [AdminAuthController::class, 'deleteRequestList'])->middleware('admin.auth')->name('admin.request-lists.delete');
 Route::delete('/admin/agent-posts/{agentPost}', [AdminAuthController::class, 'deleteAgentPost'])->middleware('admin.auth')->name('admin.agent-posts.delete');
-
+Route::post('/request-list/{requestList}/chat-read', [RequestListChatController::class, 'markAsRead'])->name('request-list.chat.read');
 
 Route::patch('/admin/reports/{report}/approve', [AdminAuthController::class, 'approveReport'])->middleware('admin.auth')->name('admin.reports.approve');
 Route::patch('/admin/reports/{report}/reject', [AdminAuthController::class, 'rejectReport'])->middleware('admin.auth')->name('admin.reports.reject');
@@ -212,6 +212,7 @@ Route::get('/', function (Request $request) {
 
     Route::patch('/agent/posts/{agentPost}/submit', [AgentPostController::class, 'submit'])->name('agent.posts.submit');
     Route::patch('/agent/posts/{agentPost}/ship', [AgentPostController::class, 'ship'])->name('agent.posts.ship');
+    Route::patch('/agent/posts/{agentPost}/complete', [AgentPostController::class, 'complete'])->name('agent.posts.complete');
     Route::delete('/agent/posts/{agentPost}', [AgentPostController::class, 'destroy'])->name('agent.posts.destroy');
     Route::delete('/agent/orders/{order}/cancel', [AgentPostController::class, 'cancelBuyerOrder'])->name('agent.orders.cancel');
 
