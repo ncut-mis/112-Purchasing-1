@@ -19,15 +19,7 @@
             
             <!-- 數據統計區 (始終顯示) -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
-                    <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-2xl">
-                        <i class="bi bi-currency-dollar"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-400">累計代購收入</p>
-                        <h4 class="text-2xl font-bold text-gray-800">${{ number_format((float)$totalIncome, 0) }}</h4>
-                    </div>
-                </div>
+                
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
                     <div class="w-12 h-12 bg-green-50 text-green-600 rounded-xl flex items-center justify-center text-2xl">
                         <i class="bi bi-check2-circle"></i>
@@ -78,11 +70,7 @@
                                 <i class="bi bi-chat-dots text-lg {{ request()->routeIs('agent.chat') ? 'text-blue-600' : 'text-blue-400' }}"></i>
                                 <span>聊天訊息</span>
                             </a>
-                            <!-- 5. 撥款紀錄 -->
-                             <a href="#" @click.prevent="activeTab = 'payouts'" :class="activeTab === 'payouts' ? 'bg-emerald-50 text-emerald-600 font-bold' : 'text-gray-600'" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition">
-                                <i class="bi bi-wallet2 text-emerald-500 text-lg"></i>
-                                <span>撥款紀錄</span>
-                            </a>
+                
                             <!-- 6. 收藏請託單 -->
                             <a href="#" @click.prevent="activeTab = 'favorites'" :class="activeTab === 'favorites' ? 'bg-pink-50 text-pink-600 font-bold' : 'text-gray-600'" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition">
                                 <i class="bi bi-heart text-pink-500 text-lg"></i>
