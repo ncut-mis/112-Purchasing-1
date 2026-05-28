@@ -57,7 +57,7 @@
     >
 </form>
 
-                                   <a href="{{ route('request-list.create') }}" class="text-sm text-green-600 hover:underline">+ 建立請購清單</a>
+                                   <a href="{{ route('request-list.create') }}" class="text-sm text-green-600 hover:underline">+ 建立請託單</a>
 
                             </div>
 
@@ -325,7 +325,7 @@
                                                 @if(request('request_search'))
                                                     沒有找到「{{ request('request_search') }}」相關的請購清單
                                                 @else
-                                                    目前尚未建立請購清單
+                                                    目前尚未建立請託單
                                                 @endif
                                             </td>
                                         </tr>

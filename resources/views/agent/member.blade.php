@@ -178,9 +178,9 @@
 
                         <div class="flex justify-between items-center mb-6">
                              <div>
-                                <h3 class="text-lg font-bold text-gray-800">我的代購貼文</h3>
+                                <h3 class="text-lg font-bold text-gray-800">我的代購團</h3>
                             </div>
-                            <a href="{{ route('agent.posts.create') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-700 transition">+發布貼文</a>
+                            <a href="{{ route('agent.posts.create') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-700 transition">+發布代購團</a>
                         </div>
 
                         @if (session('status'))
@@ -245,7 +245,7 @@
                                 </div>
                             @empty
                                 <div class="col-span-2 p-8 border border-dashed border-gray-200 rounded-2xl text-center text-sm text-gray-400">
-                                    尚未發布代購貼文，點擊右上角「+ 發布貼文」開始建立。
+                                    尚未發布代購團，點擊右上角「+ 發布代購團」開始建立。
                                 </div>
                             @endforelse
                         </div>
@@ -1351,8 +1351,8 @@
                     <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white text-amber-400 shadow-sm">
                         <i class="bi bi-collection text-2xl"></i>
                     </div>
-                    <p class="text-sm text-amber-700 font-semibold">尚未有已完成的代購貼文開團紀錄。</p>
-                    <p class="mt-1 text-xs text-amber-500">當您自己發布的代購貼文結束或結案後，紀錄將會顯示於此。</p>
+                    <p class="text-sm text-amber-700 font-semibold">尚未有已完成的代購團開團紀錄。</p>
+                    <p class="mt-1 text-xs text-amber-500">當您自己發布的代購團結束或結案後，紀錄將會顯示於此。</p>
                 </div>
             @else
                 <div class="space-y-4">
@@ -1852,7 +1852,7 @@
                     <!-- 分頁三：我的收藏請購清單 (覆蓋顯示) -->
                     <div x-show="activeTab === 'favorites'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4">
                         <section id="favorites" class="bg-white rounded-2xl shadow-sm border border-pink-100 p-6">
-                            <h3 class="text-lg font-bold text-pink-600 mb-6">我的收藏請購清單</h3>
+                            <h3 class="text-lg font-bold text-pink-600 mb-6">我的收藏請託單</h3>
                             <div class="space-y-4" id="favorite-list-block">
                                 @php
                                     $favoriteRequestLists = Auth::user()->favorites
@@ -1880,7 +1880,7 @@
                                         <a href="{{ route('agent.dashboard', ['q' => $favList->title]) }}" class="text-xs text-pink-600 font-bold hover:underline">前往接單大廳</a>
                                     </div>
                                 @empty
-                                    <div class="text-gray-400 text-sm text-center py-8">尚未收藏任何請購清單</div>
+                                    <div class="text-gray-400 text-sm text-center py-8">尚未收藏任何請託單</div>
                                 @endforelse
                             </div>
                         </section>

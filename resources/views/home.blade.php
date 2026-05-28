@@ -444,13 +444,13 @@
                                 </div>
                                 @auth
                                     @if((int) auth()->id() === (int) $agentPost->user_id)
-                                        <button class="btn btn-sm rounded-pill px-3 btn-secondary disabled">無法跟單</button>
+                                        <button class="btn btn-sm rounded-pill px-3 btn-secondary disabled">無法跟團</button>
                                     @else
-                                        <button type="button" class="btn btn-sm btn-primary-custom rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#followOrderModal-{{ $agentPost->id }}">我要跟單</button>
+                                        <button type="button" class="btn btn-sm btn-primary-custom rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#followOrderModal-{{ $agentPost->id }}">我要跟團</button>
                                     @endif
                                 @else
                                     <a href="{{ route('login') }}" class="btn btn-sm btn-primary-custom rounded-pill px-3">
-                                        我要跟單
+                                        我要跟團
                                     </a>
                                 @endauth
                             </div>
@@ -463,7 +463,7 @@
                     <div class="modal-dialog modal-lg modal-dialog-centered">
                         <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
                             <div class="modal-header border-0 bg-light py-3 px-4">
-                                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-cart-plus me-2 text-primary"></i>確認跟單商品</h5>
+                                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-cart-plus me-2 text-primary"></i>確認跟團商品</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
 

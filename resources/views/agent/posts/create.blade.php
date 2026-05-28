@@ -14,7 +14,7 @@
     <x-slot name="header">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <h2 class="font-semibold text-xl text-indigo-800 leading-tight">
-                建立代購貼文
+                建立代購團
             </h2>
 
             <a href="{{ route('agent.member') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-sm font-medium text-indigo-600 hover:bg-indigo-50 transition shadow-sm">
@@ -30,7 +30,7 @@
                 @csrf
 
                 <div class="border-b border-gray-100 pb-6">
-                    <h3 class="text-lg font-bold text-gray-800 mb-1">貼文資訊</h3>
+                    <h3 class="text-lg font-bold text-gray-800 mb-1">代購團資訊</h3>
                     <p class="text-sm text-gray-500">先儲存為編輯中草稿，再回會員專區確認內容後送出上架；商品規格最多 5 項。</p>
                 </div>
 
