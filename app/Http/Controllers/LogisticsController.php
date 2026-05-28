@@ -3,40 +3,54 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Logistics; // 確保你有對應的 Model
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class LogisticsController extends Controller
 {
     public function index()
     {
         // 抓取所有資料
-        $logistics = Logistics::all();
-        
-        // 關鍵點：路徑改為 dashboard.settings.logistics
+        $logistics = Logistics::where('user_id', Auth::id())->get();
         return view('dashboard.partials.settings.logistics', compact('logistics'));
     }
 
     public function save(Request $request)
     {
-        // 如果有傳入 id 就更新，沒有就新增
-        $data = $request->id ? Logistics::findOrFail($request->id) : new Logistics;
+        // 1. 驗證輸入（建議加入，確保資料完整）
+        $request->validate([
+            'name' => 'required|string|max:255',
+            // 其他驗證規則...
+        ]);
 
+        // 2. 透過 where('user_id', Auth::id()) 確保使用者只能操作自己的資料
+        // 如果是編輯，找不到該 ID 的物流會直接拋出 404，保護資料不被非法竄改
+        $data = $request->id 
+                ? Logistics::where('user_id', Auth::id())->findOrFail($request->id) 
+                : new Logistics(['user_id' => Auth::id()]); // 新增時自動寫入 user_id
+
+        // 3. 填入資料 (利用模型 fillable)
         $data->name = $request->name;
         $data->status = $request->status;
         $data->ship_type = $request->ship_type;
         $data->payment_method = $request->payment;
-        // 將時段陣列存成 JSON
-        $data->available_times = $request->times ? json_encode($request->times) : null;
+        $data->temp_layer = $request->temp_layer;
         
+        // 🎯 由於 Model 設定了 casts => array，直接傳入陣列即可，Laravel 會自動轉 JSON
+        $data->available_times = $request->times; 
 
-            // --- 補上這兩行 ---
-        // 儲存溫層資料 (對應 Blade 中的 select name="temp_layer")
-        $data->temp_layer = $request->temp_layer; 
-        // ----------------
-        // 將時段陣列存成 JSON
-        $data->available_times = $request->times ? json_encode($request->times, JSON_UNESCAPED_UNICODE) : null;
-
+        // 4. 儲存
         $data->save();
 
         return back()->with('success', '設定已儲存');
     }
+    public function bySeller($sellerId)
+{
+    $logistics = DB::table('logistics')
+        ->where('status', 1)
+        ->where('user_id', $sellerId)
+        ->get();
+
+    return response()->json($logistics);
+}
 }

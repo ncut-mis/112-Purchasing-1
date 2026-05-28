@@ -366,7 +366,10 @@ Route::middleware(['auth'])->group(function () {
          ->name('order.store');
     // 購物車與其他邏輯
     Route::get('/cart', [App\Http\Controllers\CartController::class, 'index'])->name('cart.index');
-
+    Route::get(
+        '/logistics/by-seller/{sellerId}',
+        [App\Http\Controllers\LogisticsController::class, 'bySeller']
+    );
 });
 Route::middleware(['auth'])->group(function () {
     // 確保這裡的名稱為 'order.store'

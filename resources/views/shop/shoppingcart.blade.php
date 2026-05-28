@@ -454,13 +454,15 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title w-100 text-center">結帳</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-clo
+                se" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="checkoutForm" action="{{ route('checkout.process') }}" method="POST">
                     @csrf
                     <input type="hidden" name="selected_follow_orders" id="selected_follow_orders">
                     <input type="hidden" name="selected_request_lists" id="selected_request_lists">
+                    <input type="hidden" name="seller_id" id="selected_seller_id">
 
                     <h6>確認購買清單</h6>
                     {{-- 這裡只放容器，JS 會自動填入內容 --}}
@@ -652,6 +654,11 @@ function prepareCheckout() {
         alert('請先勾選要結帳的商品');
         return;
     }
+    const sellerId =
+    checkedBoxes[0].dataset.sellerId.replace('seller_', '');
+
+    document.getElementById('selected_seller_id').value =
+        sellerId;
 
     let listHtml = '';
     let subtotal = 0;
@@ -694,7 +701,41 @@ function prepareCheckout() {
     document.getElementById('selected_request_lists').value =
         requestIds.join(',');
 
-    new bootstrap.Modal(document.getElementById('checkoutModal')).show();
+    fetch(`/logistics/by-seller/${sellerId}`)
+    .then(res => res.json())
+    .then(data => {
+
+        const select =
+            document.querySelector('select[name="logistics_id"]');
+
+        select.innerHTML = '';
+
+        // 沒有物流
+        if (data.length === 0) {
+
+            select.innerHTML = `
+                <option value="">
+                    該代購人尚未設定物流
+                </option>
+            `;
+
+        } else {
+
+            data.forEach(item => {
+
+                select.innerHTML += `
+                    <option value="${item.id}">
+                        ${item.name} (${item.temp_layer})
+                    </option>
+                `;
+            });
+        }
+
+        new bootstrap.Modal(
+            document.getElementById('checkoutModal')
+        ).show();
+    });
+
 }
 </script>
 

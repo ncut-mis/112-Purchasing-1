@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Logistics extends Model
 {
     protected $fillable = [
+        'user_id',
         'name',
         'status',
         'ship_type',
@@ -20,4 +21,8 @@ class Logistics extends Model
         'available_times' => 'array',
         'status' => 'boolean',
     ];
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }
