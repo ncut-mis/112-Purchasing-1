@@ -158,23 +158,32 @@ class AgentPostController extends Controller
         return redirect()->route('agent.member')->with('status', '已標記為已出貨！');
     }
 
-    // 完成：將代購貼文標記為已完成，移至歷史紀錄
+    // 到貨：將 orders 狀態改為 arrivaled
+    public function arrive(AgentPost $agentPost)
+    {
+        abort_unless($agentPost->user_id === Auth::id(), 403);
+
+        \App\Models\Order::where('seller_id', Auth::id())
+            ->where('source_id', $agentPost->id)
+            ->where('source_type', \App\Models\AgentPost::class)
+            ->whereIn('status', ['shipped', 'wait-for-ship'])
+            ->update(['status' => 'arrivaled']);
+
+        $agentPost->update([
+            'status' => 'arrivaled',
+        ]);
+
+        return redirect()->route('agent.member')->with('status', '已標記為已到貨！');
+    }
+
+    // 完成：將貼文狀態改為 completed
     public function complete(AgentPost $agentPost)
     {
         abort_unless($agentPost->user_id === Auth::id(), 403);
 
-        if ($agentPost->status !== 'shipped') {
-            return redirect()->route('agent.member')->with('status', '僅已出貨的代購貼文可標記為完成');
-        }
-
-        $agentPost->update(['status' => 'completed']);
-
-        // 同步將相關訂單也標記為 completed
-        \App\Models\Order::where('seller_id', Auth::id())
-            ->where('source_id', $agentPost->id)
-            ->where('source_type', \App\Models\AgentPost::class)
-            ->whereIn('status', ['shipped', 'pending_payment'])
-            ->update(['status' => 'completed']);
+        $agentPost->update([
+            'status' => 'completed',
+        ]);
 
         return redirect()->route('agent.member')->with('status', '代購貼文已完成，已移至歷史紀錄！');
     }

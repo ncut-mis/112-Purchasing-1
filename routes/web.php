@@ -212,6 +212,7 @@ Route::get('/', function (Request $request) {
 
     Route::patch('/agent/posts/{agentPost}/submit', [AgentPostController::class, 'submit'])->name('agent.posts.submit');
     Route::patch('/agent/posts/{agentPost}/ship', [AgentPostController::class, 'ship'])->name('agent.posts.ship');
+    Route::patch('/agent/posts/{agentPost}/arrive', [AgentPostController::class, 'arrive'])->name('agent.posts.arrive');
     Route::patch('/agent/posts/{agentPost}/complete', [AgentPostController::class, 'complete'])->name('agent.posts.complete');
     Route::delete('/agent/posts/{agentPost}', [AgentPostController::class, 'destroy'])->name('agent.posts.destroy');
     Route::delete('/agent/orders/{order}/cancel', [AgentPostController::class, 'cancelBuyerOrder'])->name('agent.orders.cancel');

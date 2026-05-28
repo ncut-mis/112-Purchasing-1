@@ -140,6 +140,8 @@ class CartController extends Controller
                     'status'         => 'wait-for-ship',
 
                     'payment_method' => $paymentMethod,
+
+                    'paid_at'        => now(),
                 ]);
         }
 

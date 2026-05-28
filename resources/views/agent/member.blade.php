@@ -182,6 +182,7 @@
                         @php
                             $myAgentPosts = \App\Models\AgentPost::with(['products'])->withCount('products')
                                 ->where('user_id', Auth::id())
+                                ->whereNotIn('status', ['completed'])
                                 ->latest()
                                 ->take(6)
                                 ->get();
@@ -216,10 +217,23 @@
                                         <div class="mt-2 flex gap-2 flex-wrap">
                                             <span class="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded">{{ $post->products_count }} 項商品</span>
                                              @php
-                                                $statusLabel = $post->status === 'draft' ? '編輯中' : ($post->status === 'open' ? '進行中' : $post->status);
-                                                $statusClasses = $post->status === 'draft'
-                                                    ? 'text-amber-600 bg-amber-50'
-                                                    : 'text-green-600 bg-green-50';
+                                                $statusLabel = match($post->status) {
+                                                    'draft'     => '編輯中',
+                                                    'open'      => '進行中',
+                                                    'closed'    => '已截單',
+                                                    'shipped'   => '已出貨',
+                                                    'arrivaled' => '已到貨',
+                                                    'completed' => '已完成',
+                                                    default     => $post->status,
+                                                };
+                                                $statusClasses = match($post->status) {
+                                                    'draft'     => 'text-amber-600 bg-amber-50',
+                                                    'open'      => 'text-green-600 bg-green-50',
+                                                    'shipped'   => 'text-blue-600 bg-blue-50',
+                                                    'arrivaled' => 'text-indigo-600 bg-indigo-50',
+                                                    'completed' => 'text-gray-500 bg-gray-100',
+                                                    default     => 'text-green-600 bg-green-50',
+                                                };
                                             @endphp
                                             <span class="text-[10px] font-bold px-2 py-0.5 rounded {{ $statusClasses }}">{{ $statusLabel }}</span>
                                         </div>
@@ -1148,13 +1162,6 @@
                                                     class="inline-flex items-center rounded-lg bg-gray-100 px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-200 transition">
                                                     檢視
                                                 </button>
-                                                <button type="button"
-                                                   onclick="openAgentRequestChatModal({{ $requestList->id }})"
-                                                   class="relative inline-flex items-center rounded-lg bg-gray-500 px-3 py-2 text-xs font-bold text-white hover:bg-gray-600 transition">
-                                                    聊天
-                                                    <span class="agent-chat-badge hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center"
-                                                          data-request-list-id="{{ $requestList->id }}"></span>
-                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -1519,13 +1526,14 @@
                                         $status = optional($post)->status;
                                         return ! $shippedPostIds->contains((int) $postId)
                                             && $status !== 'shipped'
+                                            && $status !== 'arrivaled'
                                             && $status !== 'completed';
                                     });
                                 $managedPostGroupsShipped = $managedPostGroups
                                     ->filter(function ($products, $postId) use ($shippedPostIds) {
                                         $post = optional($products->first())->post;
                                         $status = optional($post)->status;
-                                        return ($shippedPostIds->contains((int) $postId) || $status === 'shipped')
+                                        return ($shippedPostIds->contains((int) $postId) || $status === 'shipped' || $status === 'arrivaled')
                                             && $status !== 'completed';
                                     });
                             @endphp
@@ -1545,12 +1553,23 @@
                                     @php
                                         $post = optional($products->first())->post;
                                         $postStatus = optional($post)->status;
-                                        $statusLabel = $postStatus === 'draft'
-                                            ? '編輯中'
-                                            : ($postStatus === 'open' ? '進行中' : ($postStatus === 'shipped' ? '已出貨' : ($postStatus ?? '未知')));
-                                        $statusClasses = $postStatus === 'draft'
-                                            ? 'bg-amber-50 text-amber-600'
-                                            : ($postStatus === 'shipped' ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600');
+                                        $statusLabel = match($postStatus) {
+                                            'draft'     => '編輯中',
+                                            'open'      => '進行中',
+                                            'closed'    => '已截單',
+                                            'shipped'   => '已出貨',
+                                            'arrivaled' => '已到貨',
+                                            'completed' => '已完成',
+                                            default     => $postStatus ?? '未知',
+                                        };
+                                        $statusClasses = match($postStatus) {
+                                            'draft'     => 'bg-amber-50 text-amber-600',
+                                            'open'      => 'bg-emerald-50 text-emerald-600',
+                                            'shipped'   => 'bg-blue-50 text-blue-600',
+                                            'arrivaled' => 'bg-indigo-50 text-indigo-600',
+                                            'completed' => 'bg-gray-100 text-gray-500',
+                                            default     => 'bg-emerald-50 text-emerald-600',
+                                        };
                                     @endphp
                                     <div class="p-4 bg-blue-50 rounded-xl border border-blue-100 space-y-3" x-data="{ showPostDetails: false }">
                                         <div class="flex flex-wrap items-center justify-between gap-3">
@@ -1718,12 +1737,23 @@
                                     @php
                                         $post = optional($products->first())->post;
                                         $postStatus = optional($post)->status;
-                                        $statusLabel = $postStatus === 'draft'
-                                            ? '編輯中'
-                                            : ($postStatus === 'open' ? '進行中' : ($postStatus === 'shipped' ? '已出貨' : ($postStatus ?? '未知')));
-                                        $statusClasses = $postStatus === 'draft'
-                                            ? 'bg-amber-50 text-amber-600'
-                                            : ($postStatus === 'shipped' ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600');
+                                        $statusLabel = match($postStatus) {
+                                            'draft'     => '編輯中',
+                                            'open'      => '進行中',
+                                            'closed'    => '已截單',
+                                            'shipped'   => '已出貨',
+                                            'arrivaled' => '已到貨',
+                                            'completed' => '已完成',
+                                            default     => $postStatus ?? '未知',
+                                        };
+                                        $statusClasses = match($postStatus) {
+                                            'draft'     => 'bg-amber-50 text-amber-600',
+                                            'open'      => 'bg-emerald-50 text-emerald-600',
+                                            'shipped'   => 'bg-blue-50 text-blue-600',
+                                            'arrivaled' => 'bg-indigo-50 text-indigo-600',
+                                            'completed' => 'bg-gray-100 text-gray-500',
+                                            default     => 'bg-emerald-50 text-emerald-600',
+                                        };
                                     @endphp
                                     <div class="p-4 bg-blue-50 rounded-xl border border-blue-100 space-y-3" x-data="{ showPostDetails: false }">
                                         <div class="flex flex-wrap items-center justify-between gap-3">
@@ -1742,6 +1772,21 @@
                                                     @click="showPostDetails = !showPostDetails"
                                                     x-text="showPostDetails ? '收合檢視' : '檢視貼文'">
                                                 </button>
+                                                @if($postStatus === 'arrivaled')
+                                                    <button type="button" disabled
+                                                        class="inline-flex items-center px-3 py-1.5 text-xs font-bold text-gray-400 bg-gray-100 border border-gray-200 rounded-lg cursor-not-allowed">
+                                                        到貨
+                                                    </button>
+                                                @else
+                                                    <form method="POST" action="{{ route('agent.posts.arrive', $post->id) }}" class="inline" onsubmit="return confirm('確定標記為已到貨？買家將收到到貨通知。')">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button type="submit"
+                                                            class="inline-flex items-center px-3 py-1.5 text-xs font-bold text-white bg-indigo-500 border border-indigo-500 rounded-lg hover:bg-indigo-600 transition">
+                                                            到貨
+                                                        </button>
+                                                    </form>
+                                                @endif
                                                 <form method="POST" action="{{ route('agent.posts.complete', $post->id) }}" class="inline" onsubmit="return confirm('確定完成此代購貼文？完成後將移至歷史紀錄。')">
                                                     @csrf
                                                     @method('PATCH')
