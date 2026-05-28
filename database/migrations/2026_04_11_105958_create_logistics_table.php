@@ -20,6 +20,7 @@ return new class extends Migration
             $table->json('available_times')->nullable(); // 可配送時段
             $table->string('temp_layer')->nullable(); // 運送溫層
             $table->timestamps();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
         });
     }
 
@@ -29,5 +30,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('logistics');
+        Schema::table('logistics', function (Blueprint $table) {
+        $table->dropForeign(['user_id']); // 先刪除外鍵限制
+        $table->dropColumn('user_id');    // 再刪除欄位
+    });
     }
 };
