@@ -4,11 +4,11 @@
             <div class="flex flex-wrap items-center gap-3">
                 <h3 class="text-lg font-bold text-gray-800">歷史紀錄</h3>
                 <div class="inline-flex rounded-lg bg-slate-100 p-1">
-                    <a href="{{ route('dashboard', ['section' => 'history-records', 'history_type' => 'request-lists']) }}" class="rounded-md px-3 py-1.5 text-sm font-semibold transition {{ $currentHistoryType === 'request-lists' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-500 hover:text-slate-700' }}">請購清單</a>
-                    <a href="{{ route('dashboard', ['section' => 'history-records', 'history_type' => 'follow-orders']) }}" class="rounded-md px-3 py-1.5 text-sm font-semibold transition {{ $currentHistoryType === 'follow-orders' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-500 hover:text-slate-700' }}">跟單紀錄</a>
+                    <a href="{{ route('dashboard', ['section' => 'history-records', 'history_type' => 'request-lists']) }}" class="rounded-md px-3 py-1.5 text-sm font-semibold transition {{ $currentHistoryType === 'request-lists' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-500 hover:text-slate-700' }}">請託單</a>
+                    <a href="{{ route('dashboard', ['section' => 'history-records', 'history_type' => 'follow-orders']) }}" class="rounded-md px-3 py-1.5 text-sm font-semibold transition {{ $currentHistoryType === 'follow-orders' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-500 hover:text-slate-700' }}">跟團紀錄</a>
                 </div>
             </div>
-            <p class="mt-1 text-sm text-gray-500">可切換查看「請購清單」或「跟單紀錄」的完成歷史，避免資料混在一起。</p>
+            <p class="mt-1 text-sm text-gray-500">可切換查看「請託單」或「跟團紀錄」的完成歷史，避免資料混在一起。</p>
         </div>
 
         <div class="flex items-center gap-4">
@@ -81,7 +81,7 @@
                             <div class="flex items-center gap-2">
                                 <h4 class="truncate text-[0.92rem] font-semibold text-slate-700">{{ $historyRecord['title'] }}</h4>
                                 <span class="inline-flex items-center rounded-full bg-slate-200 px-2 py-0.5 text-[0.72rem] font-semibold text-slate-600">
-                                    {{ $isRequestList ? '請購清單' : '跟單紀錄' }}
+                                    {{ $isRequestList ? '請託單' : '跟團紀錄' }}
                                 </span>
                             </div>
 
@@ -130,7 +130,7 @@
                         <div class="grid gap-3 sm:grid-cols-2">
                             <div class="rounded-xl bg-slate-50 px-4 py-3">
                                 <p class="text-xs text-slate-400">紀錄類型</p>
-                                <p class="mt-1 text-sm font-semibold text-slate-700">{{ $isRequestList ? '請購清單' : '跟單紀錄' }}</p>
+                                <p class="mt-1 text-sm font-semibold text-slate-700">{{ $isRequestList ? '請託單' : '跟團紀錄' }}</p>
                             </div>
                             <div class="rounded-xl bg-slate-50 px-4 py-3">
                                 <p class="text-xs text-slate-400">狀態</p>
@@ -204,7 +204,7 @@
                 @if(request('history_search'))
                     找不到符合「{{ request('history_search') }}」的歷史紀錄。
                 @else
-                    目前尚無{{ $currentHistoryType === 'request-lists' ? '請購清單' : '跟單紀錄' }}歷史紀錄，完成後會顯示在這裡。
+                    目前尚無{{ $currentHistoryType === 'request-lists' ? '請託單' : '跟團紀錄' }}歷史紀錄，完成後會顯示在這裡。
                 @endif
             </div>
         @endforelse

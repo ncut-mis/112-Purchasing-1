@@ -259,7 +259,7 @@
 
                              @if($isOwner)
                                 <span class="position-absolute bottom-0 start-0 m-3 badge rounded-pill bg-warning text-dark" style="z-index: 11;">
-                                    無法跟單
+                                    無法跟團
                                 </span>
                             @endif
                             @auth
@@ -342,7 +342,7 @@
                             <input type="hidden" name="agent_post_id" value="{{ $post->id }}">
 
                             <div style="background-color: #63a388; height: 45px; width: 100%;">
-                                     <h5 class="modal-title fw-bold text-white p-md-2"><i class="bi bi-cart-plus me-2 text-white"></i>確認跟單商品</h5>
+                                     <h5 class="modal-title fw-bold text-white p-md-2"><i class="bi bi-cart-plus me-2 text-white"></i>確認跟團商品</h5>
                             </div>
                             <div class="modal-body p-4 p-md-8 pt-4">
 

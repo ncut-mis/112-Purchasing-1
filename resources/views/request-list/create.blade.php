@@ -8,7 +8,7 @@
                 <div class="card border-0 shadow-sm rounded-4">
                     <div class="card-body p-4 p-md-5">
                         <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h2 class="fw-bold mb-0">建立請購清單</h2>
+                            <h2 class="fw-bold mb-0">建立請託單</h2>
                             <a href="{{ route('home') }}" class="btn btn-outline-secondary rounded-pill px-4">返回首頁</a>
                         </div>
 

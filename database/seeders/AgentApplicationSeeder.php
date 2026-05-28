@@ -32,7 +32,7 @@ class AgentApplicationSeeder extends Seeder
             
             // 🎯 變成中文字串，用逗號隔開（例如："日本,美國"）
             // 如果你的系統習慣用 JSON 字串，也可以改成 json_encode($selectedCountries, JSON_UNESCAPED_UNICODE)
-            $purchasableCountriesString = json_encode($selectedCountries);
+            $purchasableCountriesString = implode(',', $selectedCountries);
 
             // 建立申請紀錄
             AgentApplication::create([
