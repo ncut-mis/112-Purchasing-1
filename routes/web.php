@@ -338,6 +338,9 @@ Route::middleware(['auth'])->group(function () {
     // 出貨
     Route::patch('/quotes/{quote}/ship', [QuoteController::class, 'ship'])->name('quotes.ship');
 
+    // 到貨
+    Route::patch('/quotes/{quote}/arrive', [QuoteController::class, 'arrive'])->name('quotes.arrive');
+
     // 完成
     Route::patch('/quotes/{quote}/complete', [QuoteController::class, 'complete'])->name('quotes.complete');
 

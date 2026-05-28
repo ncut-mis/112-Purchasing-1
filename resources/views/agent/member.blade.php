@@ -581,7 +581,7 @@
                                 $pendingQuotes  = $allMyQuotes->whereIn('status', ['pending', 'returned'])->values();
                                 $acceptedQuotes = $allMyQuotes->where('status', 'accepted')->values();
                                 $rejectedQuotes = $allMyQuotes->where('status', 'rejected')->values();
-                                $shippedQuotes  = $allMyQuotes->where('status', 'shipped')->values();
+                                $shippedQuotes  = $allMyQuotes->whereIn('status', ['shipped', 'arrivaled'])->reject(fn($q) => $q->status === 'completed')->values();
 
                                 $myQuotes = $pendingQuotes; // 保留相容性
 
@@ -1227,13 +1227,17 @@
                                         $requestList = $quote->requestList;
                                         if (!$requestList) continue;
                                         $firstItem = $requestList->items->first();
+                                        $statusLabel = $quote->status === 'arrivaled' ? '已到貨' : '已出貨';
+                                        $statusClasses = $quote->status === 'arrivaled'
+                                            ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                            : 'bg-blue-50 text-blue-700 border-blue-200';
                                     @endphp
                                     <div class="rounded-xl border border-blue-100 bg-blue-50/40 p-4">
                                         <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                                             <div class="min-w-0">
                                                 <div class="flex items-center gap-2 flex-wrap">
                                                     <h4 class="text-base font-bold text-gray-800 truncate">{{ $requestList->title }}</h4>
-                                                    <span class="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold bg-blue-50 text-blue-700 border-blue-200">已出貨</span>
+                                                    <span class="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold {{ $statusClasses }}">{{ $statusLabel }}</span>
                                                 </div>
                                                 <p class="mt-1 text-xs text-gray-500">
                                                     請託人：{{ $requestList->user->name ?? '未知會員' }} ・
@@ -1249,6 +1253,28 @@
                                                 @endif
                                             </div>
                                             <div class="flex items-center gap-2 shrink-0">
+                                                <button type="button"
+                                                   onclick="openAgentRequestChatModal({{ $requestList->id }})"
+                                                   class="relative inline-flex items-center rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700 transition">
+                                                    聊天
+                                                    <span class="agent-chat-badge hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center"
+                                                          data-request-list-id="{{ $requestList->id }}"></span>
+                                                </button>
+                                                @if($quote->status === 'arrivaled')
+                                                    <button type="button" disabled
+                                                        class="inline-flex items-center rounded-lg bg-gray-100 px-3 py-2 text-xs font-bold text-gray-400 cursor-not-allowed">
+                                                        到貨
+                                                    </button>
+                                                @else
+                                                    <form method="POST" action="{{ route('quotes.arrive', $quote->id) }}" onsubmit="return confirm('確認將此訂單標記為已到貨？')">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button type="submit"
+                                                            class="inline-flex items-center rounded-lg bg-indigo-500 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-600 transition">
+                                                            到貨
+                                                        </button>
+                                                    </form>
+                                                @endif
                                                 <form method="POST" action="{{ route('quotes.complete', $quote->id) }}" onsubmit="return confirm('確認將此訂單標記為完成？')">
                                                     @csrf
                                                     @method('PATCH')
@@ -1266,6 +1292,77 @@
                                     </div>
                                 @endforelse
                             </div>
+
+                            {{-- 已出貨區：聊天 Modal --}}
+                            @foreach($shippedQuotes as $quote)
+                                @php $requestList = $quote->requestList; @endphp
+                                @if($requestList)
+                                <div id="agent-request-chat-modal-{{ $requestList->id }}" class="agent-request-chat-modal fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4" onclick="handleAgentRequestChatBackdrop(event, {{ $requestList->id }})">
+                                    <div class="relative flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" style="max-height: 88vh;">
+                                        <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+                                            <div>
+                                                <h4 class="text-lg font-bold text-gray-800">{{ $requestList->title }}</h4>
+                                                <p class="text-xs text-gray-500 mt-0.5">請託人：{{ $requestList->user->name ?? '使用者' }}</p>
+                                            </div>
+                                            <button type="button" class="text-2xl text-gray-500 hover:text-gray-700" onclick="closeAgentRequestChatModal({{ $requestList->id }})" aria-label="關閉聊天室">✕</button>
+                                        </div>
+                                        @php
+                                            $agentChatMessages = \App\Models\Message::query()
+                                                ->where('request_list_id', $requestList->id)
+                                                ->where(function ($q) use ($requestList) {
+                                                    $q->where(function ($inner) use ($requestList) {
+                                                        $inner->where('sender_id', Auth::id())
+                                                              ->where('receiver_id', $requestList->user_id);
+                                                    })->orWhere(function ($inner) use ($requestList) {
+                                                        $inner->where('sender_id', $requestList->user_id)
+                                                              ->where('receiver_id', Auth::id());
+                                                    });
+                                                })
+                                                ->with(['sender:id,name'])
+                                                ->orderBy('created_at')
+                                                ->get();
+                                        @endphp
+                                        <div id="agent-request-chat-messages-{{ $requestList->id }}"
+                                             class="flex-1 overflow-y-auto bg-gray-50 px-5 py-4"
+                                             style="min-height: 300px; max-height: 55vh;">
+                                            @forelse($agentChatMessages as $agentMsg)
+                                                @php $isMine = (int) $agentMsg->sender_id === (int) Auth::id(); @endphp
+                                                <div class="mb-3 flex {{ $isMine ? 'justify-end' : 'justify-start' }}">
+                                                    <div class="max-w-[75%]">
+                                                        <div class="rounded-xl border px-3 py-2 {{ $isMine ? 'bg-indigo-100 border-indigo-200' : 'bg-white border-gray-200' }}">
+                                                            <p class="text-xs text-gray-500">{{ $agentMsg->sender->name ?? '使用者' }}</p>
+                                                            <p class="mt-1 text-sm text-gray-800 break-words">{{ $agentMsg->body }}</p>
+                                                        </div>
+                                                        <p class="mt-1 text-xs text-gray-500 flex items-center gap-1 {{ $isMine ? 'justify-end' : 'justify-start' }}">
+                                                            <span>{{ optional($agentMsg->created_at)->format('Y-m-d H:i') }}</span>
+                                                            @if($isMine)
+                                                                <span class="agent-msg-read-status" style="color:{{ $agentMsg->read_at ? '#6366f1' : '#94a3b8' }}">
+                                                                    {{ $agentMsg->read_at ? '已讀' : '未讀' }}
+                                                                </span>
+                                                            @endif
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            @empty
+                                                <p class="agent-request-chat-empty py-12 text-center text-sm text-gray-400" id="agent-empty-tip-{{ $requestList->id }}">目前尚無訊息，開始第一句對話吧。</p>
+                                            @endforelse
+                                        </div>
+                                        <div class="flex items-center gap-2 border-t border-gray-200 px-4 py-3 bg-white">
+                                            <input type="text"
+                                                class="agent-request-chat-input w-full rounded-full border-gray-300 px-4 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                placeholder="輸入訊息..."
+                                                maxlength="2000"
+                                                data-request-list-id="{{ $requestList->id }}"
+                                                data-receiver-id="{{ $requestList->user_id }}"
+                                                data-send-url="{{ route('request-list.chat.send', $requestList) }}">
+                                            <button type="button"
+                                                class="agent-request-chat-send-btn rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                                                data-request-list-id="{{ $requestList->id }}">送出</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                @endif
+                            @endforeach
 
                         </section>
                     </div>

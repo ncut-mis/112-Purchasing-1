@@ -222,6 +222,25 @@ class QuoteController extends Controller
         return back()->with('success', '已成功標記為已出貨！');
     }
 
+    // 到貨：將 quote 狀態改為 arrivaled
+    public function arrive(Quote $quote)
+    {
+        if ($quote->user_id !== auth()->id()) {
+            abort(403, '只有報價人才能標記到貨');
+        }
+
+        if ($quote->status !== 'shipped') {
+            return back()->with('error', '只有已出貨的訂單才能標記為到貨。');
+        }
+
+        DB::transaction(function () use ($quote) {
+            $quote->update(['status' => 'arrivaled']);
+            $quote->requestList?->update(['status' => 'arrivaled']);
+        });
+
+        return back()->with('success', '已成功標記為已到貨！');
+    }
+
     // 完成：將 quote 狀態改為 completed
     public function complete(Quote $quote)
     {
@@ -230,14 +249,16 @@ class QuoteController extends Controller
             abort(403, '只有報價人才能標記完成');
         }
 
-        if ($quote->status !== 'shipped') {
-            return back()->with('error', '只有已出貨的訂單才能標記為完成。');
+        if (!in_array($quote->status, ['shipped', 'arrivaled'])) {
+            return back()->with('error', '只有已出貨或已到貨的訂單才能標記為完成。');
         }
 
         DB::transaction(function () use ($quote) {
             $quote->update(['status' => 'completed']);
-            // 同步更新請託單狀態
-            $quote->requestList->update(['status' => 'completed']);
+            // 同步更新請託單狀態（只有在請託單狀態也是 shipped/arrivaled 時才更新）
+            if (in_array($quote->requestList?->status, ['shipped', 'arrivaled'])) {
+                $quote->requestList->update(['status' => 'completed']);
+            }
         });
 
         return back()->with('success', '訂單已標記為完成！');
