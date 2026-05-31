@@ -24,7 +24,7 @@
                 }
             </style>
             @endpush
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-6">
 
                              <div class="flex items-center gap-3">
                                 <h3 class="text-lg font-bold text-gray-800">目前請託單</h3>
@@ -37,21 +37,21 @@
                                     @endif
                                 </button>
                             </div>
-                            <div class="flex items-center gap-4">                        
+                             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">                 
 
                                 <!-- 搜尋框 -->
 
-                                <form method="GET" action="{{ route('dashboard') }}" class="relative w-full md:w-80">
+                                  <form method="GET" action="{{ route('dashboard') }}" class="relative w-full sm:w-80">
     <input type="hidden" name="section" value="request-lists">
 
     <button type="submit" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-green-600 transition">
         <i class="bi bi-search"></i>
     </button>
 
-    <input 
-        type="search" 
-        name="request_search" 
-        placeholder="搜尋標題、描述、狀態..." 
+    <input
+        type="search"
+        name="request_search"
+        placeholder="搜尋標題、描述、狀態..."
         value="{{ request('request_search') }}"
         class="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 shadow-sm transition outline-none"
     >
@@ -112,16 +112,16 @@
                         @endif
 
                 
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left">
+                         <div class="overflow-x-auto custom-scrollbar pb-3">
+                            <table class="min-w-[1120px] w-full table-fixed text-left">
                                 <thead>
                                     <tr class="text-gray-400 text-sm border-b">
-                                        <th class="pb-3 font-medium">商品</th>
-                                        <th class="pb-3 font-medium">國家</th>
-                                        <th class="pb-3 font-medium">截止日</th>
-                                        <th class="pb-3 font-medium">狀態</th>
-                                        <th class="pb-3 font-medium">注意事項</th>
-                                        <th class="pb-3 font-medium text-right">操作</th>
+                                        <th class="w-[28%] pb-3 pr-4 font-medium">商品</th>
+                                        <th class="w-20 pb-3 pr-4 font-medium">國家</th>
+                                        <th class="w-28 pb-3 pr-4 font-medium">截止日</th>
+                                        <th class="w-28 pb-3 pr-4 font-medium">狀態</th>
+                                        <th class="w-[260px] pb-3 pr-4 font-medium">注意事項</th>
+                                        <th class="w-[300px] pb-3 font-medium text-right">操作</th>
                                     </tr>
                                 </thead>
 
@@ -197,10 +197,10 @@
                                         @endphp
 
                                         <tr class="text-sm align-top">
-                                            <td class="py-4 font-medium text-gray-800">
+                                           <td class="py-4 pr-4 font-medium text-gray-800 break-words">
                                                 @if($extraItems->isNotEmpty())
                                                     <details class="group">
-                                                        <summary class="cursor-pointer select-none hover:text-blue-600">
+                                                        <summary class="cursor-pointer select-none break-words hover:text-blue-600">
                                                             {{ $firstItem }}
                                                             <span class="text-xs text-gray-400">（另有 {{ $extraItems->count() }} 項）</span>
                                                         </summary>
@@ -215,19 +215,19 @@
                                                 @endif
                                             </td>
 
-                                            <td class="py-4 text-gray-500">{{ $countryLabel }}</td>
-                                            <td class="py-4 text-gray-800">
+                                              <td class="py-4 pr-4 text-gray-500 whitespace-nowrap">{{ $countryLabel }}</td>
+                                            <td class="py-4 pr-4 text-gray-800 whitespace-nowrap">
                                                    @if(in_array($requestList->status, ['pending', 'offered', 'matched', 'wait-for-ship', 'shipped', 'arrivaled'], true))
                                                     <button type="button" class="text-blue-600 hover:underline cursor-pointer font-medium" onclick="openRequestCountdownModal({{ $requestList->id }})" title="點擊查看截止倒數">{{ optional($requestList->deadline)->format('Y-m-d') ?? '-' }}</button>
                                                 @else
                                                     {{ optional($requestList->deadline)->format('Y-m-d') ?? '-' }}
                                                 @endif
                                             </td>
-                                            <td class="py-4">
-                                               <span class="px-2 py-1 rounded-full text-[10px] {{ $statusClass }}">{{ $statusLabel }}</span>
+                                            <td class="py-4 pr-4">
+                                               <span class="inline-flex whitespace-nowrap px-2 py-1 rounded-full text-[10px] {{ $statusClass }}">{{ $statusLabel }}</span>
                                             </td>
 
-                                            <td class="py-4">
+                                            <td class="py-4 pr-4">
                                                 @php
                                                     $noticeMap = [
                                                         'editing' => ['text' => '清單送出後將不能修改與刪除,請先確認內容后再按「送出」', 'class' => 'bg-slate-100 text-slate-700'],
@@ -243,7 +243,7 @@
                                                 @endphp
 
                                                 @if($notice)
-                                                    <span class="inline-flex items-center rounded-md px-2 py-1 text-[11px] font-medium {{ $notice['class'] }}">
+                                                    <span class="inline-flex max-w-[240px] items-center rounded-md px-2 py-1 text-[11px] font-medium leading-5 break-words {{ $notice['class'] }}">
                                                         {{ $notice['text'] }}
                                                     </span>
                                                 @else
@@ -251,7 +251,7 @@
                                                 @endif
                                             </td>
 
-                                            <td class="py-4 text-right">
+                                            <td class="py-4 text-right align-middle">
                                                 @php
                                                     $acceptedOffer = $requestList->offers->firstWhere('status', 'accepted');
                                                     $activeOffer = $acceptedOffer ?? $requestList->offers->first();
@@ -262,7 +262,7 @@
                                                     $chatPartnerId = $requestList->people ?: $latestActiveQuoteUserId;
                                                 @endphp
 
-                                                <div class="inline-flex items-center gap-3">
+                                                <div class="inline-flex flex-nowrap items-center justify-end gap-2 whitespace-nowrap">
                                                     @if($requestList->status === 'arrivaled')
                                                         {{-- 商品已到貨：完成按鈕可按 --}}
                                                         <button type="button" class="inline-flex items-center rounded-lg bg-blue-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-600" onclick="openRequestDetailModal({{ $requestList->id }})">檢視</button>
@@ -284,18 +284,18 @@
                                                         </button>
                                                         <button type="button" class="inline-flex items-center rounded-lg bg-gray-300 px-4 py-2 text-xs font-semibold text-white cursor-not-allowed" disabled title="商品尚未到貨，無法完成">完成</button>
                                                     @elseif($requestList->status === 'editing')
-                                                        <button type="button" class="text-blue-500 hover:underline" onclick="openEditModal({{ $requestList->id }})">編輯</button>
-                        
+                                                         <button type="button" class="text-blue-500 hover:underline whitespace-nowrap" onclick="openEditModal({{ $requestList->id }})">編輯</button>
+
                                                         <form method="POST" action="{{ route('request-list.destroy', $requestList) }}" onsubmit="return confirm('確定要刪除此請購清單嗎？');">
                                                             @csrf
                                                             @method('DELETE')
-                                                            <button type="submit" class="text-red-500 hover:underline">刪除</button>
+                                                            <button type="submit" class="text-red-500 hover:underline whitespace-nowrap">刪除</button>
                                                         </form>
 
                                                         <form method="POST" action="{{ route('request-list.submit', $requestList) }}" onsubmit="return confirm('送出後清單將無法修改與刪除,確定送出嗎？');">
                                                             @csrf
                                                             @method('PATCH')
-                                                            <button type="submit" class="text-green-600 hover:underline">送出</button>
+                                                             <button type="submit" class="text-green-600 hover:underline whitespace-nowrap">送出</button>
                                                         </form>
                                                     @elseif(in_array($requestList->status, ['pending', 'offered'], true))
                                                         {{-- 等待報價/已報價：完成按鈕顯示但禁用 --}}
@@ -494,13 +494,13 @@
                                                                             <div class="flex items-center justify-between gap-3">
                                                                                 <span class="truncate">{{ $item->name }}</span>
                                                                                 <span class="shrink-0 font-medium text-slate-700">NT$ {{ number_format($quotedPrice, 0) }}</span>
-                                                                            </div>                             
-                                                                        @endforeach 
+                                                                            </div>
+                                                                        @endforeach
                                                                     </div>
-                                                                        
+
                                                                     <p class="text-xs text-slate-500">預計代購日期：{{ $quote->estimated_date ?? '未提供' }}</p>
                                                                     <p class="text-xs text-slate-500">報價備註：{{ $quote->comment ?? '未提供' }}</p>
-                                                                    <div>                                                         
+                                                                    <div>                                   
                                                                         <span class="text-blue-600 font-extrabold text-xs">
                                                                                 總計：NT$ {{ number_format($quote->price) }}
                                                                         </span>

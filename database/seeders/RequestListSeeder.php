@@ -2,24 +2,223 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\User;
+use App\Models\Quote;
+use App\Models\QuoteItem;
 use App\Models\RequestList;
+use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class RequestListSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. 抓取所有模擬的使用者
-        $users = User::where('id', '>', 1)->get();
+        $this->command->info('開始建立特定測試情境資料 (測試員)...');
+        $testBuyer = $this->generateFixedScenarios();
+
+        $this->command->info('開始建立隨機請託單資料 (其他使用者)...');
+        $this->generateRandomRequests($testBuyer ? $testBuyer->id : null);
+    }
+
+    /**
+     * ==========================================
+     * 1. 建立特定測試情境 (固定狀態與報價)
+     * ==========================================
+     */
+    private function generateFixedScenarios(): ?User
+    {
+        $buyer = User::updateOrCreate(
+            ['email' => 'helper@example.com'],
+            [
+                'name' => '測試員',
+                'password' => Hash::make('12345678'),
+                'role' => 'buyer',
+            ]
+        );
+
+        $agents = User::whereHas('agentApplication', function ($query) {
+                $query->where('status', 'approved');
+            })
+            ->where('id', '!=', $buyer->id)
+            ->take(4)
+            ->get();
+
+        if ($agents->count() < 4) {
+            $agents = User::where('id', '!=', $buyer->id)
+                ->where('role', 'seller')
+                ->take(4)
+                ->get();
+        }
+
+        if ($agents->count() < 2) {
+            $this->command->error('請先執行 RandomPostSeeder 與 AgentApplicationSeeder，至少需要 2 位代購人才能建立請託單報價測試資料。');
+            return $buyer; // 即使無法建立情境，依然回傳 buyer 以供後續排除
+        }
+
+        $this->deleteExistingScenarioData($buyer);
+
+        $agentPool = $agents->values();
+        $scenarioBaseDate = Carbon::now()->startOfDay();
+
+        $scenarios = [
+            [
+                'status' => 'editing',
+                'title' => '【測試】編輯中請託單-日本藥妝草稿',
+                'country' => 'jp',
+                'store_name' => '松本清 新宿三丁目店',
+                'detail_address' => '東京都新宿區新宿3丁目',
+                'deadline' => $scenarioBaseDate->copy()->addDays(14),
+                'note' => '測試用草稿：請託人尚未送出，代購人不應在大廳看到此單。',
+                'items' => [
+                    ['name' => '合利他命 EX Plus 270錠', 'quantity' => 1, 'expected_price' => 1550],
+                    ['name' => '大正感冒藥 44包', 'quantity' => 2, 'expected_price' => 380],
+                ],
+            ],
+            [
+                'status' => 'pending',
+                'title' => '【測試】等待報價請託單-韓國美妝',
+                'country' => 'kr',
+                'store_name' => 'Olive Young 明洞旗艦店',
+                'detail_address' => '首爾市中區明洞路',
+                'deadline' => $scenarioBaseDate->copy()->addDays(10),
+                'note' => '測試用等待報價：目前沒有任何報價。',
+                'items' => [
+                    ['name' => '魔女工廠卸妝油 200ml', 'quantity' => 2, 'expected_price' => 480],
+                    ['name' => '保濕修護面膜 10片', 'quantity' => 3, 'expected_price' => 420],
+                ],
+            ],
+            [
+                'status' => 'offered',
+                'title' => '【測試】代購人已報價請託單-美國保健品',
+                'country' => 'us',
+                'store_name' => 'CVS Pharmacy',
+                'detail_address' => 'Los Angeles, CA',
+                'deadline' => $scenarioBaseDate->copy()->addDays(12),
+                'note' => '測試用已報價：應有 2～4 位代購人報價，尚未選定代購人。',
+                'quote_count' => min(4, $agentPool->count()),
+                'accepted_quote_index' => null,
+                'items' => [
+                    ['name' => 'Move Free 益節葡萄糖胺', 'quantity' => 2, 'expected_price' => 1250],
+                    ['name' => 'Nature Made 魚油膠囊', 'quantity' => 1, 'expected_price' => 680],
+                ],
+            ],
+            [
+                'status' => 'matched',
+                'title' => '【測試】已確認代購人請託單-英國紅茶',
+                'country' => 'gb',
+                'store_name' => 'Fortnum & Mason',
+                'detail_address' => '181 Piccadilly, London',
+                'deadline' => $scenarioBaseDate->copy()->addDays(8),
+                'note' => '測試用已確認代購人：請購人已接受報價，但尚未結帳。',
+                'quote_count' => min(3, $agentPool->count()),
+                'accepted_quote_index' => 0,
+                'items' => [
+                    ['name' => '皇家伯爵茶 250g', 'quantity' => 2, 'expected_price' => 760],
+                    ['name' => '經典餅乾禮盒', 'quantity' => 1, 'expected_price' => 980],
+                ],
+            ],
+            [
+                'status' => 'wait-for-ship',
+                'title' => '【測試】等待出貨請託單-日本伴手禮',
+                'country' => 'jp',
+                'store_name' => '東京車站一番街',
+                'detail_address' => '東京都千代田區丸之內',
+                'deadline' => $scenarioBaseDate->copy()->addDays(6),
+                'note' => '測試用等待出貨：請購人已結帳，代購人可以出貨。',
+                'quote_count' => min(2, $agentPool->count()),
+                'accepted_quote_index' => 0,
+                'items' => [
+                    ['name' => 'NY Perfect Cheese 起司捲', 'quantity' => 2, 'expected_price' => 620],
+                    ['name' => '東京香蕉蛋糕 12入', 'quantity' => 1, 'expected_price' => 520],
+                ],
+            ],
+            [
+                'status' => 'shipped',
+                'title' => '【測試】商品已出貨請託單-韓國專輯',
+                'country' => 'kr',
+                'store_name' => '弘大 K-POP 專賣店',
+                'detail_address' => '首爾市麻浦區西橋洞',
+                'deadline' => $scenarioBaseDate->copy()->addDays(5),
+                'note' => '測試用已出貨：代購人已標記商品出貨。',
+                'quote_count' => min(2, $agentPool->count()),
+                'accepted_quote_index' => 0,
+                'accepted_quote_status' => 'shipped',
+                'items' => [
+                    ['name' => 'K-POP 官方專輯限定版', 'quantity' => 2, 'expected_price' => 650],
+                    ['name' => '官方應援手燈', 'quantity' => 1, 'expected_price' => 1800],
+                ],
+            ],
+            [
+                'status' => 'arrivaled',
+                'title' => '【測試】商品已到貨請託單-美國零食',
+                'country' => 'us',
+                'store_name' => 'Trader Joe\'s',
+                'detail_address' => 'New York, NY',
+                'deadline' => $scenarioBaseDate->copy()->addDays(4),
+                'note' => '測試用已到貨：代購人已標記到貨，等待請購人確認完成。',
+                'quote_count' => min(2, $agentPool->count()),
+                'accepted_quote_index' => 0,
+                'accepted_quote_status' => 'arrivaled',
+                'items' => [
+                    ['name' => 'Trader Joe\'s 帆布托特包', 'quantity' => 1, 'expected_price' => 450],
+                    ['name' => '花生醬夾心餅乾', 'quantity' => 3, 'expected_price' => 220],
+                ],
+            ],
+            [
+                'status' => 'expired',
+                'title' => '【測試】已過期請託單-日本零食',
+                'country' => 'jp',
+                'store_name' => '日本便利商店',
+                'detail_address' => '東京市區',
+                'deadline' => $scenarioBaseDate->copy()->subDays(2),
+                'note' => '測試用已過期：截止日已過，狀態為 expired。',
+                'items' => [
+                    ['name' => 'Calbee 薯條三兄弟', 'quantity' => 4, 'expected_price' => 180],
+                    ['name' => 'Pure 鮮果實軟糖', 'quantity' => 2, 'expected_price' => 150],
+                ],
+            ],
+        ];
+
+        foreach ($scenarios as $index => $scenario) {
+            $requestList = $this->createRequestListScenario($buyer, $scenario, $index);
+            $items = $requestList->items()->get();
+
+            if (! empty($scenario['quote_count'])) {
+                $this->createQuotesForScenario(
+                    requestList: $requestList,
+                    items: $items,
+                    agents: $agentPool,
+                    quoteCount: (int) $scenario['quote_count'],
+                    acceptedQuoteIndex: $scenario['accepted_quote_index'],
+                    acceptedQuoteStatus: $scenario['accepted_quote_status'] ?? 'accepted',
+                );
+            }
+        }
+
+        $this->command->info('成功建立測試員請託單情境！');
+        return $buyer;
+    }
+
+    /**
+     * ==========================================
+     * 2. 建立隨機情境 (適用於大廳與所有使用者)
+     * ==========================================
+     */
+    private function generateRandomRequests(?int $excludeBuyerId = null): void
+    {
+        // 抓取所有模擬的使用者，並排除前述的測試員及 ID=1 的管理員
+        $query = User::where('id', '>', 1);
+        if ($excludeBuyerId) {
+            $query->where('id', '!=', $excludeBuyerId);
+        }
+        $users = $query->get();
 
         if ($users->isEmpty()) {
-            $this->command->error("找不到使用者，請確認之前的 Seeder 是否已執行。");
+            $this->command->error("找不到其他使用者，請確認之前的 Seeder 是否已執行。");
             return;
         }
 
-        // 🎯 2. 準備超豐富的多國隨機情境池與商品庫
         $countryPool = [
             'jp' => [
                 'titles' => ['想買日本藥妝與動漫周邊', '東京限定零食伴手禮代購', '日本連鎖藥妝店許願清單', '秋葉原限定動漫模型'],
@@ -44,12 +243,6 @@ class RequestListSeeder extends Seeder
                 'stores' => ['Harrods 百貨', 'Fortnum & Mason 總店', 'Burberry 倫敦旗艦店', 'Jo Malone 專櫃'],
                 'addresses' => ['倫敦騎士橋', '倫敦皮卡迪利街', '倫敦攝政街', '曼徹斯特市中心'],
                 'item_bank' => ['Fortnum & Mason 皇家紅茶', 'Jo Malone 英國梨與小蒼蘭香水', 'Dr. Martens 1461 三孔馬汀鞋', 'Burberry 經典格紋圍巾', 'Dyson 國際電壓美髮梳', '劍橋包經典皮革款']
-            ],
-            'th' => [
-                'titles' => ['泰國曼谷熱門零食與香氛', '泰國設計師精品包包', '恰圖恰市集好物許願', '泰式傳統香料連線'],
-                'stores' => ['恰圖恰週末市集', 'Big C 總店', 'Central World 商場', '建興酒家周邊伴手禮店'],
-                'addresses' => ['曼谷帕歌區帕混育清路', '曼谷巴吞旺區紅十字路', '曼谷孔堤區', '清邁古城區'],
-                'item_bank' => ['Bento 超辣魷魚片', '小老闆海苔巨無霸包', 'Counterpain 酸痛軟膏', '泰國皇家蜂蜜', '手標牌泰式奶茶粉', '絲綢刺繡抱枕', '香氛精油擴香組']
             ]
         ];
 
@@ -62,22 +255,16 @@ class RequestListSeeder extends Seeder
             '只要是正品就行，非常急需！'
         ];
 
-        // 3. 遍歷每個人發出需求單
         foreach ($users as $user) {
-            // 隨機選一個國家代碼 (jp, kr, us, gb, th)
             $randomCountryCode = array_rand($countryPool);
             $scenario = $countryPool[$randomCountryCode];
 
-            // 從該國家各自隨機抽題
             $randomTitle = $scenario['titles'][array_rand($scenario['titles'])];
             $randomStore = $scenario['stores'][array_rand($scenario['stores'])];
             $randomAddress = $scenario['addresses'][array_rand($scenario['addresses'])];
             $randomNote = $notesPool[array_rand($notesPool)];
-
-            // 隨機決定截止日期（從 2 天後的超急單，到 25 天後的寬裕單）
             $randomDeadline = Carbon::now()->addDays(rand(2, 25));
 
-            // 建立需求單主檔 (先給 budget_total = 0，稍後計算)
             $requestList = RequestList::create([
                 'user_id'        => $user->id,
                 'title'          => $randomTitle,
@@ -91,37 +278,134 @@ class RequestListSeeder extends Seeder
                 'currency'       => 'TWD',
             ]);
 
-            // 🎯 4. 動態建立隨機個數的商品項目（隨機挑選 1 ~ 3 樣不重複商品）
             $totalBudget = 0;
-            $itemCount = rand(1, 3); // 每單隨機 1 ~ 3 樣商品
+            $itemCount = rand(1, 3);
             $shuffledItems = $scenario['item_bank'];
-            shuffle($shuffledItems); // 打亂該國商品庫
+            shuffle($shuffledItems);
             
-            $selectedItems = array_slice($shuffledItems, 0, $itemCount); // 切出隨機數量的商品
+            $selectedItems = array_slice($shuffledItems, 0, $itemCount);
 
             foreach ($selectedItems as $itemName) {
-                $qty = rand(1, 5); // 隨機數量 1 ~ 5
-                
-                // 假設你的 RequestItem 資料表有單價或價格欄位（例如價格單價 price）
-                // 這裡我們隨機產出一個合情合理的單價
+                $qty = rand(1, 5);
                 $unitPrice = rand(150, 2500); 
                 $itemSubtotal = $unitPrice * $qty;
                 $totalBudget += $itemSubtotal;
 
+                // 配合固定情境的資料表設計，使用 expected_price
                 $requestList->items()->create([
-                    'name'     => $itemName,
-                    'quantity' => $qty,
-                    // 'price' => $unitPrice, // 👈 如果你的項目表有單價欄位可以取消註解這行
+                    'name'           => $itemName,
+                    'quantity'       => $qty,
+                    'expected_price' => $unitPrice,
                 ]);
             }
 
-            // 🎯 5. 計算完所有隨機商品的總價後，回填更新主表的預算總額
-            // 如果你的系統目前沒有強制算總價，這裡就純粹塞一個隨機總預算數值
             $requestList->update([
                 'budget_total' => $totalBudget > 0 ? $totalBudget : rand(500, 8000)
             ]);
         }
 
         $this->command->info("成功模擬 " . $users->count() . " 筆完全隨機、跨國、多樣化商品的真實請購單！");
+    }
+
+    /**
+     * ==========================================
+     * 3. Helper Functions (供情境建立使用)
+     * ==========================================
+     */
+    private function deleteExistingScenarioData(User $buyer): void
+    {
+        RequestList::withTrashed()
+            ->where('user_id', $buyer->id)
+            ->where('title', 'like', '【測試】%')
+            ->forceDelete();
+    }
+
+    private function createRequestListScenario(User $buyer, array $scenario, int $index): RequestList
+    {
+        $budgetTotal = collect($scenario['items'])->sum(function (array $item) {
+            return (float) $item['expected_price'] * (int) $item['quantity'];
+        });
+
+        $requestList = RequestList::create([
+            'user_id' => $buyer->id,
+            'title' => $scenario['title'],
+            'country' => $scenario['country'],
+            'store_name' => $scenario['store_name'],
+            'detail_address' => $scenario['detail_address'],
+            'deadline' => $scenario['deadline'],
+            'note' => $scenario['note'],
+            'status' => $scenario['status'],
+            'budget_total' => $budgetTotal,
+            'currency' => 'TWD',
+            'expired_notified_at' => $scenario['status'] === 'expired' ? Carbon::now()->subDay() : null,
+            'created_at' => Carbon::now()->subDays(8 - $index),
+            'updated_at' => Carbon::now()->subDays(max(0, 7 - $index)),
+        ]);
+
+        foreach ($scenario['items'] as $item) {
+            $requestList->items()->create([
+                'name' => $item['name'],
+                'quantity' => $item['quantity'],
+                'expected_price' => $item['expected_price'],
+                'reference_url' => 'https://example.com/test-request/' . $requestList->id,
+                'specification' => 'Seeder 測試資料：' . $scenario['title'],
+            ]);
+        }
+
+        return $requestList;
+    }
+
+    private function createQuotesForScenario(
+        RequestList $requestList,
+        $items,
+        $agents,
+        int $quoteCount,
+        ?int $acceptedQuoteIndex,
+        string $acceptedQuoteStatus,
+    ): void {
+        $selectedAgents = $agents->take($quoteCount)->values();
+        $acceptedQuote = null;
+
+        foreach ($selectedAgents as $quoteIndex => $agent) {
+            $quoteStatus = $acceptedQuoteIndex === $quoteIndex
+                ? $acceptedQuoteStatus
+                : ($acceptedQuoteIndex === null ? 'pending' : 'rejected');
+
+            $quoteTotal = 0;
+            $quote = Quote::create([
+                'request_list_id' => $requestList->id,
+                'user_id' => $agent->id,
+                'price' => 0,
+                'estimated_date' => Carbon::now()->addDays(5 + $quoteIndex),
+                'comment' => "Seeder 測試報價：{$agent->name} 提供第 " . ($quoteIndex + 1) . ' 版報價。',
+                'status' => $quoteStatus,
+                'created_at' => Carbon::now()->subDays(3)->addHours($quoteIndex),
+                'updated_at' => Carbon::now()->subDays(2)->addHours($quoteIndex),
+            ]);
+
+            foreach ($items as $item) {
+                $unitPrice = max(50, (float) ($item->expected_price ?? 300) + ($quoteIndex * 80) + rand(-30, 60));
+                $quoteTotal += $unitPrice * (int) $item->quantity;
+
+                QuoteItem::create([
+                    'quote_id' => $quote->id,
+                    'request_item_id' => $item->id,
+                    'unit_price' => $unitPrice,
+                ]);
+            }
+
+            $quote->update(['price' => $quoteTotal]);
+
+            if ($acceptedQuoteIndex === $quoteIndex) {
+                $acceptedQuote = $quote;
+            }
+        }
+
+        if ($acceptedQuote) {
+            $requestList->update([
+                'people' => $acceptedQuote->user_id,
+                'agent_quote_total' => $acceptedQuote->price,
+            ]);
+        }
     }
 }

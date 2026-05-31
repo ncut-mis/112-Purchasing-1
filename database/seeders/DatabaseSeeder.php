@@ -10,9 +10,9 @@ class DatabaseSeeder extends Seeder
 {
     $this->call([
         // 確保這裡叫 RandomPostSeeder 而不是 PostSeeder[cite: 2, 3]
-        RandomPostSeeder::class, 
-        RequestListSeeder::class,
+        RandomPostSeeder::class,
         AgentApplicationSeeder::class,
+        RequestListSeeder::class,
         people::class,
         AgentPostFavoriteSeeder::class,
         AgentPostOrderSeeder::class,
