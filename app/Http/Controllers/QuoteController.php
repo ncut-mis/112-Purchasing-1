@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\RequestList;
+use App\Models\Logistics;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -24,6 +25,13 @@ class QuoteController extends Controller
         ]);
 
         $requestList = RequestList::findOrFail($validated['request_list_id']);
+
+        if (! $this->hasActiveLogistics()) {
+            return response()->json([
+                'message' => '請先新增並啟用至少一筆物流設定，再送出報價，避免請購人結帳時沒有配送方式可選。',
+                'logistics_url' => route('logistics.index'),
+            ], 422);
+        }
 
         // 防呆：禁止重複報價
         $exists = Quote::where('request_list_id', $requestList->id)
@@ -58,6 +66,14 @@ class QuoteController extends Controller
         $requestList->update(['status' => 'offered']);
 
         return response()->json(['status' => 'success', 'message' => '報價成功，請待案主選定！']);
+    }
+
+
+    private function hasActiveLogistics(): bool
+    {
+        return Logistics::where('user_id', auth()->id())
+            ->where('status', true)
+            ->exists();
     }
 
     // 【新增】2. 查看報價詳細內容 (對應路由: quotes.show)
@@ -210,6 +226,10 @@ class QuoteController extends Controller
 
         if ($quote->status !== 'accepted') {
             return back()->with('error', '只有已接單的報價才能標記出貨。');
+        }
+
+        if ($quote->requestList?->status !== 'wait-for-ship') {
+            return back()->with('error', '請購人尚未完成結帳，暫時不能標記出貨。');
         }
 
         DB::transaction(function () use ($quote) {

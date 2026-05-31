@@ -174,6 +174,9 @@
                                 ->latest()
                                 ->take(6)
                                 ->get();
+                                $hasActiveLogistics = \App\Models\Logistics::where('user_id', Auth::id())
+                                ->where('status', true)
+                                ->exists();
                         @endphp
 
                         <div class="flex justify-between items-center mb-6">
@@ -234,7 +237,7 @@
                                                     @method('DELETE')
                                                     <button type="submit" class="text-[11px] px-3 py-1.5 rounded-lg bg-rose-50 text-rose-600 font-semibold hover:bg-rose-100 transition">刪除</button>
                                                 </form>
-                                                <form method="POST" action="{{ route('agent.posts.submit', $post) }}" onsubmit="return confirm('送出後會顯示在首頁最新代購連線，確定送出？');">
+                                                <form method="POST" action="{{ route('agent.posts.submit', $post) }}" onsubmit="@if($hasActiveLogistics) return confirm('送出後會顯示在首頁最新代購連線，確定送出？'); @else alert('您目前還未設定物流或啟用物流，請至物流設定，設定完物流再按送出。'); return false; @endif">
                                                     @csrf
                                                     @method('PATCH')
                                                     <button type="submit" class="text-[11px] px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition">送出</button>
@@ -928,6 +931,7 @@
                                         $requestList = $quote->requestList;
                                         if (!$requestList) continue;
                                         $firstItem = $requestList->items->first();
+                                        $canShipQuote = $requestList->status === 'wait-for-ship';
                                     @endphp
                                     <div class="rounded-xl border border-emerald-100 bg-emerald-50/40 p-4">
                                         <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -962,14 +966,22 @@
                                                     <span class="agent-chat-badge hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center"
                                                           data-request-list-id="{{ $requestList->id }}"></span>
                                                 </button>
-                                                <form method="POST" action="{{ route('quotes.ship', $quote->id) }}" onsubmit="return confirm('確認將此訂單標記為已出貨？')">
-                                                    @csrf
-                                                    @method('PATCH')
-                                                    <button type="submit"
-                                                        class="inline-flex items-center rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700 transition">
+                                                @if($canShipQuote)
+                                                    <form method="POST" action="{{ route('quotes.ship', $quote->id) }}" onsubmit="return confirm('確認將此訂單標記為已出貨？')">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button type="submit"
+                                                            class="inline-flex items-center rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700 transition">
+                                                            出貨
+                                                        </button>
+                                                    </form>
+                                                @else
+                                                    <button type="button" disabled
+                                                        title="請購人尚未完成結帳，暫時不能出貨"
+                                                        class="inline-flex items-center rounded-lg bg-gray-200 px-3 py-2 text-xs font-bold text-gray-400 cursor-not-allowed">
                                                         出貨
                                                     </button>
-                                                </form>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
@@ -1536,6 +1548,7 @@
                                     });
                                 $productFollowers = collect();
                                 $productOrderedTotals = collect();
+                                $ordersByPostId = collect();
                                 $managedPostIds = $managedPostGroups
                                     ->keys()
                                     ->filter(function ($id) {
@@ -1560,6 +1573,7 @@
                                         ])
                                         ->latest('id')
                                         ->get();
+                                    $ordersByPostId = $relatedOrders->groupBy('source_id');
                                     $shippedPostIds = $relatedOrders
                                         ->where('status', 'shipped')
                                         ->pluck('source_id')
@@ -1571,11 +1585,13 @@
                                         ->flatMap(function ($order) {
                                             return $order->items->map(function ($item) use ($order) {
                                                 return [
+                                                    'order_id' => (int) $order->id,
                                                     'product_id' => (int) $item->product_id,
                                                     'buyer_id' => (int) $order->buyer_id,
-                                                    'buyer_name' => optional($order->buyer)->name ?? '未知會員',
+                                                    'buyer_name' => optional($order->buyer)->name ?? ($order->recipient_data['name'] ?? '未知會員'),
                                                     'quantity' => (int) $item->quantity,
-                                                    'paid_at' => $order->paid_at,
+                                                    'order_status' => $order->status,
+                                                    'is_paid' => $order->status !== 'pending_payment',
                                                 ];
                                             });
                                         })
@@ -1593,14 +1609,21 @@
                                         ->groupBy('product_id')
                                         ->map(function ($rows) {
                                             return $rows
-                                                ->groupBy('buyer_id')
-                                                ->map(function ($buyerRows) {
+                                                ->groupBy('order_id')
+                                                ->map(function ($orderRows) {
+                                                    $firstRow = $orderRows->first();
+
                                                     return [
-                                                        'buyer_id'   => $buyerRows->first()['buyer_id'] ?? 0,
-                                                        'buyer_name' => $buyerRows->first()['buyer_name'] ?? '未知會員',
-                                                        'quantity' => (int) $buyerRows->sum('quantity'),
-                                                        'paid_at' => $buyerRows->first()['paid_at'],
+                                                        'order_id' => $firstRow['order_id'] ?? 0,
+                                                        'buyer_id' => $firstRow['buyer_id'] ?? 0,
+                                                        'buyer_name' => $firstRow['buyer_name'] ?? '未知會員',
+                                                        'quantity' => (int) $orderRows->sum('quantity'),
+                                                        'order_status' => $firstRow['order_status'] ?? null,
+                                                        'is_paid' => (bool) ($firstRow['is_paid'] ?? false),
                                                     ];
+                                                })
+                                                ->sortBy(function ($row) {
+                                                    return ($row['is_paid'] ? '1' : '0') . '|' . $row['buyer_name'] . '|' . $row['order_id'];
                                                 })
                                                 ->values();
                                         });
@@ -1655,6 +1678,12 @@
                                             'completed' => 'bg-gray-100 text-gray-500',
                                             default     => 'bg-emerald-50 text-emerald-600',
                                         };
+                                        $postOrders = $post ? $ordersByPostId->get($post->id, collect()) : collect();
+                                        $hasFollowOrders = $postOrders->isNotEmpty();
+                                        $hasUnpaidFollowOrders = $postOrders->contains(function ($order) {
+                                            return $order->status === 'pending_payment';
+                                        });
+                                        $canShipPost = $postStatus === 'open' && $hasFollowOrders && ! $hasUnpaidFollowOrders;
                                     @endphp
                                     <div class="p-4 bg-blue-50 rounded-xl border border-blue-100 space-y-3" x-data="{ showPostDetails: false }">
                                         <div class="flex flex-wrap items-center justify-between gap-3">
@@ -1679,14 +1708,22 @@
                                                     管理
                                                 </button>
                                                 @if($post->status === 'open')
-                                                <form method="POST" action="{{ route('agent.posts.ship', $post->id) }}" class="inline" onsubmit="return confirm('確定要將此貼文標記為已出貨？')">
-                                                    @csrf
-                                                    @method('PATCH')
-                                                    <button type="submit"
-                                                        class="inline-flex items-center px-3 py-1.5 text-xs font-bold text-white bg-emerald-500 border border-emerald-500 rounded-lg hover:bg-emerald-600 transition">
-                                                        出貨
-                                                    </button>
-                                                </form>
+                                                @if($canShipPost)
+                                                        <form method="POST" action="{{ route('agent.posts.ship', $post->id) }}" class="inline" onsubmit="return confirm('確定要將此貼文標記為已出貨？')">
+                                                            @csrf
+                                                            @method('PATCH')
+                                                            <button type="submit"
+                                                                class="inline-flex items-center px-3 py-1.5 text-xs font-bold text-white bg-emerald-500 border border-emerald-500 rounded-lg hover:bg-emerald-600 transition">
+                                                                出貨
+                                                            </button>
+                                                        </form>
+                                                    @else
+                                                        <button type="button" disabled
+                                                            title="{{ ! $hasFollowOrders ? '目前尚無請購人跟單，不能出貨' : '仍有請購人尚未完成結帳，暫時不能出貨' }}"
+                                                            class="inline-flex items-center px-3 py-1.5 text-xs font-bold text-gray-400 bg-gray-200 border border-gray-200 rounded-lg cursor-not-allowed">
+                                                            出貨
+                                                        </button>
+                                                    @endif
                                                 @endif
                                             </div>
                                         </div>
@@ -1737,7 +1774,7 @@
                                                                 @forelse($followers as $follower)
                                                                     <div class="mb-1 flex items-center gap-2">
                                                                         <span>{{ $follower['buyer_name'] }}：{{ $follower['quantity'] }} 件</span>
-                                                                        @if(!empty($follower['paid_at']))
+                                                                        @if(!empty($follower['is_paid']))
                                                                             <span class="inline-flex items-center rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5 text-[10px] font-bold">已付款</span>
                                                                         @else
                                                                             <span class="inline-flex items-center rounded-full bg-red-50 text-red-500 px-2 py-0.5 text-[10px] font-bold">未付款</span>
@@ -1771,31 +1808,25 @@
                                                             <p class="font-bold text-gray-800 mb-3 text-sm">{{ $product->name }}</p>
                                                             <div class="space-y-2">
                                                                 @foreach($mFollowers as $follower)
-                                                                    @php
-                                                                        $followerOrder = \App\Models\Order::where('seller_id', Auth::id())
-                                                                            ->where('source_id', $post->id)
-                                                                            ->where('buyer_id', $follower['buyer_id'] ?? 0)
-                                                                            ->where('status', 'pending_payment')
-                                                                            ->first();
-                                                                    @endphp
+                                                                    
                                                                     <div class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-2">
                                                                         <div class="flex items-center gap-3">
                                                                             <span class="text-sm text-gray-800">{{ $follower['buyer_name'] }}</span>
                                                                             <span class="text-xs text-gray-500">{{ $follower['quantity'] }} 件</span>
-                                                                            @if(!empty($follower['paid_at']))
+                                                                            @if(!empty($follower['is_paid']))
                                                                                 <span class="text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5">已付款</span>
                                                                             @else
                                                                                 <span class="text-[10px] font-bold rounded-full bg-red-50 text-red-500 px-2 py-0.5">未付款</span>
                                                                             @endif
                                                                         </div>
-                                                                        @if($followerOrder && empty($follower['paid_at']))
-                                                                            <form method="POST" action="{{ route('agent.orders.cancel', $followerOrder->id) }}"
+                                                                        @if(!empty($follower['order_id']) && empty($follower['is_paid']))
+                                                                            <form method="POST" action="{{ route('agent.orders.cancel', $follower['order_id']) }}"
                                                                                   onsubmit="return confirm('確定要取消 {{ $follower['buyer_name'] }} 的訂單？數量將會回補。')">
                                                                                 @csrf
                                                                                 @method('DELETE')
                                                                                 <button type="submit" class="text-xs text-red-500 hover:text-red-700 font-semibold">取消訂單</button>
                                                                             </form>
-                                                                        @elseif(!empty($follower['paid_at']))
+                                                                        @elseif(!empty($follower['is_paid']))
                                                                             <span class="text-xs text-gray-400">已付款不可取消</span>
                                                                         @endif
                                                                     </div>
@@ -1920,7 +1951,7 @@
                                                                     <div class="flex items-center gap-2 py-0.5">
                                                                         <span>{{ $follower['buyer_name'] }}</span>
                                                                         <span class="text-gray-400">{{ $follower['quantity'] }} 件</span>
-                                                                        @if(!empty($follower['paid_at']))
+                                                                        @if(!empty($follower['is_paid']))
                                                                             <span class="inline-flex items-center rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5 text-[10px] font-bold">已付款</span>
                                                                         @else
                                                                             <span class="inline-flex items-center rounded-full bg-red-50 text-red-500 px-2 py-0.5 text-[10px] font-bold">未付款</span>

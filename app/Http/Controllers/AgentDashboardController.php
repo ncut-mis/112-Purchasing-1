@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Favorite;
+use App\Models\Logistics;
 
 class AgentDashboardController extends Controller
 {
@@ -77,6 +78,10 @@ class AgentDashboardController extends Controller
                 ->all()
             : [];
 
+        $hasActiveLogistics = Auth::check()
+            ? Logistics::where('user_id', Auth::id())->where('status', true)->exists()
+            : false;
+
         // 6. 回傳視圖
         return view('agent.dashboard', [
             'requests' => $requests,
@@ -86,6 +91,7 @@ class AgentDashboardController extends Controller
             'selectedTime' => $selectedTime,
             'keyword' => $keyword,
             'searchBuyerId' => $searchBuyerId, // 💡 傳給前端，未來如果想做「清除篩選」按鈕可以用
+            'hasActiveLogistics' => $hasActiveLogistics,
         ]);
     }
 }
