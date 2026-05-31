@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AgentPost;
 use App\Models\PostProduct;
 use App\Models\Favorite;
+use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -140,21 +141,22 @@ class AgentPostController extends Controller
         return redirect()->route('agent.member')->with('status', '代購貼文已送出並上架！');
     }
 
-    // 出貨：將 orders 狀態改為 shipped
+    // 出貨：將已付款等待出貨的跟團訂單狀態改為 shipped
     public function ship(AgentPost $agentPost)
     {
         abort_unless($agentPost->user_id === Auth::id(), 403);
 
-        \App\Models\Order::where('seller_id', Auth::id())
-            ->where('source_id', $agentPost->id)
-            ->where('source_type', \App\Models\AgentPost::class)
-            ->where('status', 'pending_payment')
-            ->update(['status' => 'shipped']);
-        
-        $agentPost->update([
-            'status' => 'shipped',
-        ]);
+        DB::transaction(function () use ($agentPost) {
+            Order::where('seller_id', Auth::id())
+                ->where('source_id', $agentPost->id)
+                ->where('source_type', AgentPost::class)
+                ->where('status', 'wait-for-ship')
+                ->update(['status' => 'shipped']);
 
+            $agentPost->update([
+                'status' => 'shipped',
+            ]);
+        });
         return redirect()->route('agent.member')->with('status', '已標記為已出貨！');
     }
 

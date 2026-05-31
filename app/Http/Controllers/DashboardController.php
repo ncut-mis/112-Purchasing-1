@@ -7,7 +7,6 @@ use App\Models\Message;
 use App\Models\Order;
 use App\Models\RequestList;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -127,11 +126,7 @@ class DashboardController extends Controller
             ->get();
 
         // --- 6. 跟單/訂單 (Orders) 邏輯 ---
-        $followOrders = new LengthAwarePaginator([], 0, 9, (int) $request->query('follow_page', 1), [
-            'path' => $request->url(),
-            'query' => $request->query(),
-            'pageName' => 'follow_page',
-        ]);
+        $followOrders = collect();
 
         if (in_array($currentSection, ['follow-orders', 'history-records'], true) && Schema::hasTable('orders')) {
             $followOrdersQuery = Order::with(['seller', 'items', 'source'])
@@ -153,7 +148,7 @@ class DashboardController extends Controller
             }
 
             if ($currentSection === 'follow-orders') {
-                $followOrders = $followOrdersQuery->latest()->paginate(9, ['*'], 'follow_page');
+               $followOrders = $followOrdersQuery->latest()->get();
             }
         }
 
@@ -256,16 +251,28 @@ class DashboardController extends Controller
 
 
         // --- 8. 統計數據 (關鍵修正區塊) ---
+
+        $ongoingFollowOrderStatuses = ['pending_payment', 'wait-for-ship', 'shipped', 'arrivaled'];
+        $followOrderStatusCounts = Schema::hasTable('orders')
+            ? Order::where('buyer_id', $user->id)
+                ->whereIn('status', $ongoingFollowOrderStatuses)
+                ->select('status', DB::raw('count(*) as aggregate'))
+                ->groupBy('status')
+                ->pluck('aggregate', 'status')
+            : collect();
+
+        $ongoingFollowOrderCount = collect($ongoingFollowOrderStatuses)
+            ->sum(fn ($status) => (int) ($followOrderStatusCounts[$status] ?? 0));
+
+
         $stats = [
             // 進行中的請託：尚未完成、尚未過期都算進行中
             'ongoing_requests' => RequestList::where('user_id', $user->id)
                 ->whereNotIn('status', ['completed', 'expired'])
                 ->count(),
 
-            // 進行中的跟團：未付款 + 待出貨 + 已到貨
-            'ongoing_follow_orders' => Order::where('buyer_id', $user->id)
-                ->whereIn('status', ['pending_payment', 'wait-for-ship', 'shipped', 'arrivaled'])
-                ->count(),
+           // 進行中的跟團：未付款 + 待出貨 + 已出貨 + 已到貨
+            'ongoing_follow_orders' => $ongoingFollowOrderCount,
             
             // 修正點：徹底移除 request_list_id 的過濾與 exists 子查詢
             // 系統報錯是因為 messages 表沒有 request_list_id 欄位

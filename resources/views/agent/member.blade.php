@@ -201,7 +201,7 @@
                                     </div>
                                     <div class="flex-1 min-w-0">
                                         <h6 class="font-bold text-gray-800 text-sm truncate">【{{ $post->country }}】{{ $post->title }}</h6>
-                                        <p class="text-[10px] text-gray-400">銷售期間: {{ optional($post->start_date)->format('Y-m-d') }} ~ {{ optional($post->end_date)->format('Y-m-d') }}</p>
+                                        <p class="text-[10px] text-gray-400">預計代購時段: {{ optional($post->start_date)->format('Y-m-d') }} ~ {{ optional($post->end_date)->format('Y-m-d') }}</p>
                                         <div class="mt-2 flex gap-2 flex-wrap">
                                             <span class="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded">{{ $post->products_count }} 項商品</span>
                                              @php
@@ -257,7 +257,7 @@
                                     <h4 class="text-xl font-bold text-gray-800 mb-2">{{ $post->title }}</h4>
                                     <p class="text-sm text-gray-500 mb-1">國家：{{ $post->country }}</p>
                                      <p class="text-sm text-gray-500 mb-1">狀態：{{ $post->status === 'draft' ? '編輯中' : ($post->status === 'open' ? '進行中' : $post->status) }}</p>
-                                    <p class="text-sm text-gray-500 mb-1">銷售期間：{{ optional($post->start_date)->format('Y-m-d') }} ~ {{ optional($post->end_date)->format('Y-m-d') }}</p>
+                                    <p class="text-sm text-gray-500 mb-1">預計代購時段：{{ optional($post->start_date)->format('Y-m-d') }} ~ {{ optional($post->end_date)->format('Y-m-d') }}</p>
                                     <p class="text-sm text-gray-500 mb-1 whitespace-pre-line">描述訊息：{{ $post->description }}</p>
                                     <div class="mt-6 border-t pt-4">
                                         <h5 class="font-bold text-gray-800 mb-3">商品規格</h5>
@@ -286,7 +286,7 @@
                             <div id="agent-post-edit-modal-{{ $post->id }}" class="agent-post-modal fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4">
                                 <div class="bg-white w-full max-w-4xl rounded-2xl shadow-xl p-6 max-h-[88vh] overflow-y-auto relative">
                                     <button type="button" class="modal-close-btn absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
-                                    <h4 class="text-xl font-bold text-gray-800 mb-4">編輯代購貼文</h4>
+                                    <h4 class="text-xl font-bold text-gray-800 mb-4">編輯代購團</h4>
 
                                     <form method="POST" action="{{ route('agent.posts.update', $post) }}" enctype="multipart/form-data" class="agent-post-edit-form space-y-5" data-max-items="5">
                                         @csrf
@@ -305,13 +305,13 @@
                                                     @endforeach
                                                 </select>
                                             </div>
-                                            <div>
-                                                <label class="block text-sm font-semibold text-gray-700 mb-2">銷售開始日</label>
-                                                <input type="date" name="start_date" value="{{ optional($post->start_date)->format('Y-m-d') }}" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
-                                            </div>
-                                            <div>
-                                                <label class="block text-sm font-semibold text-gray-700 mb-2">銷售結束日</label>
-                                                <input type="date" name="end_date" value="{{ optional($post->end_date)->format('Y-m-d') }}" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+                                            <div class="md:col-span-2">
+                                                 <label class="block text-sm font-semibold text-gray-700 mb-2">預計代購時段</label>
+                                              <div class="flex items-center gap-3">
+                                                   <input type="date" name="start_date" value="{{ optional($post->start_date)->format('Y-m-d') }}" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+                                                   <span class="text-gray-500 font-medium">~</span>
+                                                   <input type="date" name="end_date" value="{{ optional($post->end_date)->format('Y-m-d') }}" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+                                              </div>
                                             </div>
                                         </div>
 
@@ -1461,7 +1461,7 @@
                                         {{ $post->country ? '【'.$post->country.'】' : '' }}{{ $post->title ?? '未命名貼文' }}
                                     </div>
                                     <div class="text-xs text-gray-500 mt-1">
-                                        代購期間：{{ optional($post->start_date)->format('Y/m/d') ?? '-' }} - {{ optional($post->end_date)->format('Y/m/d') ?? '-' }}
+                                        預計代購時段：{{ optional($post->start_date)->format('Y/m/d') ?? '-' }} - {{ optional($post->end_date)->format('Y/m/d') ?? '-' }}
                                         ・ 完成日期：{{ $post->updated_at->format('Y-m-d') }}
                                     </div>
                                 </div>
@@ -1663,7 +1663,7 @@
                                                     {{ optional($post)->country ? '【'.optional($post)->country.'】' : '' }}{{ optional($post)->title ?? '未命名貼文' }}
                                                 </div>
                                                 <div class="text-xs text-gray-500 mt-1">
-                                                    代購期間：{{ optional(optional($post)->start_date)->format('Y/m/d') ?? '-' }} - {{ optional(optional($post)->end_date)->format('Y/m/d') ?? '-' }}
+                                                    預計代購時段：{{ optional(optional($post)->start_date)->format('Y/m/d') ?? '-' }} - {{ optional(optional($post)->end_date)->format('Y/m/d') ?? '-' }}
                                                 </div>
                                             </div>
                                             <div class="flex items-center gap-2 flex-wrap justify-end">
@@ -1847,7 +1847,7 @@
                                                     {{ optional($post)->country ? '【'.optional($post)->country.'】' : '' }}{{ optional($post)->title ?? '未命名貼文' }}
                                                 </div>
                                                 <div class="text-xs text-gray-500 mt-1">
-                                                    代購期間：{{ optional(optional($post)->start_date)->format('Y/m/d') ?? '-' }} - {{ optional(optional($post)->end_date)->format('Y/m/d') ?? '-' }}
+                                                    預計代購時段：{{ optional(optional($post)->start_date)->format('Y/m/d') ?? '-' }} - {{ optional(optional($post)->end_date)->format('Y/m/d') ?? '-' }}
                                                 </div>
                                             </div>
                                             <div class="flex items-center gap-2 flex-wrap justify-end">

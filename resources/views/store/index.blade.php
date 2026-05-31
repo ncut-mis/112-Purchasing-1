@@ -353,7 +353,7 @@
                                         <input type="text" class="form-control custom-input" value="{{ $post->user->name ?? '系統匹配' }}" readonly>
                                     </div>
                                     <div class="col-lg-4 col-md-6 d-flex align-items-center">
-                                        <span class="text-nowrap me-2 fw-bold text-muted">銷售期間：</span>
+                                        <span class="text-nowrap me-2 fw-bold text-muted">預計代購時段：</span>
                                         <input type="text" class="form-control custom-input" 
                                                value="{{ \Carbon\Carbon::parse($post->start_date)->format('Y-m-d') }} ~ {{ \Carbon\Carbon::parse($post->end_date)->format('Y-m-d') }}" 
                                                readonly>

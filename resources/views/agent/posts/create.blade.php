@@ -60,15 +60,13 @@
                         </select>
                     </div>
 
-                    <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">銷售開始日</label>
-                            <input type="date" name="start_date" value="{{ old('start_date') }}" class="w-full rounded-xl border-2 border-blue-500 focus:border-blue-500 focus:ring-blue-500" required>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">銷售結束日</label>
-                            <input type="date" name="end_date" value="{{ old('end_date') }}" class="w-full rounded-xl border-2 border-blue-500 focus:border-blue-500 focus:ring-blue-500" required>
-                        </div>
+                    <div class="md:col-span-2">
+                         <label class="block text-sm font-semibold text-gray-700 mb-2">預計代購時段</label>
+                      <div class="flex items-center gap-3">
+                           <input type="date" name="start_date" value="{{ old('start_date') }}" class="w-full rounded-xl border-2 border-blue-500 focus:border-blue-500 focus:ring-blue-500" required>
+                           <span class="text-gray-500 font-medium">~</span>
+                           <input type="date" name="end_date" value="{{ old('end_date') }}" class="w-full rounded-xl border-2 border-blue-500 focus:border-blue-500 focus:ring-blue-500" required>
+                      </div>
                     </div>
                 </div>
 
