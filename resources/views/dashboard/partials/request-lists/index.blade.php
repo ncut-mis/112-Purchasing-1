@@ -30,9 +30,9 @@
                                 <h3 class="text-lg font-bold text-gray-800">目前請託單</h3>
                                 <button type="button" onclick="openExpiredNoticeModal()" class="relative inline-flex items-center rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700 hover:bg-sky-200 transition">
                                     系統通知
-                                    @if(!empty($hasUnreadExpiredNotice) && $hasUnreadExpiredNotice)
+                                    @if(!empty($hasUnreadSystemNotice) && $hasUnreadSystemNotice)
                                         <span id="expired-notice-unread-dot" class="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] leading-[18px] text-center font-bold">
-                                            {{ (int) ($unreadExpiredNoticeCount ?? 0) }}
+                                            {{ (int) ($unreadSystemNoticeCount ?? 0) }}
                                         </span>
                                     @endif
                                 </button>
@@ -69,25 +69,66 @@
                                     <h4 class="text-lg font-bold">系統通知</h4>
                                     <button type="button" class="text-2xl leading-none" onclick="closeExpiredNoticeModal()">&times;</button>
                                 </div>
-                             <div id="expired-notice-list" class="max-h-[70vh] overflow-y-auto p-5 space-y-3">
-                                    @forelse(($expiredNotices ?? collect()) as $notice)
-                                       <div class="expired-notice-card rounded-xl border border-sky-100 bg-sky-50 p-4 text-sm text-slate-700 flex items-start justify-between gap-3" data-request-list-id="{{ $notice->id }}">
-                                            <p class="leading-6">
-                                                您於{{ optional($notice->created_at)->format('Y年m月d日') }}所建立的標題為「{{ $notice->title }}」之請託單因截止日到前未有代購人報價因此該請託單已自動丟入歷史紀錄並標記為已過期。
-                                            </p>
-                                            <button
-                                                type="button"
-                                                class="flex-shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 bg-white text-rose-500 hover:bg-rose-50 transition"
-                                                title="移除此通知"
-                                                aria-label="移除此通知"
-                                                onclick="openExpiredNoticeRemoveModal(this)"
-                                            >
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </div>
-                                    @empty
+                             <div id="expired-notice-list" class="max-h-[70vh] overflow-y-auto p-5 space-y-5">
+                                    @if(($expiredNotices ?? collect())->isNotEmpty())
+                                        <section class="space-y-3" aria-label="過期請託單通知">
+                                            <div class="flex items-center gap-2 text-sm font-bold text-sky-700">
+                                                <span class="inline-flex rounded-full bg-sky-100 px-3 py-1">過期請託單通知</span>
+                                                <span class="text-xs font-medium text-slate-400">{{ ($expiredNotices ?? collect())->count() }} 則</span>
+                                            </div>
+                                            @foreach(($expiredNotices ?? collect()) as $notice)
+                                               <div class="expired-notice-card rounded-xl border border-sky-100 bg-sky-50 p-4 text-sm text-slate-700 flex items-start justify-between gap-3" data-request-list-id="{{ $notice->id }}" data-notice-type="expired">
+                                                    <div class="space-y-2">
+                                                        <span class="inline-flex rounded-full bg-white px-2.5 py-1 text-xs font-bold text-sky-700 ring-1 ring-sky-100">過期請託單通知</span>
+                                                        <p class="leading-6">
+                                                            您於{{ optional($notice->created_at)->format('Y年n月j日') }}所建立的標題為「{{ $notice->title }}」之請託單因截止日到前未有代購人報價因此該請託單已自動丟入歷史紀錄並標記為已過期。
+                                                        </p>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        class="flex-shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 bg-white text-rose-500 hover:bg-rose-50 transition"
+                                                        title="移除此通知"
+                                                        aria-label="移除此通知"
+                                                        onclick="openExpiredNoticeRemoveModal(this)"
+                                                    >
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            @endforeach
+                                        </section>
+                                    @endif
+
+                                    @if(($violationNotices ?? collect())->isNotEmpty())
+                                        <section class="space-y-3" aria-label="違規請託單通知">
+                                            <div class="flex items-center gap-2 text-sm font-bold text-rose-700">
+                                                <span class="inline-flex rounded-full bg-rose-100 px-3 py-1">違規請託單通知</span>
+                                                <span class="text-xs font-medium text-slate-400">{{ ($violationNotices ?? collect())->count() }} 則</span>
+                                            </div>
+                                            @foreach(($violationNotices ?? collect()) as $notice)
+                                               <div class="expired-notice-card rounded-xl border border-rose-100 bg-rose-50 p-4 text-sm text-slate-700 flex items-start justify-between gap-3" data-request-list-id="{{ $notice->id }}" data-notice-type="violation">
+                                                    <div class="space-y-2">
+                                                        <span class="inline-flex rounded-full bg-white px-2.5 py-1 text-xs font-bold text-rose-700 ring-1 ring-rose-100">違規請託單通知</span>
+                                                        <p class="leading-6">
+                                                            您於{{ optional($notice->created_at)->format('Y年n月j日') }}所建立的標題為「{{ $notice->title }}」之請託單因被檢舉並審核確認為違規內容因此該請託單已被移除，請留意不要張貼違規的內容。
+                                                        </p>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        class="flex-shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 bg-white text-rose-500 hover:bg-rose-50 transition"
+                                                        title="移除此通知"
+                                                        aria-label="移除此通知"
+                                                        onclick="openExpiredNoticeRemoveModal(this)"
+                                                    >
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            @endforeach
+                                        </section>
+                                    @endif
+
+                                    @if(($expiredNotices ?? collect())->isEmpty() && ($violationNotices ?? collect())->isEmpty())
                                         <div id="expired-notice-empty" class="text-sm text-gray-500">目前沒有系統通知。</div>
-                                    @endforelse
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -1015,12 +1056,15 @@
                 },
                 body: JSON.stringify({}),
             })
-                .then((response) => {
+              .then((response) => {
                     if (!response.ok) throw new Error('remove failed');
 
+                    const noticeSection = expiredNoticeCardToRemove.closest('section');
                     expiredNoticeCardToRemove.remove();
+                    if (noticeSection && !noticeSection.querySelector('.expired-notice-card')) {
+                        noticeSection.remove();
+                    }
                     closeExpiredNoticeRemoveModal();
-
                     const list = document.getElementById('expired-notice-list');
                     const hasCards = list && list.querySelector('.expired-notice-card');
                     if (!hasCards && list) {

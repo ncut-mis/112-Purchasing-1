@@ -53,6 +53,14 @@ class DashboardController extends Controller
             ->limit(20)
             ->get();
 
+        $violationNotices = RequestList::withTrashed()
+            ->where('user_id', $user->id)
+            ->whereNotNull('violation_notified_at')
+            ->whereNull('violation_notice_removed_at')
+            ->latest('violation_notified_at')
+            ->limit(20)
+            ->get();
+
         $unreadExpiredNoticeCount = RequestList::where('user_id', $user->id)
             ->where('status', 'expired')
             ->whereNotNull('expired_notified_at')
@@ -60,7 +68,16 @@ class DashboardController extends Controller
             ->whereNull('expired_notice_read_at')
             ->count();
 
-        $hasUnreadExpiredNotice = $unreadExpiredNoticeCount > 0;
+        $unreadViolationNoticeCount = RequestList::withTrashed()
+            ->where('user_id', $user->id)
+            ->whereNotNull('violation_notified_at')
+            ->whereNull('violation_notice_removed_at')
+            ->whereNull('violation_notice_read_at')
+            ->count();
+
+        $unreadSystemNoticeCount = $unreadExpiredNoticeCount + $unreadViolationNoticeCount;
+        $hasUnreadSystemNotice = $unreadSystemNoticeCount > 0;
+        $hasUnreadExpiredNotice = $hasUnreadSystemNotice;
 
 
         // --- 1. 獲取使用者收藏的 ID 陣列 ---
@@ -304,8 +321,12 @@ class DashboardController extends Controller
             'historyRecords',
             'currentHistoryType',
             'expiredNotices',
+            'violationNotices',
             'hasUnreadExpiredNotice',
+            'hasUnreadSystemNotice',
             'unreadExpiredNoticeCount',
+            'unreadViolationNoticeCount',
+            'unreadSystemNoticeCount',
             'offers', 
             'followings'
         ));
@@ -332,7 +353,7 @@ class DashboardController extends Controller
         ]);
     }
 
- public function markExpiredNoticeRead(Request $request)
+public function markExpiredNoticeRead(Request $request)
     {
         $user = Auth::user();
         if (! $user) {
@@ -345,26 +366,43 @@ class DashboardController extends Controller
             ->whereNull('expired_notice_read_at')
             ->update(['expired_notice_read_at' => now()]);
 
+        RequestList::withTrashed()
+            ->where('user_id', $user->id)
+            ->whereNotNull('violation_notified_at')
+            ->whereNull('violation_notice_read_at')
+            ->update(['violation_notice_read_at' => now()]);
+
         return response()->json(['status' => 'success']);
     }
-public function removeExpiredNotice(RequestList $requestList)
+
+    public function removeExpiredNotice(int $requestList)
     {
         $user = Auth::user();
         if (! $user) {
             return response()->json(['status' => 'unauthorized'], 401);
         }
 
+        $requestList = RequestList::withTrashed()->findOrFail($requestList);
+
         if ((int) $requestList->user_id !== (int) $user->id) {
             return response()->json(['status' => 'forbidden'], 403);
         }
 
-        if ($requestList->status !== 'expired' || is_null($requestList->expired_notified_at)) {
+        $updates = [];
+
+        if ($requestList->status === 'expired' && ! is_null($requestList->expired_notified_at)) {
+            $updates['expired_notice_removed_at'] = now();
+        }
+
+        if (! is_null($requestList->violation_notified_at)) {
+            $updates['violation_notice_removed_at'] = now();
+        }
+
+        if ($updates === []) {
             return response()->json(['status' => 'invalid_notice'], 422);
         }
 
-        $requestList->update([
-            'expired_notice_removed_at' => now(),
-        ]);
+        $requestList->forceFill($updates)->save();
 
         return response()->json(['status' => 'success']);
     }

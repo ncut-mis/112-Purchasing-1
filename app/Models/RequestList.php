@@ -14,7 +14,7 @@ use App\Models\User;
 
         protected $fillable = [
             'user_id', 'title', 'store_name', 'country', 'deadline',
-           'budget_total', 'currency', 'status', 'expired_notified_at', 'expired_notice_read_at', 'expired_notice_removed_at', 'quote_notice_seen_count', 'detail_address', 'note', 'people', 'time', 'agent_quote_total'
+           'budget_total', 'currency', 'status', 'expired_notified_at', 'expired_notice_read_at', 'expired_notice_removed_at', 'violation_notified_at', 'violation_notice_read_at', 'violation_notice_removed_at', 'quote_notice_seen_count', 'detail_address', 'note', 'people', 'time', 'agent_quote_total'
         ];
 
         protected $casts = [
@@ -22,6 +22,9 @@ use App\Models\User;
             'expired_notified_at' => 'datetime',
             'expired_notice_read_at' => 'datetime',
             'expired_notice_removed_at' => 'datetime',
+            'violation_notified_at' => 'datetime',
+            'violation_notice_read_at' => 'datetime',
+            'violation_notice_removed_at' => 'datetime',
             'quote_notice_seen_count' => 'integer',
         ];
 
