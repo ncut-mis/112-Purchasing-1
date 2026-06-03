@@ -73,7 +73,7 @@ class RequestListController extends Controller
             ]);
         }
 
-        return redirect()->route('dashboard')->with('status', '請購清單建立成功');
+        return redirect()->route('dashboard')->with('status', '請託單建立成功');
     }
 
     public function update(Request $request, RequestList $requestList)
@@ -81,7 +81,7 @@ class RequestListController extends Controller
         abort_unless($requestList->user_id === Auth::id(), 403);
 
         if ($requestList->status !== 'editing') {
-            return redirect()->route('dashboard')->with('status', '僅編輯中的請購清單可修改');
+            return redirect()->route('dashboard')->with('status', '僅編輯中的請託單可修改');
         }
 
          $createdDate = $requestList->created_at
@@ -165,7 +165,7 @@ class RequestListController extends Controller
             ]);
         }
 
-        return redirect()->route('dashboard')->with('status', '請購清單更新成功');
+        return redirect()->route('dashboard')->with('status', '請託單更新成功');
     }
 
 public function submit(RequestList $requestList)
@@ -173,7 +173,7 @@ public function submit(RequestList $requestList)
         abort_unless($requestList->user_id === Auth::id(), 403);
 
         if ($requestList->status !== 'editing') {
-            return redirect()->route('dashboard')->with('status', '僅編輯中的請購清單可送出');
+            return redirect()->route('dashboard')->with('status', '僅編輯中的請託單可送出');
         }
 
         if ($requestList->items()->count() < 1) {
@@ -223,12 +223,12 @@ public function submit(RequestList $requestList)
                 'buyer_id'        => $buyer->id,
                 'request_list_id' => $requestList->id,
                 'title'           => '推薦請購人',
-                'content'         => '發現符合您國家的全新請購清單！',
+                'content'         => '發現符合您國家的全新請託單！',
                 'is_read'         => false,
             ]);
         }
 
-        return redirect()->route('dashboard')->with('status', '請購清單已送出，系統已同步推薦給對應國家的代購人！');
+        return redirect()->route('dashboard')->with('status', '請託單已送出，系統已同步推薦給對應國家的代購人！');
     }
 
 
@@ -237,13 +237,13 @@ public function submit(RequestList $requestList)
         abort_unless($requestList->user_id === Auth::id(), 403);
 
         if ($requestList->status !== 'arrivaled') {
-            return redirect()->route('dashboard')->with('error', '只有商品已到貨的請購清單才能標記為完成');
+            return redirect()->route('dashboard')->with('error', '只有商品已到貨的請託單才能標記為完成');
         }
 
 
         $requestList->update(['status' => 'completed']);
 
-        return redirect()->route('dashboard')->with('status', '請購清單已標記為完成！');
+        return redirect()->route('dashboard')->with('status', '請託單已標記為完成！');
     }
 
     public function destroy(RequestList $requestList)
@@ -253,7 +253,7 @@ public function submit(RequestList $requestList)
         $requestList->items()->delete();
         $requestList->delete();
 
-        return redirect()->route('dashboard')->with('status', '請購清單已刪除！');
+        return redirect()->route('dashboard')->with('status', '請託單已刪除！');
     }
 
     public function image(RequestItem $requestItem)

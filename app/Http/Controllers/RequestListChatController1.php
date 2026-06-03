@@ -77,7 +77,7 @@ class RequestListChatController extends Controller
         $ownerId = (int) $requestList->user_id;
         $agentId = (int) ($requestList->people ?? 0);
 
-        abort_if($agentId < 1, 403, '此請購清單尚未有接單代購人，無法聊天。');
+        abort_if($agentId < 1, 403, '此請託單尚未有接單代購人，無法聊天。');
 
         $isParticipant = in_array($userId, [$ownerId, $agentId], true);
         abort_unless($isParticipant, 403);

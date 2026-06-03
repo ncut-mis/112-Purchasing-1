@@ -15,7 +15,7 @@ class AgentNotification extends Model
         return $this->belongsTo(User::class, 'buyer_id');
     }
 
-    // 關聯請購清單
+    // 關聯請託單
     public function requestList()
     {
         return $this->belongsTo(RequestList::class, 'request_list_id');

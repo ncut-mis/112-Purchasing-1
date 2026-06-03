@@ -526,7 +526,7 @@
                         <div class="modal-dialog modal-dialog-centered">
                             <div class="modal-content border-0 shadow-lg rounded-4">
                                 <div class="modal-header border-0 pb-2">
-                                    <h5 class="modal-title fw-bold text-dark"><i class="bi bi-exclamation-triangle me-2 text-danger"></i>檢舉代購貼文</h5>
+                                    <h5 class="modal-title fw-bold text-dark"><i class="bi bi-exclamation-triangle me-2 text-danger"></i>檢舉代購團</h5>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <form class="store-report-form px-4 pb-4" data-target-type="agent_post" data-target-id="{{ $post->id }}">
@@ -560,7 +560,7 @@
                 @endauth
             @empty
                 <div class="col-12 text-center py-5">
-                    <p class="text-muted">目前沒有符合條件的代購貼文</p>
+                    <p class="text-muted">目前沒有符合條件的代購團</p>
                 </div>
             @endforelse
         </div>

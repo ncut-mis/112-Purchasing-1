@@ -177,7 +177,7 @@
                                 aria-controls="violation-post-pane"
                                 aria-selected="false"
                             >
-                                代購貼文
+                                代購團
                             </button>
                         </li>
                     </ul>
@@ -244,12 +244,12 @@
                         </div>
 
                         <div class="tab-pane fade" id="violation-post-pane" role="tabpanel" aria-labelledby="violation-post-tab" tabindex="0">
-                            <p class="text-muted mb-3">以下為被檢舉違規的代購貼文</p>
+                            <p class="text-muted mb-3">以下為被檢舉違規的代購團</p>
                             <div class="table-responsive">
                                 <table class="table align-middle">
                                     <thead>
                                         <tr>
-                                            <th style="min-width: 200px;">代購貼文</th>
+                                            <th style="min-width: 200px;">代購團</th>
                                             <th>檢舉人</th>
                                             <th>檢舉違規類型</th>
                                             <th style="min-width: 260px;">檢舉原因</th>
@@ -295,7 +295,7 @@
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="7" class="text-center text-muted py-4">目前沒有代購貼文檢舉資料</td>
+                                                <td colspan="7" class="text-center text-muted py-4">目前沒有代購團檢舉資料</td>
                                             </tr>
                                         @endforelse
                                     </tbody>
@@ -453,7 +453,7 @@
                             aria-expanded="false"
                             aria-controls="{{ $detailCollapseId }}"
                         >
-                            展開詳細檢舉代購貼文內容
+                            展開詳細檢舉代購團內容
                         </button>
 
                         <div class="collapse" id="{{ $detailCollapseId }}">
@@ -500,7 +500,7 @@
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="4" class="text-muted text-center">此代購貼文尚無商品資料</td>
+                                                    <td colspan="4" class="text-muted text-center">此代購團尚無商品資料</td>
                                                 </tr>
                                             @endforelse
                                         </tbody>

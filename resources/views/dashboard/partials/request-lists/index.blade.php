@@ -327,7 +327,7 @@
                                                     @elseif($requestList->status === 'editing')
                                                          <button type="button" class="text-blue-500 hover:underline whitespace-nowrap" onclick="openEditModal({{ $requestList->id }})">編輯</button>
 
-                                                        <form method="POST" action="{{ route('request-list.destroy', $requestList) }}" onsubmit="return confirm('確定要刪除此請購清單嗎？');">
+                                                        <form method="POST" action="{{ route('request-list.destroy', $requestList) }}" onsubmit="return confirm('確定要刪除此請託單嗎？');">
                                                             @csrf
                                                             @method('DELETE')
                                                             <button type="submit" class="text-red-500 hover:underline whitespace-nowrap">刪除</button>
@@ -364,7 +364,7 @@
                                         <tr>
                                             <td colspan="6" class="py-6 text-center text-gray-400">
                                                 @if(request('request_search'))
-                                                    沒有找到「{{ request('request_search') }}」相關的請購清單
+                                                    沒有找到「{{ request('request_search') }}」相關的請託單
                                                 @else
                                                     目前尚未建立請託單
                                                 @endif
@@ -632,7 +632,7 @@
                                     <div class="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
                                         <div class="flex items-start justify-between gap-3 border-b border-orange-100 bg-orange-500 px-5 py-4 text-white">
                                             <div>
-                                                <p class="text-sm font-medium text-orange-100">請購清單截止倒數</p>
+                                                <p class="text-sm font-medium text-orange-100">請託單截止倒數</p>
                                                 <h4 class="mt-1 text-xl font-bold">{{ $requestList->title }}</h4>
                                             </div>
                                             <button type="button" class="rounded-full bg-white/20 p-2 text-white transition hover:bg-white/30" onclick="closeRequestCountdownModal({{ $requestList->id }})" aria-label="關閉倒數視窗">✕</button>
@@ -843,7 +843,7 @@
                                 <div id="edit-modal-{{ $requestList->id }}" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
                                     <div class="bg-white w-full max-w-3xl rounded-xl shadow-lg max-h-[90vh] overflow-y-auto">
                                         <div class="flex justify-between items-center border-b px-6 py-4">
-                                            <h4 class="text-lg font-bold text-gray-800">編輯請購清單</h4>
+                                            <h4 class="text-lg font-bold text-gray-800">編輯請託單</h4>
                                             <button type="button" class="text-gray-400 hover:text-gray-600" onclick="closeEditModal({{ $requestList->id }})">✕</button>
                                         </div>
 

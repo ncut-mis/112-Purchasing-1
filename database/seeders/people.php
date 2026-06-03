@@ -120,6 +120,14 @@ class people extends Seeder
                 $myCountries = (array) array_rand(array_flip($fallbackCountries), 2);
             }
 
+            // 🎯【新增邏輯】檢查該代購人是否有啟用的物流設定
+            $hasEnabledLogistics = \App\Models\Logistics::where('user_id', $user->id)
+                ->where('status', true)
+                ->exists();
+
+            // 如果沒有啟用的物流，則貼文狀態應為 'draft'（編輯中），否則為 'open'
+            $postStatus = $hasEnabledLogistics ? 'open' : 'draft';
+
             // 每位代購人隨機發 2 則貼文
             for ($i = 0; $i < 2; $i++) {
                 $chosenCountry = $myCountries[array_rand($myCountries)];
@@ -152,7 +160,7 @@ class people extends Seeder
                     'start_date'              => $startDate,
                     'end_date'                => $endDate,
                     'estimated_shipping_date' => $shippingDate,
-                    'status'                  => 'open',
+                    'status'                  => $postStatus,
                     'cover_image'             => null,
                 ]);
 

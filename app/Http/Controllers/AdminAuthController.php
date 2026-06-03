@@ -152,7 +152,7 @@ class AdminAuthController extends Controller
 
         $requestList->forceDelete();
 
-        return redirect()->route('admin.dashboard')->with('status', '請購清單已刪除');
+        return redirect()->route('admin.dashboard')->with('status', '請託單已刪除');
     }
 
     public function deleteAgentPost(AgentPost $agentPost)
@@ -174,7 +174,7 @@ class AdminAuthController extends Controller
             $agentPost->forceDelete();
         });
 
-        return redirect()->route('admin.dashboard')->with('status', '代購貼文已刪除');
+        return redirect()->route('admin.dashboard')->with('status', '代購團已刪除');
     }
 
     public function identityImage(int $user, string $side)

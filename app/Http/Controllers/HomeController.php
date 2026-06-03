@@ -10,14 +10,14 @@ class HomeController extends Controller
 {
     public function index()
     {
-        // 撈取最新的 6 筆代購貼文 (必須是開放狀態)
+        // 撈取最新的 6 筆代購團 (必須是開放狀態)
         $posts = AgentPost::with('user') 
             ->where('status', 'open')
             ->latest()
             ->take(6)
             ->get();
 
-        // 撈取最新的 8 筆請購清單
+        // 撈取最新的 8 筆請託單
 
         AgentPost::recalculateHotScores();
 
@@ -45,7 +45,7 @@ class HomeController extends Controller
     }
 
     /**
-     * 搜尋代購貼文 (首頁搜尋表單使用)
+     * 搜尋代購團 (首頁搜尋表單使用)
      */
     public function search(Request $request)
     {

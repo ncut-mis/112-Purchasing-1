@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Auth;
 
 class FavoriteController extends Controller
 {
-    // 收藏或取消收藏請購清單
+    // 收藏或取消收藏請託單
     public function toggle(Request $request)
     {
         $validated = $request->validate([
@@ -23,7 +23,7 @@ class FavoriteController extends Controller
         if ($validated['type'] === 'request_list') {
             $requestList = RequestList::query()->findOrFail($validated['id']);
             if ((int) $requestList->user_id === (int) $user->id) {
-                return response()->json(['message' => '不能收藏自己的請購清單'], 422);
+                return response()->json(['message' => '不能收藏自己的請託單'], 422);
             }
 
             $favoriteableType = RequestList::class;
@@ -33,7 +33,7 @@ class FavoriteController extends Controller
         if ($validated['type'] === 'agent_post') {
             $agentPost = AgentPost::query()->findOrFail($validated['id']);
             if ((int) $agentPost->user_id === (int) $user->id) {
-                return response()->json(['message' => '不能收藏自己的代購貼文'], 422);
+                return response()->json(['message' => '不能收藏自己的代購團'], 422);
             }
 
             $favoriteableType = AgentPost::class;

@@ -309,7 +309,7 @@
                         </div>
                         <div class="lg:col-span-2">
                             <h5 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                <i class="bi bi-megaphone text-emerald-500"></i> 目前活躍的代購貼文
+                                <i class="bi bi-megaphone text-emerald-500"></i> 目前活躍的代購團
                             </h5>
                             <div class="space-y-4">
                                 <template x-for="post in (activeAgent?.agent_posts || [])" :key="post.id">

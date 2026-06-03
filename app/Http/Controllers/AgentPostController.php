@@ -43,10 +43,10 @@ class AgentPostController extends Controller
         if (! $this->hasActiveLogistics()) {
             return redirect()
                 ->route('logistics.index')
-                ->with('status', '代購貼文已儲存為草稿。請先新增並啟用物流，再回代購人專區送出上架。');
+                ->with('status', '代購團已儲存為草稿。請先新增並啟用物流，再回代購人專區送出上架。');
         }
 
-        return redirect()->route('agent.member')->with('status', '代購貼文已儲存。');
+        return redirect()->route('agent.member')->with('status', '代購團已儲存。');
     }
 
     public function image(PostProduct $postProduct)
@@ -111,7 +111,7 @@ class AgentPostController extends Controller
         abort_unless($agentPost->user_id === Auth::id(), 403);
 
         if ($agentPost->status !== 'draft') {
-            return redirect()->route('agent.member')->with('status', '僅編輯中的代購貼文可修改。');
+            return redirect()->route('agent.member')->with('status', '僅編輯中的代購團可修改。');
         }
 
         $validated = $this->validatePost($request, true);
@@ -128,7 +128,7 @@ class AgentPostController extends Controller
             $this->syncProducts($request, $agentPost, $validated['products'], true);
         });
 
-        return redirect()->route('agent.member')->with('status', '代購貼文已更新！');
+        return redirect()->route('agent.member')->with('status', '代購團已更新！');
     }
 
     public function submit(AgentPost $agentPost)
@@ -136,7 +136,7 @@ class AgentPostController extends Controller
         abort_unless($agentPost->user_id === Auth::id(), 403);
 
         if ($agentPost->status !== 'draft') {
-            return redirect()->route('agent.member')->with('status', '僅編輯中的代購貼文可送出。');
+            return redirect()->route('agent.member')->with('status', '僅編輯中的代購團可送出。');
         }
 
         if (! $agentPost->products()->exists()) {
@@ -153,7 +153,7 @@ class AgentPostController extends Controller
             'status' => 'open',
         ]);
 
-        return redirect()->route('agent.member')->with('status', '代購貼文已送出並上架！');
+        return redirect()->route('agent.member')->with('status', '代購團已送出並上架！');
     }
 
     // 出貨：將已付款等待出貨的跟團訂單狀態改為 shipped
@@ -216,7 +216,7 @@ class AgentPostController extends Controller
             'status' => 'completed',
         ]);
 
-        return redirect()->route('agent.member')->with('status', '代購貼文已完成，已移至歷史紀錄！');
+        return redirect()->route('agent.member')->with('status', '代購團已完成，已移至歷史紀錄！');
     }
 
     // 代購人取消特定買家的訂單並回補數量
@@ -257,7 +257,7 @@ class AgentPostController extends Controller
         abort_unless($agentPost->user_id === Auth::id(), 403);
 
         if ($agentPost->status !== 'draft') {
-            return redirect()->route('agent.member')->with('status', '僅編輯中的代購貼文可刪除。');
+            return redirect()->route('agent.member')->with('status', '僅編輯中的代購團可刪除。');
         }
 
         DB::transaction(function () use ($agentPost) {
@@ -275,7 +275,7 @@ class AgentPostController extends Controller
             $agentPost->delete();
         });
 
-        return redirect()->route('agent.member')->with('status', '代購貼文已刪除。');
+        return redirect()->route('agent.member')->with('status', '代購團已刪除。');
     }
 
      private function hasActiveLogistics(): bool

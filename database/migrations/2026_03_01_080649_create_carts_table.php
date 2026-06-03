@@ -14,7 +14,7 @@ return new class extends Migration
             // 買家
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
 
-            // 商品 (來自代購貼文的商品)
+            // 商品 (來自代購團的商品)
             $table->foreignId('post_product_id')->constrained('post_products')->onDelete('cascade');
 
             // 數量

@@ -77,10 +77,10 @@
                 </section>
             </div>
 
-            <!-- 右側：代購貼文 (agent_posts) -->
+            <!-- 右側：代購團 (agent_posts) -->
             <div class="lg:col-span-2 space-y-6">
                 <h3 class="text-2xl font-black text-gray-800 flex items-center gap-3 mb-6">
-                    <i class="bi bi-megaphone text-emerald-500"></i> 已發布代購貼文
+                    <i class="bi bi-megaphone text-emerald-500"></i> 已發布代購團
                 </h3>
 
                 @forelse($agent->agentPosts as $post)
@@ -127,7 +127,7 @@
                 @empty
                     <div class="bg-gray-50 rounded-3xl p-12 text-center border-2 border-dashed border-gray-200">
                         <i class="bi bi-inbox text-4xl text-gray-300 mb-4 block"></i>
-                        <p class="text-gray-400 font-medium">目前暫無發布中的代購貼文</p>
+                        <p class="text-gray-400 font-medium">目前暫無發布中的代購團</p>
                     </div>
                 @endforelse
             </div>

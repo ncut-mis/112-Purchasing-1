@@ -5,8 +5,8 @@
     <div class="container" style="max-width: 900px;">
         <div class="mb-4 d-flex justify-content-between align-items-center gap-3 flex-wrap">
             <div>
-                <h1 class="fw-bold mb-1" style="color:#2c3e50;">請購清單聊天室</h1>
-                <p class="text-muted mb-0">此對話僅限該請購單的請購人與接單代購人可見。</p>
+                <h1 class="fw-bold mb-1" style="color:#2c3e50;">請託單聊天室</h1>
+                <p class="text-muted mb-0">此對話僅限該請託單的請託人與接單代購人可見。</p>
             </div>
             <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary rounded-circle d-inline-flex align-items-center justify-content-center" style="width:44px;height:44px;" aria-label="關閉聊天室">
                 ✕

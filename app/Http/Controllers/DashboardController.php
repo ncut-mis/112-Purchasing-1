@@ -204,7 +204,7 @@ class DashboardController extends Controller
                         return [
                             'id' => 'request-' . $requestList->id,
                             'type' => 'request-list',
-                            'title' => $requestList->title ?: '未命名請購清單',
+                            'title' => $requestList->title ?: '未命名請託單',
                             'status' => $requestList->status,
                             'country' => $requestList->country,
                             'city' => $requestList->city,

@@ -49,7 +49,7 @@
                             <i class="bi bi-person-badge"></i>
                         </div>
                         <nav class="p-2 space-y-1">
-                            <!-- 1. 我的代購貼文 -->
+                            <!-- 1. 我的代購團 -->
                             <a href="#" @click.prevent="activeTab = 'posts'" :class="activeTab === 'posts' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-gray-600'" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition">
                                 <i class="bi bi-megaphone-fill text-lg"></i>
                                 <span>我的代購團</span>
@@ -59,7 +59,7 @@
                                 <i class="bi bi-file-earmark-medical text-indigo-500 text-lg"></i>
                                 <span>請託單管理</span>
                             </a>
-                            <!-- 3. 代購貼文管理 -->
+                            <!-- 3. 代購團管理 -->
                             <a href="#" @click.prevent="activeTab = 'product-management'" :class="activeTab === 'product-management' ? 'bg-blue-50 text-blue-600 font-bold' : 'text-gray-600'" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition">
                                 <i class="bi bi-box text-blue-500 text-lg"></i>
                                 <span>代購團管理</span>
@@ -161,7 +161,7 @@
                 <div class="w-full lg:w-3/4 space-y-8">
 
                     
-                    <!-- 分頁一：我的代購貼文 (預設顯示) -->
+                    <!-- 分頁一：我的代購團 (預設顯示) -->
                     <div x-show="activeTab === 'posts'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4">
                         
 
@@ -232,7 +232,7 @@
                                             <button type="button" class="agent-post-view-btn text-[11px] px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition" data-modal-id="agent-post-view-modal-{{ $post->id }}">檢視</button>
                                             @if($post->status === 'draft')
                                                 <button type="button" class="agent-post-edit-btn text-[11px] px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition" data-modal-id="agent-post-edit-modal-{{ $post->id }}">編輯</button>
-                                                <form method="POST" action="{{ route('agent.posts.destroy', $post) }}" onsubmit="return confirm('確定要刪除這篇編輯中的代購貼文嗎？');">
+                                                <form method="POST" action="{{ route('agent.posts.destroy', $post) }}" onsubmit="return confirm('確定要刪除這篇編輯中的代購團嗎？');">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="text-[11px] px-3 py-1.5 rounded-lg bg-rose-50 text-rose-600 font-semibold hover:bg-rose-100 transition">刪除</button>
@@ -1374,10 +1374,7 @@
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <div>
                 <h3 class="text-lg font-bold text-amber-600">代購歷史紀錄</h3>
-                <p class="text-sm text-gray-500">查看您已完成的代購貼文團務與請購清單紀錄。</p>
-            </div>
-            
-            <form method="GET" action="{{ route('agent.member') }}" class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <p class="text-sm text-gray-500">查看您已完成的代購團務與請託單紀錄。</p>
                 <input type="hidden" name="tab" value="agent-history">
                 <input type="text" name="agent_history_search" value="{{ $agentHistorySearch ?? '' }}" placeholder="搜尋清單編號 / 貼文標題 / 買家"
                     class="w-full sm:w-72 rounded-xl border border-gray-200 px-4 py-2 text-sm text-gray-700 focus:border-amber-300 focus:ring-amber-200 focus:outline-none">
@@ -1391,12 +1388,12 @@
             <button @click="subTab = 'lists'" 
                 :class="subTab === 'lists' ? 'border-amber-500 text-amber-600 font-bold' : 'border-transparent text-gray-500 hover:text-gray-700'"
                 class="pb-3 px-4 text-sm border-b-2 font-medium transition focus:outline-none">
-                已接請購清單 ({{ $agentHistoryOrders->count() }})
+                已接請託單 ({{ $agentHistoryOrders->count() }})
             </button>
             <button @click="subTab = 'posts'" 
                 :class="subTab === 'posts' ? 'border-amber-500 text-amber-600 font-bold' : 'border-transparent text-gray-500 hover:text-gray-700'"
                 class="pb-3 px-4 text-sm border-b-2 font-medium transition focus:outline-none">
-                已完成代購貼文 ({{ $completedPosts->count() }})
+                已完成代購團 ({{ $completedPosts->count() }})
             </button>
         </div>
 
@@ -1406,8 +1403,8 @@
             <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white text-amber-400 shadow-sm">
                 <i class="bi bi-journal-x text-2xl"></i>
             </div>
-            <p class="text-sm text-amber-700 font-semibold">尚未有完成的請購清單紀錄。</p>
-            <p class="mt-1 text-xs text-amber-500">當您承接的請購清單順利結案後，相關明細將會呈現在這裡。</p>
+            <p class="text-sm text-amber-700 font-semibold">尚未有完成的請託單紀錄。</p>
+            <p class="mt-1 text-xs text-amber-500">當您承接的請託單順利結案後，相關明細將會呈現在這裡。</p>
         </div>
     @else
         <div class="grid gap-4">
@@ -1843,7 +1840,7 @@
                                     </div>
                                 @empty
                                     <div class="text-gray-400 text-sm text-center py-8 border border-dashed border-blue-200 rounded-xl">
-                                        目前沒有進行中的代購貼文商品管理資料。
+                                        目前沒有進行中的代購團商品管理資料。
                                     </div>
                                 @endforelse
                             </div>
@@ -1903,7 +1900,7 @@
                                                         </button>
                                                     </form>
                                                 @endif
-                                                <form method="POST" action="{{ route('agent.posts.complete', $post->id) }}" class="inline" onsubmit="return confirm('確定完成此代購貼文？完成後將移至歷史紀錄。')">
+                                                <form method="POST" action="{{ route('agent.posts.complete', $post->id) }}" class="inline" onsubmit="return confirm('確定完成此代購團？完成後將移至歷史紀錄。')">
                                                     @csrf
                                                     @method('PATCH')
                                                     <button type="submit"
@@ -1969,7 +1966,7 @@
                                     </div>
                                 @empty
                                     <div class="text-gray-400 text-sm text-center py-8 border border-dashed border-blue-200 rounded-xl">
-                                        目前沒有已出貨的代購貼文商品管理資料。
+                                        目前沒有已出貨的代購團商品管理資料。
                                     </div>
                                 @endforelse
                             </div>
@@ -1977,7 +1974,7 @@
                         </section>
                     </div>
 
-                    <!-- 分頁三：我的收藏請購清單 (覆蓋顯示) -->
+                    <!-- 分頁三：我的收藏請託單 (覆蓋顯示) -->
                     <div x-show="activeTab === 'favorites'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4">
                         <section id="favorites" class="bg-white rounded-2xl shadow-sm border border-pink-100 p-6">
                             <h3 class="text-lg font-bold text-pink-600 mb-6">我的收藏請託單</h3>
