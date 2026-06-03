@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Favorite;
 use App\Models\AgentNotification;
+use App\Models\User;
 
 class RequestListController extends Controller
 {
@@ -353,4 +354,68 @@ public function submit(RequestList $requestList)
         // 必須直接導向「接單大廳 (agent.dashboard)」，並在網址後面帶上 search_buyer_id 參數！
         return redirect()->route('agent.dashboard', ['search_buyer_id' => $buyer_id]);
     }
+    
+    public function saveSelection(Request $request)
+    {
+        // 1. 將該代理商所有通知的 is_selected 重置為 false
+        AgentNotification::where('agent_id', auth()->id())
+            ->update(['is_selected' => false]);
+
+        // 2. 如果有勾選，將勾選的 IDs 更新為 true
+        if ($request->has('selected_notifications')) {
+            AgentNotification::whereIn('id', $request->selected_notifications)
+                ->update(['is_selected' => true]);
+        }
+
+        return back()->with('success', '已更新選擇狀態');
+    }
+    public function selectNotifications(Request $request)
+    {
+        // 1. 將該代理人的所有通知重置為未選取
+        \App\Models\AgentNotification::where('agent_id', auth()->id())
+            ->update(['is_selected' => false]);
+
+        // 2. 將選中的 ID 設為 true
+        if ($request->has('selected_notifications')) {
+            \App\Models\AgentNotification::whereIn('id', $request->selected_notifications)
+                ->update(['is_selected' => true]);
+        }
+
+        // 3. 改為回傳 JSON，配合前端的 fetch 進行跳轉
+        return response()->json(['success' => true]);
+    }
+   
+    public function showBuyerDetails($id)
+    {
+        // 1. 取得該請託人的資料
+        $user = User::findOrFail($id);
+        
+        // 2. 取得該請託人的所有需求清單
+        $requestLists = RequestList::where('user_id', $id)->paginate(10);
+        
+        // 3. 導向代購大廳，並把資料傳過去 (假設你的大廳視圖是 agent.dashboard)
+        return view('agent.dashboard', compact('user', 'requestLists'));
+    }
+    public function selectBuyers(Request $request)
+{
+    $buyerIds = $request->input('selected_buyers', []); // 獲取所有勾選的 ID
+    
+    // 將這些 ID 存入 Session 或資料庫，以便導向到代購大廳時讀取
+    session(['selected_buyer_ids' => $buyerIds]);
+    
+    return response()->json(['success' => true]);
+}
+    public function clearFilter()
+{
+    $agentId = auth()->id(); // 確保獲取當前登入的 agent ID
+
+    if ($agentId) {
+        \App\Models\AgentNotification::where('agent_id', $agentId)
+            ->update([
+                'is_selected' => false // 明確將所有相關記錄設為 0
+            ]);
+    }
+
+    return redirect()->route('agent.dashboard');
+}
 }

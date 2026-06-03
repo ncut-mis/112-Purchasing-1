@@ -379,3 +379,19 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/agent-posts/{agentPost}/order', [OrderController::class, 'store'])
          ->name('order.store');
 });
+
+//推薦請託人路由
+Route::post('/agent/notifications/select', [RequestListController::class, 'selectNotifications'])
+    ->name('agent.notifications.select');
+Route::post(
+    '/agent/notifications/clear',
+    [RequestListController::class, 'clearNotifications']
+)->name('agent.notifications.clear');
+
+// 請根據實際情況調整 Controller 與方法名稱
+Route::get('/agent/buyer/{id}', [App\Http\Controllers\RequestListController::class, 'showBuyerDetails'])
+    ->name('agent.buyer.details');
+
+// 確保您在 web.php 最後面寫的是 Route::post
+Route::post('/agent/dashboard/clear', [AgentDashboardController::class, 'clearFilter'])
+    ->name('agent.dashboard.clear');

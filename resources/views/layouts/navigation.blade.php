@@ -7,6 +7,57 @@
         // 只要網址包含 'agent'，或是路由名稱以 'agent.' 開頭，就判定為代購模式
         $isAgentMode = request()->is('agent', 'agent/*', '*/agent/*') || request()->routeIs('agent.*');
     @endphp
+    <script>
+    function submitAndRedirect() {
+        const form = document.getElementById('selectForm');
+        
+        fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: { 
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json' // 強制要求 JSON 回應
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                // 如果後端回傳 500 等錯誤，這裡會被捕捉
+                throw new Error('後端處理失敗');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // 成功後執行跳轉
+            window.location.href = "{{ route('agent.dashboard') }}";
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('處理時發生錯誤，請檢查後端邏輯。建議開啟 F12 查看 Network 分頁以取得詳細錯誤。');
+        });
+    }
+    function clearSelections() {
+    fetch("{{ route('agent.notifications.clear') }}", {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        // 取消畫面上的勾選
+        document.querySelectorAll(
+            'input[name="selected_notifications[]"]'
+        ).forEach(cb => cb.checked = false);
+
+        alert('已清除所有勾選');
+    })
+    .catch(error => {
+        console.error(error);
+        alert('清除失敗');
+    });
+}
+</script>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
@@ -61,29 +112,37 @@
                         >
                             <div class="fw-bold text-dark border-bottom pb-1 mb-2 px-1 text-start" style="font-size: 14px;">推薦</div>
                             
-                            <div class="max-h-48 overflow-y-auto px-1">
-                                @if(isset($agentNotifications) && $agentNotifications->isNotEmpty())
-                                    @foreach($agentNotifications as $notify)
-                                        <div class="d-flex align-items-center justify-content-between py-2 border-bottom border-dashed border-gray-100 text-start">
+                            <form id="selectForm" action="{{ route('agent.notifications.select') }}" method="POST">
+                                @csrf
+                                <div class="max-h-48 overflow-y-auto px-1">
+                                    @forelse($agentNotifications as $notify)    
+                                        <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
                                             <div class="d-flex align-items-center">
-                                                <div class="bg-slate-200 border border-info rounded p-1 me-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                                                    <i class="bi bi-person-fill text-secondary"></i>
+                                                <input type="checkbox" name="selected_notifications[]" value="{{ $notify->id }}" 
+                                                    class="me-3 form-check-input" {{ $notify->is_selected ? 'checked' : '' }}>
+                                                
+                                                <div class="bg-slate-200 rounded p-1 me-2" style="width: 32px; height: 32px;">
+                                                    <i class="bi bi-person-fill"></i>
                                                 </div>
-                                                <span class="fw-medium text-dark" style="font-size: 15px;">
-                                                    {{ $notify->buyer->name ?? '未知用戶' }}
-                                                </span>
+                                                <span class="fw-medium">{{ $notify->buyer->name ?? '未知用戶' }}</span>
                                             </div>
-                                            <a href="{{ route('agent.notification.read', ['buyer_id' => $notify->buyer_id, 'request_list_id' => $notify->request_list_id]) }}" 
-                                            class="inline-flex items-center px-2.5 py-1.5 text-xs font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none transition duration-150 ease-in-out shadow-sm"
-                                            style="font-size: 11px;">
-                                                {{ __('前往查看') }}
-                                            </a>
                                         </div>
-                                    @endforeach
-                                @else
-                                    <div class="py-3 text-center text-muted small">目前沒有推薦的請購人</div>
-                                @endif
-                            </div>
+                                    @empty
+                                        <div class="py-3 text-center text-muted small">目前沒有推薦的請購人</div>
+                                    @endforelse
+                                </div>
+
+                                <button type="button" 
+                                        onclick="submitAndRedirect()" 
+                                        class="w-full mt-3 btn btn-indigo">
+                                    前往查看
+                                </button>
+                                <button type="button"
+                                        onclick="clearSelections()"
+                                        class="flex-1 btn btn-secondary">
+                                    清除勾選
+                                </button>
+                            </form>
 
                             <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-solid border-b-white border-x-transparent border-t-transparent" 
                                 style="border-width: 0 8px 8px 8px; margin-bottom: -1px;">
@@ -231,4 +290,5 @@
             }
         </script>
     @endif
+
 </nav>

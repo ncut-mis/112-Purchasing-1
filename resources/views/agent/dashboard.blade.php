@@ -177,11 +177,12 @@
                                 </span>
                             </div>
                             
-                            <a href="{{ route('agent.dashboard') }}" 
-                            class="inline-flex items-center px-4 py-2 bg-white border border-indigo-300 rounded-lg text-xs font-semibold text-indigo-700 shadow-sm hover:bg-indigo-100 transition">
-                                <i class="bi bi-x-circle-fill me-1.5 text-indigo-500"></i>
-                                {{ __('清除篩選（顯示全部）') }}
-                            </a>
+                            <form action="{{ route('agent.dashboard.clear') }}" method="POST">
+                                @csrf
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    清除篩選條件
+                                </button>
+                            </form>
                         </div>
                     @endif
                 
