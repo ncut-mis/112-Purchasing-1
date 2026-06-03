@@ -53,19 +53,23 @@ class AdminAuthController extends Controller
     }
 
 
-    public function approveReport(ContentReport $report)
+   public function approveReport(ContentReport $report)
     {
         if ($report->status !== ContentReport::STATUS_PENDING) {
             return redirect()->route('admin.dashboard')->with('status', '此檢舉案件已審核過');
         }
 
-        $report->update([
-            'status' => ContentReport::STATUS_APPROVED,
-            'reviewed_by_admin_id' => Auth::guard('admin')->id(),
-            'reviewed_at' => now(),
-        ]);
+        DB::transaction(function () use ($report) {
+            $report->update([
+                'status' => ContentReport::STATUS_APPROVED,
+                'reviewed_by_admin_id' => Auth::guard('admin')->id(),
+                'reviewed_at' => now(),
+            ]);
 
-        return redirect()->route('admin.dashboard', ['tab' => 'violation'])->with('status', '已標記為檢舉成立');
+            $report->removeReportableFromPublicListings();
+        });
+
+        return redirect()->route('admin.dashboard', ['tab' => 'violation'])->with('status', '已標記為檢舉成立，檢舉內容已從前台移除');
     }
 
     public function rejectReport(ContentReport $report)
@@ -93,15 +97,23 @@ class AdminAuthController extends Controller
             'decision' => ['required', 'in:approved,rejected'],
         ]);
 
-        $newStatus = $validated['decision'] === 'approved' ? ContentReport::STATUS_APPROVED : ContentReport::STATUS_REJECTED;
+       $newStatus = $validated['decision'] === 'approved' ? ContentReport::STATUS_APPROVED : ContentReport::STATUS_REJECTED;
 
-        $report->update([
-            'status' => $newStatus,
-            'reviewed_by_admin_id' => Auth::guard('admin')->id(),
-            'reviewed_at' => now(),
-        ]);
+        DB::transaction(function () use ($report, $newStatus) {
+            $report->update([
+                'status' => $newStatus,
+                'reviewed_by_admin_id' => Auth::guard('admin')->id(),
+                'reviewed_at' => now(),
+            ]);
 
-        $statusMessage = $newStatus === ContentReport::STATUS_APPROVED ? '已更改為檢舉成立' : '已更改為檢舉不成立';
+            if ($newStatus === ContentReport::STATUS_APPROVED) {
+                $report->removeReportableFromPublicListings();
+            } else {
+                $report->restoreReportableToPublicListings();
+            }
+        });
+
+        $statusMessage = $newStatus === ContentReport::STATUS_APPROVED ? '已更改為檢舉成立，檢舉內容已從前台移除' : '已更改為檢舉不成立，檢舉內容已恢復顯示';
 
         return redirect()->route('admin.dashboard', ['tab' => 'violation'])->with('status', $statusMessage);
     }
@@ -140,7 +152,7 @@ class AdminAuthController extends Controller
 
         $requestList->forceDelete();
 
-        return redirect()->route('admin.dashboard')->with('status', '請購清單已刪除');
+        return redirect()->route('admin.dashboard')->with('status', '請託單已刪除');
     }
 
     public function deleteAgentPost(AgentPost $agentPost)
@@ -162,7 +174,7 @@ class AdminAuthController extends Controller
             $agentPost->forceDelete();
         });
 
-        return redirect()->route('admin.dashboard')->with('status', '代購貼文已刪除');
+        return redirect()->route('admin.dashboard')->with('status', '代購團已刪除');
     }
 
     public function identityImage(int $user, string $side)

@@ -97,7 +97,7 @@
                     <div class="p-8 flex flex-col items-center text-center flex-1">
                         <!-- 代購人頭像 -->
                         <div class="mb-5 relative">
-                            <img src="{{ $agent->avatar ? asset('storage/' . $agent->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode($agent->name) . '&background=f59e0b&color=fff&size=128' }}" 
+                            <img src="{{ $agent->avatar_url }}" 
                                  class="w-24 h-24 rounded-full border-4 border-white shadow-md object-cover relative z-10">
                             <div class="absolute bottom-1 right-1 w-6 h-6 bg-green-500 border-4 border-white rounded-full z-20 shadow-sm"></div>
                         </div>
@@ -183,7 +183,7 @@
                         <div class="flex flex-col md:flex-row items-center md:items-end gap-6">
                             <div class="relative">
                                 <!-- 這裡路徑增加判斷防止 403 -->
-                                <img :src="selectedAgent.avatar ? '/storage/' + selectedAgent.avatar : 'https://ui-avatars.com/api/?name=' + encodeURIComponent(selectedAgent.name) + '&background=fff&color=10b981&size=128'" 
+                                <img :src="selectedAgent.avatar_url" 
                                      class="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-white shadow-xl object-cover bg-white">
                                 <div class="absolute bottom-2 right-2 w-8 h-8 bg-green-500 border-4 border-white rounded-full"></div>
                             </div>
@@ -232,7 +232,7 @@
                             <!-- 右欄 -->
                             <div class="lg:col-span-3">
                                 <h5 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                    <i class="bi bi-megaphone text-emerald-500"></i> 目前活躍的代購貼文
+                                    <i class="bi bi-megaphone text-emerald-500"></i> 目前活躍的代購團
                                 </h5>
                                 <div class="space-y-4">
                                     <template x-for="post in (selectedAgent.agent_posts || [])" :key="post.id">
@@ -246,7 +246,7 @@
                                                     <h6 class="font-black text-gray-800 text-lg truncate group-hover:text-emerald-700 transition" x-text="post.title"></h6>
                                                     <span class="text-[10px] font-bold text-emerald-600 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-200">OPEN</span>
                                                 </div>
-                                                <p class="text-xs text-gray-500 line-clamp-1 mb-4" x-text="post.description || '這是一則專業的代購貼文。'"></p>
+                                                <p class="text-xs text-gray-500 line-clamp-1 mb-4" x-text="post.description || '這是一則專業的代購團。'"></p>
                                                 <div class="flex items-center gap-4">
                                                     <div class="flex items-center gap-1 text-[10px] font-bold text-gray-400"><i class="bi bi-geo-alt"></i><span x-text="post.country"></span></div>
                                                     <div class="flex items-center gap-1 text-[10px] font-bold text-gray-400"><i class="bi bi-calendar-check"></i><span x-text="(post.end_date ? post.end_date.split('T')[0] : '2026-05-10') + ' 截止'"></span></div>

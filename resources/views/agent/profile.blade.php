@@ -25,11 +25,7 @@
                             <div class="relative group">
                                 <label for="avatar-input" class="relative block cursor-pointer">
                                     <div id="avatar-preview" class="w-36 h-36 rounded-full border-4 border-white shadow-2xl overflow-hidden bg-indigo-500 flex items-center justify-center transition group-hover:scale-105 group-hover:brightness-90">
-                                        @if(Auth::user()->avatar)
-                                            <img src="{{ asset('storage/' . Auth::user()->avatar) }}" class="w-full h-full object-cover">
-                                        @else
-                                            <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background=6366f1&color=fff&size=128" class="w-full h-full object-cover">
-                                        @endif
+                                        <img src="{{ Auth::user()->avatar_url }}" class="w-full h-full object-cover">
 
                                         <div class="absolute inset-0 bg-indigo-900/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
                                             <div class="text-center">

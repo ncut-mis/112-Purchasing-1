@@ -77,6 +77,7 @@
                     ];
                     $scoreBadgeColor = $scoreBadgeColors[$index] ?? '#ffffff';
                     $scoreTextColor = $index < 3 ? '#1f2937' : '#374151';
+                     $isHotPostOwner = auth()->check() && (int) auth()->id() === (int) $popPost->user_id;
                 @endphp
                 <div class="col-md-6 col-lg-4">
                     <div class="card border-0 shadow-lg rounded-4 overflow-hidden position-relative hover-lift transition">
@@ -148,7 +149,9 @@
                         </div>
 
                         <div class="card-body p-4 d-flex flex-column">
-                            <h5 class="fw-bold mb-3 text-truncate">{{ $popPost->title }}</h5>
+                            <h5 class="fw-bold mb-3" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                {{ $popPost->title }}
+                            </h5>
 
                             <button
                                 type="button"
@@ -164,7 +167,7 @@
 
                             <div id="hot-post-details-{{ $popPost->id }}" class="agent-post-details d-none mb-4">
                                 <div class="mb-3">
-                                    <div class="small text-uppercase text-muted fw-bold mb-2">商品資訊（名稱 / 單價 / 目前可下單上限）</div>
+                                    <div class="small text-uppercase text-muted fw-bold mb-2">商品資訊（名稱 / 單價 / 目前可下單數量）</div>
                                     <div class="d-flex flex-column gap-2">
                                         @forelse($popPost->products as $product)
                                             @php
@@ -176,7 +179,7 @@
                                                 <span class="fw-semibold text-dark">{{ $product->name }}</span>
                                                 <div class="d-flex align-items-center gap-2 small text-muted">
                                                     <span class="badge rounded-pill text-bg-light border">單價：NT$ {{ number_format((float) ($product->price ?? 0), 0) }}</span>
-                                                    <span class="badge rounded-pill text-bg-light border">目前可下單上限：{{ $currentMaxQuantity }}</span>
+                                                    <span class="badge rounded-pill text-bg-light border">目前可下單數量：{{ $currentMaxQuantity }}</span>
                                                 </div>
                                             </div>
                                         @empty
@@ -192,7 +195,7 @@
                                 <div class="rounded-3 bg-light px-3 py-2 border" style="border-color: #eef1f4 !important;">
                                     <div class="d-flex align-items-center text-secondary small">
                                         <i class="bi bi-calendar-event me-2"></i>
-                                        <span>代購期間：{{ optional($popPost->start_date)->format('Y/m/d') }} - {{ optional($popPost->end_date)->format('Y/m/d') }}</span>
+                                        <span>預計代購時段：{{ optional($popPost->start_date)->format('Y/m/d') }} - {{ optional($popPost->end_date)->format('Y/m/d') }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -202,13 +205,32 @@
                                     <img src="https://ui-avatars.com/api/?name={{ urlencode($popPost->user->name) }}&background=6366f1&color=fff" class="rounded-circle" width="28" height="28">
                                     <span class="small fw-bold text-gray-700">{{ $popPost->user->nickname ?? $popPost->user->name }}</span>
                                 </div>
-                               <a href="{{ route('agent.posts.search', ['search' => $popPost->title, 'post_id' => $popPost->id]) }}" class="text-danger fw-bold text-decoration-none" style="font-size: 12px;">
-                                    <i class="bi bi-fire me-1"></i> 搜尋此熱門代購團
-                                </a>
+                                @auth
+                                    @if($isHotPostOwner)
+                                        <button type="button" class="btn btn-link text-danger fw-bold text-decoration-none p-0 disabled" style="font-size: 12px; opacity: .55;" disabled>
+                                             <button class="btn btn-sm rounded-pill px-3 btn-secondary disabled">無法跟團</button>
+                                        </button>
+                                    @else
+                                        <button type="button" class="btn btn-sm btn-danger rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#hotFollowOrderModal-{{ $popPost->id }}">
+                                            <i class="bi bi-fire me-1"></i> 我要跟團
+                                        </button>
+                                    @endif
+                                @else
+                                    <a href="{{ route('login') }}" class="text-danger fw-bold text-decoration-none" style="font-size: 12px;">
+                                        <button type="button" class="btn btn-sm btn-danger rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#hotFollowOrderModal-{{ $popPost->id }}">
+                                            <i class="bi bi-fire me-1"></i> 我要跟團
+                                        </button>
+                                    </a>
+                                @endauth
                             </div>
                         </div>
                     </div>
                 </div>
+                 @auth
+                    @unless($isHotPostOwner)
+                        @include('partials.follow-order-modal', ['agentPost' => $popPost, 'modalId' => 'hotFollowOrderModal-' . $popPost->id])
+                    @endunless
+                @endauth
             @empty
                 <div class="col-12 text-center py-5">
                     <p class="text-muted">目前暫無熱門團</p>
@@ -273,6 +295,10 @@
             </div>
         @endif
 
+        @php
+            $hotPostIds = collect($hotPosts ?? collect())->pluck('id')->map(fn($id) => (int) $id)->all();
+        @endphp
+
         <div class="row g-4">
             @forelse($agentPosts as $agentPost)
                 @php
@@ -284,6 +310,7 @@
 
                     $isFavorited = in_array((int) $agentPost->id, $favoritedAgentPostIds ?? [], true);
                     $isOwner = auth()->check() && (int) auth()->id() === (int) $agentPost->user_id;
+                    $isHotLatest = in_array((int) $agentPost->id, $hotPostIds, true);
                 @endphp
 
                 <div class="col-md-6 col-lg-4">
@@ -296,6 +323,12 @@
                             <span class="position-absolute top-0 start-0 m-3 badge rounded-pill bg-dark-subtle text-dark" style="z-index: 10;">
                                 {{ $agentPost->country }}{{ $agentPost->city ? '・' . $agentPost->city : '' }}
                             </span>
+
+                            @if($isHotLatest)
+                                <span class="position-absolute bottom-0 start-0 m-3 badge bg-danger shadow-sm rounded-pill px-3 py-2" style="z-index: 10;">
+                                    <i class="bi bi-fire me-1"></i> HOT
+                                </span>
+                            @endif
 
                             {{-- 狀態徽章 --}}
                             <span class="position-absolute top-0 end-0 m-3 badge rounded-pill bg-success" style="z-index: 10;">
@@ -401,7 +434,7 @@
 
                             <div id="agent-post-details-{{ $agentPost->id }}" class="agent-post-details d-none mb-4">
                                 <div class="mb-3">
-                                    <div class="small text-uppercase text-muted fw-bold mb-2">商品資訊（名稱 / 單價 / 目前可下單上限）</div>
+                                    <div class="small text-uppercase text-muted fw-bold mb-2">商品資訊（名稱 / 單價 / 目前可下單數量）</div>
                                     <div class="d-flex flex-column gap-2">
                                         @forelse($agentPost->products as $product)
                                             @php
@@ -413,7 +446,7 @@
                                                 <span class="fw-semibold text-dark">{{ $product->name }}</span>
                                                 <div class="d-flex align-items-center gap-2 small text-muted">
                                                     <span class="badge rounded-pill text-bg-light border">單價：NT$ {{ number_format((float) ($product->price ?? 0), 0) }}</span>
-                                                    <span class="badge rounded-pill text-bg-light border">目前可下單上限：{{ $currentMaxQuantity }}</span>
+                                                    <span class="badge rounded-pill text-bg-light border">目前可下單數量：{{ $currentMaxQuantity }}</span>
                                                 </div>
                                             </div>
                                         @empty
@@ -429,7 +462,7 @@
                                 <div class="rounded-3 bg-light px-3 py-2 border" style="border-color: #eef1f4 !important;">
                                     <div class="d-flex align-items-center text-secondary small">
                                         <i class="bi bi-calendar-event me-2"></i>
-                                        <span>代購期間：{{ optional($agentPost->start_date)->format('Y/m/d') }} - {{ optional($agentPost->end_date)->format('Y/m/d') }}</span>
+                                        <span>預計代購時段：{{ optional($agentPost->start_date)->format('Y/m/d') }} - {{ optional($agentPost->end_date)->format('Y/m/d') }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -458,114 +491,7 @@
                     </div>
                 </div>
 
-                {{-- 跟單 Modal --}}
-                <div class="modal fade" id="followOrderModal-{{ $agentPost->id }}" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog modal-lg modal-dialog-centered">
-                        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-                            <div class="modal-header border-0 bg-light py-3 px-4">
-                                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-cart-plus me-2 text-primary"></i>確認跟團商品</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-
-                            <form action="{{ route('orders.store', $agentPost) }}" method="POST" class="follow-order-form">
-                                @csrf
-                                <div class="modal-body p-4">
-                                    <div class="row g-3 mb-4">
-                                        <div class="col-md-6">
-                                            <div class="p-3 border rounded-4 h-100 bg-light-subtle">
-                                                <label class="text-muted small fw-bold text-uppercase d-block mb-1">銷售期間</label>
-                                                <div class="text-dark fw-bold">
-                                                    {{ optional($agentPost->start_date)->format('Y/m/d') }} <span class="mx-1 text-muted">至</span> {{ optional($agentPost->end_date)->format('Y/m/d') }}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="p-3 border rounded-4 h-100 bg-light-subtle">
-                                                <label class="text-muted small fw-bold text-uppercase d-block mb-1">描述訊息</label>
-                                                <div class="text-muted small text-truncate">
-                                                    {{ $agentPost->description ?: '無詳細說明。' }}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="table-responsive">
-                                        <table class="table align-middle">
-                                            <thead class="bg-light">
-                                                <tr class="small text-muted border-0">
-                                                    <th class="border-0 ps-0" style="width: 70px;">圖片</th>
-                                                    <th class="border-0">商品名稱</th>
-                                                    <th class="border-0 text-center">可下單數量</th>
-                                                    <th class="border-0 text-center">單價</th>
-                                                    <th class="border-0 text-center" style="width: 140px;">數量</th>
-                                                    <th class="border-0 text-end pe-0">小計</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach($agentPost->products as $product)
-                                                    @php
-                                                        $max = $product->max_quantity ?? 0;
-                                                        $sold = $product->sold_quantity ?? 0;
-                                                        $remaining = $max - $sold;
-                                                    @endphp
-                                                    <tr class="product-row" data-price="{{ $product->price }}">
-                                                        <td class="ps-0">
-                                                            <img src="{{ $product->display_image_url ?? 'https://via.placeholder.com/60' }}"
-                                                                 class="rounded-3 object-fit-cover shadow-sm" width="55" height="55">
-                                                        </td>
-                                                        <td>
-                                                            <div class="fw-bold text-dark mb-0">{{ $product->name }}</div>
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <span class="badge {{ $remaining > 0 ? 'bg-info-subtle text-info' : 'bg-danger-subtle text-danger' }} rounded-pill">
-                                                                {{ $remaining > 0 ? '還有 ' . $remaining : '已售罄' }}
-                                                            </span>
-                                                        </td>
-                                                        <td class="text-center fw-semibold text-muted">
-                                                            ${{ number_format($product->price) }}
-                                                        </td>
-                                                        <td>
-                                                            <div class="input-group input-group-sm border rounded-pill overflow-hidden bg-white mx-auto" style="max-width: 110px;">
-                                                                <button class="btn btn-link text-decoration-none border-0 px-2 qty-minus" type="button" {{ $remaining <= 0 ? 'disabled' : '' }}>
-                                                                    <i class="bi bi-dash-lg"></i>
-                                                                </button>
-                                                                <input type="number" name="products[{{ $product->id }}][quantity]"
-                                                                       class="form-control border-0 text-center bg-transparent qty-input"
-                                                                       value="0"
-                                                                       min="0"
-                                                                       max="{{ $remaining }}"
-                                                                       {{ $remaining <= 0 ? 'disabled' : '' }}
-                                                                       style="box-shadow: none;">
-                                                                <button class="btn btn-link text-decoration-none border-0 px-2 qty-plus" type="button" {{ $remaining <= 0 ? 'disabled' : '' }}>
-                                                                    <i class="bi bi-plus-lg"></i>
-                                                                </button>
-                                                            </div>
-                                                        </td>
-                                                        <td class="text-end pe-0 fw-bold text-primary subtotal">
-                                                            $0
-                                                        </td>
-                                                    </tr>
-                                                @endforeach
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-
-                                <div class="modal-footer border-0 p-4 pt-0 flex-column align-items-end">
-                                    <div class="d-flex align-items-baseline mb-4">
-                                        <span class="text-muted me-3">總計金額：</span>
-                                        <span class="h3 fw-bold text-success mb-0">NT$ <span class="total-amount">0</span></span>
-                                    </div>
-                                    <div class="d-flex gap-2 w-100">
-                                        <button type="button" class="btn btn-light rounded-pill flex-grow-1 py-2 fw-bold" data-bs-dismiss="modal">再逛逛</button>
-                                        <button type="submit" class="btn btn-primary-custom rounded-pill flex-grow-1 py-2 fw-bold shadow follow-order-submit-btn">確認結帳</button>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-
+                 @include('partials.follow-order-modal', ['agentPost' => $agentPost, 'modalId' => 'followOrderModal-' . $agentPost->id])
                 {{-- 檢舉貼文 Modal --}}
                 <div class="modal fade" id="reportAgentPostModal-{{ $agentPost->id }}" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
@@ -819,7 +745,7 @@
         });
 
         // 6. Modal 數量與金額即時計算
-        document.querySelectorAll('[id^="followOrderModal-"]').forEach(modal => {
+       document.querySelectorAll('.follow-order-modal').forEach(modal => {
             const form = modal.querySelector('.follow-order-form');
             const submitBtn = modal.querySelector('.follow-order-submit-btn');
             const totalAmountNode = modal.querySelector('.total-amount');

@@ -2,7 +2,7 @@
     use Illuminate\Support\Facades\Auth;
     $userId = Auth::id();
 
-    // 已完成的跟單（代購貼文）- Order
+    // 已完成的跟單（代購團）- Order
     $completedOrders = \App\Models\Order::where('buyer_id', $userId)
         ->where('status', 'completed')
         ->with(['seller:id,name', 'source'])
@@ -47,7 +47,7 @@
             </button>
         </div>
 
-        {{-- 跟單評價（代購貼文） --}}
+        {{-- 跟單評價（代購團） --}}
         <div x-show="reviewTab === 'orders'" class="space-y-4">
             @forelse($completedOrders as $order)
                 @php
@@ -63,7 +63,7 @@
                     <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
                         <div class="min-w-0">
                             <div class="flex items-center gap-2 flex-wrap">
-                                <h4 class="text-sm font-bold text-gray-800">{{ $order->source->title ?? '代購貼文' }}</h4>
+                                <h4 class="text-sm font-bold text-gray-800">{{ $order->source->title ?? '代購團' }}</h4>
                                 @if($hasReviewed)
                                     <span class="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold bg-gray-100 text-gray-500 border-gray-200">已評價</span>
                                 @else
@@ -89,7 +89,7 @@
                         </div>
                         @if(!$hasReviewed)
                             <button type="button"
-                                onclick="openReviewModal('order', {{ $order->id }}, '{{ addslashes($order->seller->name ?? '代購人') }}', '{{ addslashes($order->source->title ?? '代購貼文') }}')"
+                                onclick="openReviewModal('order', {{ $order->id }}, '{{ addslashes($order->seller->name ?? '代購人') }}', '{{ addslashes($order->source->title ?? '代購團') }}')"
                                 class="shrink-0 inline-flex items-center rounded-lg bg-purple-600 px-3 py-2 text-xs font-bold text-white hover:bg-purple-700 transition">
                                 ✦ 寫評價
                             </button>

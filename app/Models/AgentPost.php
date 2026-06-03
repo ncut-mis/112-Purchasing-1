@@ -78,6 +78,27 @@ class AgentPost extends Model
             'v' => $this->updated_at?->timestamp ?? now()->timestamp,
         ]);
     }
+
+    public static function recalculateHotScores(): void
+    {
+        $totalOpenPosts = max(self::where('status', 'open')->count(), 1);
+
+        self::withCount(['favorites', 'orders'])
+            ->where('status', 'open')
+            ->get()
+            ->each(function (self $post) use ($totalOpenPosts) {
+                $favoriteRatio = min(($post->favorites_count / $totalOpenPosts) * 100, 100);
+                $orderRatio = min(($post->orders_count / $totalOpenPosts) * 100, 100);
+                $score = (int) round(($favoriteRatio * 0.55) + ($orderRatio * 0.45));
+                $hotScore = max(0, min(100, $score));
+
+                if ($post->hot_score !== $hotScore) {
+                    $post->hot_score = $hotScore;
+                    $post->saveQuietly();
+                }
+            });
+    }
+
     public function postProducts(): HasMany
     {
         return $this->hasMany(PostProduct::class, 'agent_post_id');

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\AgentPost;
 use App\Models\PostProduct;
 use App\Models\Favorite;
+use App\Models\Order;
+use App\Models\Logistics;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +16,9 @@ class AgentPostController extends Controller
 {
     public function create()
     {
-        return view('agent.posts.create');
+        $hasActiveLogistics = $this->hasActiveLogistics();
+
+        return view('agent.posts.create', compact('hasActiveLogistics'));
     }
 
     public function store(Request $request)
@@ -36,7 +40,13 @@ class AgentPostController extends Controller
             $this->syncProducts($request, $agentPost, $validated['products']);
         });
 
-        return redirect()->route('agent.member')->with('status', '代購貼文已儲存。');
+        if (! $this->hasActiveLogistics()) {
+            return redirect()
+                ->route('logistics.index')
+                ->with('status', '代購團已儲存為草稿。請先新增並啟用物流，再回代購人專區送出上架。');
+        }
+
+        return redirect()->route('agent.member')->with('status', '代購團已儲存。');
     }
 
     public function image(PostProduct $postProduct)
@@ -101,14 +111,14 @@ class AgentPostController extends Controller
         abort_unless($agentPost->user_id === Auth::id(), 403);
 
         if ($agentPost->status !== 'draft') {
-            return redirect()->route('agent.member')->with('status', '僅編輯中的代購貼文可修改。');
+            return redirect()->route('agent.member')->with('status', '僅編輯中的代購團可修改。');
         }
 
         $validated = $this->validatePost($request, true);
 
         DB::transaction(function () use ($request, $agentPost, $validated) {
             $agentPost->update([
-                'title' => $validated['title'],
+        'title' => $validated['title'],
                 'country' => $validated['country'],
                 'description' => $validated['description'],
                 'start_date' => $validated['start_date'],
@@ -118,7 +128,7 @@ class AgentPostController extends Controller
             $this->syncProducts($request, $agentPost, $validated['products'], true);
         });
 
-        return redirect()->route('agent.member')->with('status', '代購貼文已更新！');
+        return redirect()->route('agent.member')->with('status', '代購團已更新！');
     }
 
     public function submit(AgentPost $agentPost)
@@ -126,35 +136,56 @@ class AgentPostController extends Controller
         abort_unless($agentPost->user_id === Auth::id(), 403);
 
         if ($agentPost->status !== 'draft') {
-            return redirect()->route('agent.member')->with('status', '僅編輯中的代購貼文可送出。');
+            return redirect()->route('agent.member')->with('status', '僅編輯中的代購團可送出。');
         }
 
         if (! $agentPost->products()->exists()) {
             return redirect()->route('agent.member')->with('status', '請至少保留 1 項商品後再送出貼文。');
         }
 
+        if (! $this->hasActiveLogistics()) {
+            return redirect()
+                ->route('agent.member')
+                ->with('status', '您目前還未設定物流或啟用物流，請至物流設定，設定完物流再按送出。');
+        }
+
         $agentPost->update([
             'status' => 'open',
         ]);
 
-        return redirect()->route('agent.member')->with('status', '代購貼文已送出並上架！');
+        return redirect()->route('agent.member')->with('status', '代購團已送出並上架！');
     }
 
-    // 出貨：將 orders 狀態改為 shipped
+    // 出貨：將已付款等待出貨的跟團訂單狀態改為 shipped
     public function ship(AgentPost $agentPost)
     {
         abort_unless($agentPost->user_id === Auth::id(), 403);
 
-        \App\Models\Order::where('seller_id', Auth::id())
+        $orders = Order::where('seller_id', Auth::id())
             ->where('source_id', $agentPost->id)
-            ->where('source_type', \App\Models\AgentPost::class)
-            ->where('status', 'pending_payment')
-            ->update(['status' => 'shipped']);
-        
-        $agentPost->update([
-            'status' => 'shipped',
-        ]);
+            ->where('source_type', AgentPost::class)
+            ->whereNotIn('status', ['cancelled', 'refunded'])
+            ->get();
 
+        if ($orders->isEmpty()) {
+            return back()->with('error', '目前尚無請購人跟單，不能標記出貨。');
+        }
+
+        if ($orders->contains(fn ($order) => $order->status === 'pending_payment' || is_null($order->paid_at))) {
+            return back()->with('error', '仍有請購人尚未完成結帳，請等所有跟單完成結帳後再出貨。');
+        }
+
+        DB::transaction(function () use ($agentPost) {
+            Order::where('seller_id', Auth::id())
+                ->where('source_id', $agentPost->id)
+                ->where('source_type', AgentPost::class)
+                ->where('status', 'wait-for-ship')
+                ->update(['status' => 'shipped']);
+
+            $agentPost->update([
+                'status' => 'shipped',
+            ]);
+        });
         return redirect()->route('agent.member')->with('status', '已標記為已出貨！');
     }
 
@@ -185,7 +216,7 @@ class AgentPostController extends Controller
             'status' => 'completed',
         ]);
 
-        return redirect()->route('agent.member')->with('status', '代購貼文已完成，已移至歷史紀錄！');
+        return redirect()->route('agent.member')->with('status', '代購團已完成，已移至歷史紀錄！');
     }
 
     // 代購人取消特定買家的訂單並回補數量
@@ -226,7 +257,7 @@ class AgentPostController extends Controller
         abort_unless($agentPost->user_id === Auth::id(), 403);
 
         if ($agentPost->status !== 'draft') {
-            return redirect()->route('agent.member')->with('status', '僅編輯中的代購貼文可刪除。');
+            return redirect()->route('agent.member')->with('status', '僅編輯中的代購團可刪除。');
         }
 
         DB::transaction(function () use ($agentPost) {
@@ -244,7 +275,14 @@ class AgentPostController extends Controller
             $agentPost->delete();
         });
 
-        return redirect()->route('agent.member')->with('status', '代購貼文已刪除。');
+        return redirect()->route('agent.member')->with('status', '代購團已刪除。');
+    }
+
+     private function hasActiveLogistics(): bool
+    {
+        return Logistics::where('user_id', Auth::id())
+            ->where('status', true)
+            ->exists();
     }
 
     private function validatePost(Request $request, bool $includeExistingImage = false): array
@@ -434,6 +472,15 @@ class AgentPostController extends Controller
                    ->paginate(12)
                    ->withQueryString();
 
+    // 重新計算並取得熱門貼文的 ID（前端用來標示 HOT 卡片）
+    \App\Models\AgentPost::recalculateHotScores();
+    $hotPostIds = \App\Models\AgentPost::where('status', 'open')
+                    ->orderByDesc('hot_score')
+                    ->take(6)
+                    ->pluck('id')
+                    ->map(fn($id) => (int) $id)
+                    ->all();
+
     $favoritedAgentPostIds = Auth::check()
         ? Favorite::query()
             ->where('user_id', Auth::id())
@@ -443,6 +490,6 @@ class AgentPostController extends Controller
             ->all()
         : [];
 
-    return view('store.index', compact('posts', 'favoritedAgentPostIds'));
+    return view('store.index', compact('posts', 'favoritedAgentPostIds', 'hotPostIds'));
 }
 }

@@ -23,7 +23,7 @@ class PostProduct extends Model
         'is_active',
     ];
 
-    // 反向關聯：這個商品屬於哪篇代購貼文
+    // 反向關聯：這個商品屬於哪篇代購團
     public function post()
     {
         return $this->belongsTo(AgentPost::class, 'agent_post_id');

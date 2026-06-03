@@ -173,7 +173,7 @@
                         
                         <div class="flex flex-col items-center text-center flex-1">
                             <div class="relative mb-4 cursor-pointer" @click="openProfile({{ Js::from($agent) }})">
-                                <img src="{{ $agent->avatar ? asset('storage/' . $agent->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode($agent->name) . '&background=10b981&color=fff' }}" 
+                                <img src="{{ $agent->avatar_url }}" 
                                      class="w-24 h-24 rounded-full border-4 border-white shadow-md object-cover transition group-hover:scale-105">
                                 <div class="absolute bottom-0 right-0 w-6 h-6 bg-green-500 border-2 border-white rounded-full"></div>
                             </div>
@@ -253,7 +253,7 @@
                 <div class="overflow-y-auto flex-1 custom-scrollbar">
                     <div class="bg-emerald-800 p-8 pt-12 pb-16 relative text-white flex flex-col md:flex-row items-center md:items-end gap-6">
                         <template x-if="activeAgent">
-                            <img :src="activeAgent.avatar ? '/storage/' + activeAgent.avatar : 'https://ui-avatars.com/api/?name=' + encodeURIComponent(activeAgent.name) + '&background=10b981&color=fff&size=128'" 
+                            <img :src="activeAgent.avatar_url" 
                                  class="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-white shadow-xl object-cover bg-white">
                         </template>
                         
@@ -309,7 +309,7 @@
                         </div>
                         <div class="lg:col-span-2">
                             <h5 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                <i class="bi bi-megaphone text-emerald-500"></i> 目前活躍的代購貼文
+                                <i class="bi bi-megaphone text-emerald-500"></i> 目前活躍的代購團
                             </h5>
                             <div class="space-y-4">
                                 <template x-for="post in (activeAgent?.agent_posts || [])" :key="post.id">

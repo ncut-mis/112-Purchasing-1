@@ -15,7 +15,7 @@ class AgentPostFavoriteSeeder extends Seeder
         $users = User::query()->get();
 
         if ($posts->isEmpty() || $users->isEmpty()) {
-            $this->command?->warn('略過 AgentPostFavoriteSeeder：缺少使用者或代購貼文資料。');
+            $this->command?->warn('略過 AgentPostFavoriteSeeder：缺少使用者或代購團資料。');
             return;
         }
 

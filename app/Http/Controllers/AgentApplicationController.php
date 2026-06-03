@@ -124,13 +124,11 @@ class AgentApplicationController extends Controller
 
         // 處理頭像上傳
         if ($request->hasFile('avatar')) {
-            // 如果原本有舊頭像，先刪除
-            if ($user->avatar) {
+            if ($user->avatar && is_string($user->avatar) && strlen($user->avatar) <= 1024 && preg_match('/^[\x20-\x7E]+$/', $user->avatar)) {
                 Storage::disk('public')->delete($user->avatar);
             }
-            
-            $path = $request->file('avatar')->store('avatars', 'public');
-            $user->avatar = $path;
+
+            $user->avatar = file_get_contents($request->file('avatar')->getRealPath());
         }
 
         $user->save();

@@ -94,24 +94,13 @@ Route::get('/', function (Request $request) {
         return app(HomeController::class)->search($request);
     }
 
- $totalOpenPosts = max(AgentPost::where('status', 'open')->count(), 1);
+AgentPost::recalculateHotScores();
 
     $hotPosts = AgentPost::with(['user', 'products'])
-        ->withCount(['favorites', 'orders'])
         ->where('status', 'open')
-        ->get()
-        ->map(function (AgentPost $post) use ($totalOpenPosts) {
-            $favoriteRatio = min(($post->favorites_count / $totalOpenPosts) * 100, 100);
-            $orderRatio = min(($post->orders_count / $totalOpenPosts) * 100, 100);
-
-            $score = (int) round(($favoriteRatio * 0.55) + ($orderRatio * 0.45));
-            $post->hot_score = max(0, min(100, $score));
-
-            return $post;
-        })
-        ->sortByDesc('hot_score')
+        ->orderByDesc('hot_score')
         ->take(6)
-        ->values();
+        ->get();
 
     $agentPosts = AgentPost::with(['user', 'products'])
         ->where('status', 'open')
@@ -253,7 +242,7 @@ Route::middleware('auth')->group(function () {
 
 
 
-// 收藏/取消收藏請購清單
+// 收藏/取消收藏請託單
 Route::middleware(['auth'])->post('/favorite/toggle', [\App\Http\Controllers\FavoriteController::class, 'toggle'])->name('favorite.toggle');
 
 
@@ -378,3 +367,20 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/agent-posts/{agentPost}/order', [OrderController::class, 'store'])
          ->name('order.store');
 });
+
+//推薦請託人路由
+Route::post('/agent/notifications/select', [RequestListController::class, 'selectNotifications'])
+    ->name('agent.notifications.select');
+Route::post(
+    '/agent/notifications/clear',
+    [RequestListController::class, 'clearNotifications']
+)->name('agent.notifications.clear');
+
+// 請根據實際情況調整 Controller 與方法名稱
+Route::get('/agent/buyer/{id}', [App\Http\Controllers\RequestListController::class, 'showBuyerDetails'])
+    ->name('agent.buyer.details');
+
+// 確保您在 web.php 最後面寫的是 Route::post
+Route::post('/agent/dashboard/clear', [AgentDashboardController::class, 'clearFilter'])
+    ->middleware(['auth', 'verified'])
+    ->name('agent.dashboard.clear');

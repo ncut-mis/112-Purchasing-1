@@ -44,6 +44,20 @@
                     </div>
                 @endif
 
+                @unless($hasActiveLogistics ?? false)
+                    <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <p class="font-bold">提醒：送出上架前需要先設定物流</p>
+                                <p class="mt-1">請先新增並啟用至少一筆物流，請購人結帳時才不用再傳訊息提醒您補設定。</p>
+                            </div>
+                            <a href="{{ route('logistics.index') }}" class="inline-flex items-center justify-center rounded-xl bg-amber-500 px-4 py-2 font-bold text-white hover:bg-amber-600">
+                                立即設定物流
+                            </a>
+                        </div>
+                    </div>
+                @endunless
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">貼文標題</label>
@@ -60,15 +74,13 @@
                         </select>
                     </div>
 
-                    <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">銷售開始日</label>
-                            <input type="date" name="start_date" value="{{ old('start_date') }}" class="w-full rounded-xl border-2 border-blue-500 focus:border-blue-500 focus:ring-blue-500" required>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">銷售結束日</label>
-                            <input type="date" name="end_date" value="{{ old('end_date') }}" class="w-full rounded-xl border-2 border-blue-500 focus:border-blue-500 focus:ring-blue-500" required>
-                        </div>
+                    <div class="md:col-span-2">
+                         <label class="block text-sm font-semibold text-gray-700 mb-2">預計代購時段</label>
+                      <div class="flex items-center gap-3">
+                           <input type="date" name="start_date" value="{{ old('start_date') }}" class="w-full rounded-xl border-2 border-blue-500 focus:border-blue-500 focus:ring-blue-500" required>
+                           <span class="text-gray-500 font-medium">~</span>
+                           <input type="date" name="end_date" value="{{ old('end_date') }}" class="w-full rounded-xl border-2 border-blue-500 focus:border-blue-500 focus:ring-blue-500" required>
+                      </div>
                     </div>
                 </div>
 

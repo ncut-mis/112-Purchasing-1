@@ -49,7 +49,7 @@
                             <i class="bi bi-person-badge"></i>
                         </div>
                         <nav class="p-2 space-y-1">
-                            <!-- 1. 我的代購貼文 -->
+                            <!-- 1. 我的代購團 -->
                             <a href="#" @click.prevent="activeTab = 'posts'" :class="activeTab === 'posts' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-gray-600'" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition">
                                 <i class="bi bi-megaphone-fill text-lg"></i>
                                 <span>我的代購團</span>
@@ -59,7 +59,7 @@
                                 <i class="bi bi-file-earmark-medical text-indigo-500 text-lg"></i>
                                 <span>請託單管理</span>
                             </a>
-                            <!-- 3. 代購貼文管理 -->
+                            <!-- 3. 代購團管理 -->
                             <a href="#" @click.prevent="activeTab = 'product-management'" :class="activeTab === 'product-management' ? 'bg-blue-50 text-blue-600 font-bold' : 'text-gray-600'" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition">
                                 <i class="bi bi-box text-blue-500 text-lg"></i>
                                 <span>代購團管理</span>
@@ -105,7 +105,7 @@
                     <div class="flex flex-col items-center p-4 bg-gray-50 rounded-2xl">
                         <a href="{{ route('agent.profile.edit') }}" class="relative group cursor-pointer mb-3">
                             <!-- 頭像主體 -->
-                            <img src="{{ Auth::user()->avatar ? asset('storage/' . Auth::user()->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode(Auth::user()->name) . '&background=6366f1&color=fff' }}" 
+                            <img src="{{ Auth::user()->avatar_url }}" 
                                  class="w-20 h-20 rounded-full border-4 border-white shadow-sm transition duration-300 group-hover:brightness-50 object-cover">
                             
                             <!-- 懸停顯示的淺淺 "設定" 文字與圖示 -->
@@ -161,7 +161,7 @@
                 <div class="w-full lg:w-3/4 space-y-8">
 
                     
-                    <!-- 分頁一：我的代購貼文 (預設顯示) -->
+                    <!-- 分頁一：我的代購團 (預設顯示) -->
                     <div x-show="activeTab === 'posts'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4">
                         
 
@@ -174,6 +174,9 @@
                                 ->latest()
                                 ->take(6)
                                 ->get();
+                                $hasActiveLogistics = \App\Models\Logistics::where('user_id', Auth::id())
+                                ->where('status', true)
+                                ->exists();
                         @endphp
 
                         <div class="flex justify-between items-center mb-6">
@@ -201,7 +204,7 @@
                                     </div>
                                     <div class="flex-1 min-w-0">
                                         <h6 class="font-bold text-gray-800 text-sm truncate">【{{ $post->country }}】{{ $post->title }}</h6>
-                                        <p class="text-[10px] text-gray-400">銷售期間: {{ optional($post->start_date)->format('Y-m-d') }} ~ {{ optional($post->end_date)->format('Y-m-d') }}</p>
+                                        <p class="text-[10px] text-gray-400">預計代購時段: {{ optional($post->start_date)->format('Y-m-d') }} ~ {{ optional($post->end_date)->format('Y-m-d') }}</p>
                                         <div class="mt-2 flex gap-2 flex-wrap">
                                             <span class="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded">{{ $post->products_count }} 項商品</span>
                                              @php
@@ -229,12 +232,12 @@
                                             <button type="button" class="agent-post-view-btn text-[11px] px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition" data-modal-id="agent-post-view-modal-{{ $post->id }}">檢視</button>
                                             @if($post->status === 'draft')
                                                 <button type="button" class="agent-post-edit-btn text-[11px] px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition" data-modal-id="agent-post-edit-modal-{{ $post->id }}">編輯</button>
-                                                <form method="POST" action="{{ route('agent.posts.destroy', $post) }}" onsubmit="return confirm('確定要刪除這篇編輯中的代購貼文嗎？');">
+                                                <form method="POST" action="{{ route('agent.posts.destroy', $post) }}" onsubmit="return confirm('確定要刪除這篇編輯中的代購團嗎？');">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="text-[11px] px-3 py-1.5 rounded-lg bg-rose-50 text-rose-600 font-semibold hover:bg-rose-100 transition">刪除</button>
                                                 </form>
-                                                <form method="POST" action="{{ route('agent.posts.submit', $post) }}" onsubmit="return confirm('送出後會顯示在首頁最新代購連線，確定送出？');">
+                                                <form method="POST" action="{{ route('agent.posts.submit', $post) }}" onsubmit="@if($hasActiveLogistics) return confirm('送出後會顯示在首頁最新代購連線，確定送出？'); @else alert('您目前還未設定物流或啟用物流，請至物流設定，設定完物流再按送出。'); return false; @endif">
                                                     @csrf
                                                     @method('PATCH')
                                                     <button type="submit" class="text-[11px] px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition">送出</button>
@@ -257,7 +260,7 @@
                                     <h4 class="text-xl font-bold text-gray-800 mb-2">{{ $post->title }}</h4>
                                     <p class="text-sm text-gray-500 mb-1">國家：{{ $post->country }}</p>
                                      <p class="text-sm text-gray-500 mb-1">狀態：{{ $post->status === 'draft' ? '編輯中' : ($post->status === 'open' ? '進行中' : $post->status) }}</p>
-                                    <p class="text-sm text-gray-500 mb-1">銷售期間：{{ optional($post->start_date)->format('Y-m-d') }} ~ {{ optional($post->end_date)->format('Y-m-d') }}</p>
+                                    <p class="text-sm text-gray-500 mb-1">預計代購時段：{{ optional($post->start_date)->format('Y-m-d') }} ~ {{ optional($post->end_date)->format('Y-m-d') }}</p>
                                     <p class="text-sm text-gray-500 mb-1 whitespace-pre-line">描述訊息：{{ $post->description }}</p>
                                     <div class="mt-6 border-t pt-4">
                                         <h5 class="font-bold text-gray-800 mb-3">商品規格</h5>
@@ -286,7 +289,7 @@
                             <div id="agent-post-edit-modal-{{ $post->id }}" class="agent-post-modal fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4">
                                 <div class="bg-white w-full max-w-4xl rounded-2xl shadow-xl p-6 max-h-[88vh] overflow-y-auto relative">
                                     <button type="button" class="modal-close-btn absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
-                                    <h4 class="text-xl font-bold text-gray-800 mb-4">編輯代購貼文</h4>
+                                    <h4 class="text-xl font-bold text-gray-800 mb-4">編輯代購團</h4>
 
                                     <form method="POST" action="{{ route('agent.posts.update', $post) }}" enctype="multipart/form-data" class="agent-post-edit-form space-y-5" data-max-items="5">
                                         @csrf
@@ -305,13 +308,13 @@
                                                     @endforeach
                                                 </select>
                                             </div>
-                                            <div>
-                                                <label class="block text-sm font-semibold text-gray-700 mb-2">銷售開始日</label>
-                                                <input type="date" name="start_date" value="{{ optional($post->start_date)->format('Y-m-d') }}" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
-                                            </div>
-                                            <div>
-                                                <label class="block text-sm font-semibold text-gray-700 mb-2">銷售結束日</label>
-                                                <input type="date" name="end_date" value="{{ optional($post->end_date)->format('Y-m-d') }}" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+                                            <div class="md:col-span-2">
+                                                 <label class="block text-sm font-semibold text-gray-700 mb-2">預計代購時段</label>
+                                              <div class="flex items-center gap-3">
+                                                   <input type="date" name="start_date" value="{{ optional($post->start_date)->format('Y-m-d') }}" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+                                                   <span class="text-gray-500 font-medium">~</span>
+                                                   <input type="date" name="end_date" value="{{ optional($post->end_date)->format('Y-m-d') }}" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+                                              </div>
                                             </div>
                                         </div>
 
@@ -928,6 +931,7 @@
                                         $requestList = $quote->requestList;
                                         if (!$requestList) continue;
                                         $firstItem = $requestList->items->first();
+                                        $canShipQuote = $requestList->status === 'wait-for-ship';
                                     @endphp
                                     <div class="rounded-xl border border-emerald-100 bg-emerald-50/40 p-4">
                                         <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -962,14 +966,22 @@
                                                     <span class="agent-chat-badge hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center"
                                                           data-request-list-id="{{ $requestList->id }}"></span>
                                                 </button>
-                                                <form method="POST" action="{{ route('quotes.ship', $quote->id) }}" onsubmit="return confirm('確認將此訂單標記為已出貨？')">
-                                                    @csrf
-                                                    @method('PATCH')
-                                                    <button type="submit"
-                                                        class="inline-flex items-center rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700 transition">
+                                                @if($canShipQuote)
+                                                    <form method="POST" action="{{ route('quotes.ship', $quote->id) }}" onsubmit="return confirm('確認將此訂單標記為已出貨？')">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button type="submit"
+                                                            class="inline-flex items-center rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700 transition">
+                                                            出貨
+                                                        </button>
+                                                    </form>
+                                                @else
+                                                    <button type="button" disabled
+                                                        title="請購人尚未完成結帳，暫時不能出貨"
+                                                        class="inline-flex items-center rounded-lg bg-gray-200 px-3 py-2 text-xs font-bold text-gray-400 cursor-not-allowed">
                                                         出貨
                                                     </button>
-                                                </form>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
@@ -1362,10 +1374,7 @@
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <div>
                 <h3 class="text-lg font-bold text-amber-600">代購歷史紀錄</h3>
-                <p class="text-sm text-gray-500">查看您已完成的代購貼文團務與請購清單紀錄。</p>
-            </div>
-            
-            <form method="GET" action="{{ route('agent.member') }}" class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <p class="text-sm text-gray-500">查看您已完成的代購團務與請託單紀錄。</p>
                 <input type="hidden" name="tab" value="agent-history">
                 <input type="text" name="agent_history_search" value="{{ $agentHistorySearch ?? '' }}" placeholder="搜尋清單編號 / 貼文標題 / 買家"
                     class="w-full sm:w-72 rounded-xl border border-gray-200 px-4 py-2 text-sm text-gray-700 focus:border-amber-300 focus:ring-amber-200 focus:outline-none">
@@ -1379,12 +1388,12 @@
             <button @click="subTab = 'lists'" 
                 :class="subTab === 'lists' ? 'border-amber-500 text-amber-600 font-bold' : 'border-transparent text-gray-500 hover:text-gray-700'"
                 class="pb-3 px-4 text-sm border-b-2 font-medium transition focus:outline-none">
-                已接請購清單 ({{ $agentHistoryOrders->count() }})
+                已接請託單 ({{ $agentHistoryOrders->count() }})
             </button>
             <button @click="subTab = 'posts'" 
                 :class="subTab === 'posts' ? 'border-amber-500 text-amber-600 font-bold' : 'border-transparent text-gray-500 hover:text-gray-700'"
                 class="pb-3 px-4 text-sm border-b-2 font-medium transition focus:outline-none">
-                已完成代購貼文 ({{ $completedPosts->count() }})
+                已完成代購團 ({{ $completedPosts->count() }})
             </button>
         </div>
 
@@ -1394,8 +1403,8 @@
             <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white text-amber-400 shadow-sm">
                 <i class="bi bi-journal-x text-2xl"></i>
             </div>
-            <p class="text-sm text-amber-700 font-semibold">尚未有完成的請購清單紀錄。</p>
-            <p class="mt-1 text-xs text-amber-500">當您承接的請購清單順利結案後，相關明細將會呈現在這裡。</p>
+            <p class="text-sm text-amber-700 font-semibold">尚未有完成的請託單紀錄。</p>
+            <p class="mt-1 text-xs text-amber-500">當您承接的請託單順利結案後，相關明細將會呈現在這裡。</p>
         </div>
     @else
         <div class="grid gap-4">
@@ -1461,7 +1470,7 @@
                                         {{ $post->country ? '【'.$post->country.'】' : '' }}{{ $post->title ?? '未命名貼文' }}
                                     </div>
                                     <div class="text-xs text-gray-500 mt-1">
-                                        代購期間：{{ optional($post->start_date)->format('Y/m/d') ?? '-' }} - {{ optional($post->end_date)->format('Y/m/d') ?? '-' }}
+                                        預計代購時段：{{ optional($post->start_date)->format('Y/m/d') ?? '-' }} - {{ optional($post->end_date)->format('Y/m/d') ?? '-' }}
                                         ・ 完成日期：{{ $post->updated_at->format('Y-m-d') }}
                                     </div>
                                 </div>
@@ -1536,6 +1545,7 @@
                                     });
                                 $productFollowers = collect();
                                 $productOrderedTotals = collect();
+                                $ordersByPostId = collect();
                                 $managedPostIds = $managedPostGroups
                                     ->keys()
                                     ->filter(function ($id) {
@@ -1560,6 +1570,7 @@
                                         ])
                                         ->latest('id')
                                         ->get();
+                                    $ordersByPostId = $relatedOrders->groupBy('source_id');
                                     $shippedPostIds = $relatedOrders
                                         ->where('status', 'shipped')
                                         ->pluck('source_id')
@@ -1571,11 +1582,13 @@
                                         ->flatMap(function ($order) {
                                             return $order->items->map(function ($item) use ($order) {
                                                 return [
+                                                    'order_id' => (int) $order->id,
                                                     'product_id' => (int) $item->product_id,
                                                     'buyer_id' => (int) $order->buyer_id,
-                                                    'buyer_name' => optional($order->buyer)->name ?? '未知會員',
+                                                    'buyer_name' => optional($order->buyer)->name ?? ($order->recipient_data['name'] ?? '未知會員'),
                                                     'quantity' => (int) $item->quantity,
-                                                    'paid_at' => $order->paid_at,
+                                                    'order_status' => $order->status,
+                                                    'is_paid' => $order->status !== 'pending_payment',
                                                 ];
                                             });
                                         })
@@ -1593,14 +1606,21 @@
                                         ->groupBy('product_id')
                                         ->map(function ($rows) {
                                             return $rows
-                                                ->groupBy('buyer_id')
-                                                ->map(function ($buyerRows) {
+                                                ->groupBy('order_id')
+                                                ->map(function ($orderRows) {
+                                                    $firstRow = $orderRows->first();
+
                                                     return [
-                                                        'buyer_id'   => $buyerRows->first()['buyer_id'] ?? 0,
-                                                        'buyer_name' => $buyerRows->first()['buyer_name'] ?? '未知會員',
-                                                        'quantity' => (int) $buyerRows->sum('quantity'),
-                                                        'paid_at' => $buyerRows->first()['paid_at'],
+                                                        'order_id' => $firstRow['order_id'] ?? 0,
+                                                        'buyer_id' => $firstRow['buyer_id'] ?? 0,
+                                                        'buyer_name' => $firstRow['buyer_name'] ?? '未知會員',
+                                                        'quantity' => (int) $orderRows->sum('quantity'),
+                                                        'order_status' => $firstRow['order_status'] ?? null,
+                                                        'is_paid' => (bool) ($firstRow['is_paid'] ?? false),
                                                     ];
+                                                })
+                                                ->sortBy(function ($row) {
+                                                    return ($row['is_paid'] ? '1' : '0') . '|' . $row['buyer_name'] . '|' . $row['order_id'];
                                                 })
                                                 ->values();
                                         });
@@ -1655,6 +1675,12 @@
                                             'completed' => 'bg-gray-100 text-gray-500',
                                             default     => 'bg-emerald-50 text-emerald-600',
                                         };
+                                        $postOrders = $post ? $ordersByPostId->get($post->id, collect()) : collect();
+                                        $hasFollowOrders = $postOrders->isNotEmpty();
+                                        $hasUnpaidFollowOrders = $postOrders->contains(function ($order) {
+                                            return $order->status === 'pending_payment';
+                                        });
+                                        $canShipPost = $postStatus === 'open' && $hasFollowOrders && ! $hasUnpaidFollowOrders;
                                     @endphp
                                     <div class="p-4 bg-blue-50 rounded-xl border border-blue-100 space-y-3" x-data="{ showPostDetails: false }">
                                         <div class="flex flex-wrap items-center justify-between gap-3">
@@ -1663,7 +1689,7 @@
                                                     {{ optional($post)->country ? '【'.optional($post)->country.'】' : '' }}{{ optional($post)->title ?? '未命名貼文' }}
                                                 </div>
                                                 <div class="text-xs text-gray-500 mt-1">
-                                                    代購期間：{{ optional(optional($post)->start_date)->format('Y/m/d') ?? '-' }} - {{ optional(optional($post)->end_date)->format('Y/m/d') ?? '-' }}
+                                                    預計代購時段：{{ optional(optional($post)->start_date)->format('Y/m/d') ?? '-' }} - {{ optional(optional($post)->end_date)->format('Y/m/d') ?? '-' }}
                                                 </div>
                                             </div>
                                             <div class="flex items-center gap-2 flex-wrap justify-end">
@@ -1679,14 +1705,22 @@
                                                     管理
                                                 </button>
                                                 @if($post->status === 'open')
-                                                <form method="POST" action="{{ route('agent.posts.ship', $post->id) }}" class="inline" onsubmit="return confirm('確定要將此貼文標記為已出貨？')">
-                                                    @csrf
-                                                    @method('PATCH')
-                                                    <button type="submit"
-                                                        class="inline-flex items-center px-3 py-1.5 text-xs font-bold text-white bg-emerald-500 border border-emerald-500 rounded-lg hover:bg-emerald-600 transition">
-                                                        出貨
-                                                    </button>
-                                                </form>
+                                                @if($canShipPost)
+                                                        <form method="POST" action="{{ route('agent.posts.ship', $post->id) }}" class="inline" onsubmit="return confirm('確定要將此貼文標記為已出貨？')">
+                                                            @csrf
+                                                            @method('PATCH')
+                                                            <button type="submit"
+                                                                class="inline-flex items-center px-3 py-1.5 text-xs font-bold text-white bg-emerald-500 border border-emerald-500 rounded-lg hover:bg-emerald-600 transition">
+                                                                出貨
+                                                            </button>
+                                                        </form>
+                                                    @else
+                                                        <button type="button" disabled
+                                                            title="{{ ! $hasFollowOrders ? '目前尚無請購人跟單，不能出貨' : '仍有請購人尚未完成結帳，暫時不能出貨' }}"
+                                                            class="inline-flex items-center px-3 py-1.5 text-xs font-bold text-gray-400 bg-gray-200 border border-gray-200 rounded-lg cursor-not-allowed">
+                                                            出貨
+                                                        </button>
+                                                    @endif
                                                 @endif
                                             </div>
                                         </div>
@@ -1737,7 +1771,7 @@
                                                                 @forelse($followers as $follower)
                                                                     <div class="mb-1 flex items-center gap-2">
                                                                         <span>{{ $follower['buyer_name'] }}：{{ $follower['quantity'] }} 件</span>
-                                                                        @if(!empty($follower['paid_at']))
+                                                                        @if(!empty($follower['is_paid']))
                                                                             <span class="inline-flex items-center rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5 text-[10px] font-bold">已付款</span>
                                                                         @else
                                                                             <span class="inline-flex items-center rounded-full bg-red-50 text-red-500 px-2 py-0.5 text-[10px] font-bold">未付款</span>
@@ -1771,31 +1805,25 @@
                                                             <p class="font-bold text-gray-800 mb-3 text-sm">{{ $product->name }}</p>
                                                             <div class="space-y-2">
                                                                 @foreach($mFollowers as $follower)
-                                                                    @php
-                                                                        $followerOrder = \App\Models\Order::where('seller_id', Auth::id())
-                                                                            ->where('source_id', $post->id)
-                                                                            ->where('buyer_id', $follower['buyer_id'] ?? 0)
-                                                                            ->where('status', 'pending_payment')
-                                                                            ->first();
-                                                                    @endphp
+                                                                    
                                                                     <div class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-2">
                                                                         <div class="flex items-center gap-3">
                                                                             <span class="text-sm text-gray-800">{{ $follower['buyer_name'] }}</span>
                                                                             <span class="text-xs text-gray-500">{{ $follower['quantity'] }} 件</span>
-                                                                            @if(!empty($follower['paid_at']))
+                                                                            @if(!empty($follower['is_paid']))
                                                                                 <span class="text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5">已付款</span>
                                                                             @else
                                                                                 <span class="text-[10px] font-bold rounded-full bg-red-50 text-red-500 px-2 py-0.5">未付款</span>
                                                                             @endif
                                                                         </div>
-                                                                        @if($followerOrder && empty($follower['paid_at']))
-                                                                            <form method="POST" action="{{ route('agent.orders.cancel', $followerOrder->id) }}"
+                                                                        @if(!empty($follower['order_id']) && empty($follower['is_paid']))
+                                                                            <form method="POST" action="{{ route('agent.orders.cancel', $follower['order_id']) }}"
                                                                                   onsubmit="return confirm('確定要取消 {{ $follower['buyer_name'] }} 的訂單？數量將會回補。')">
                                                                                 @csrf
                                                                                 @method('DELETE')
                                                                                 <button type="submit" class="text-xs text-red-500 hover:text-red-700 font-semibold">取消訂單</button>
                                                                             </form>
-                                                                        @elseif(!empty($follower['paid_at']))
+                                                                        @elseif(!empty($follower['is_paid']))
                                                                             <span class="text-xs text-gray-400">已付款不可取消</span>
                                                                         @endif
                                                                     </div>
@@ -1812,7 +1840,7 @@
                                     </div>
                                 @empty
                                     <div class="text-gray-400 text-sm text-center py-8 border border-dashed border-blue-200 rounded-xl">
-                                        目前沒有進行中的代購貼文商品管理資料。
+                                        目前沒有進行中的代購團商品管理資料。
                                     </div>
                                 @endforelse
                             </div>
@@ -1847,7 +1875,7 @@
                                                     {{ optional($post)->country ? '【'.optional($post)->country.'】' : '' }}{{ optional($post)->title ?? '未命名貼文' }}
                                                 </div>
                                                 <div class="text-xs text-gray-500 mt-1">
-                                                    代購期間：{{ optional(optional($post)->start_date)->format('Y/m/d') ?? '-' }} - {{ optional(optional($post)->end_date)->format('Y/m/d') ?? '-' }}
+                                                    預計代購時段：{{ optional(optional($post)->start_date)->format('Y/m/d') ?? '-' }} - {{ optional(optional($post)->end_date)->format('Y/m/d') ?? '-' }}
                                                 </div>
                                             </div>
                                             <div class="flex items-center gap-2 flex-wrap justify-end">
@@ -1872,7 +1900,7 @@
                                                         </button>
                                                     </form>
                                                 @endif
-                                                <form method="POST" action="{{ route('agent.posts.complete', $post->id) }}" class="inline" onsubmit="return confirm('確定完成此代購貼文？完成後將移至歷史紀錄。')">
+                                                <form method="POST" action="{{ route('agent.posts.complete', $post->id) }}" class="inline" onsubmit="return confirm('確定完成此代購團？完成後將移至歷史紀錄。')">
                                                     @csrf
                                                     @method('PATCH')
                                                     <button type="submit"
@@ -1920,7 +1948,7 @@
                                                                     <div class="flex items-center gap-2 py-0.5">
                                                                         <span>{{ $follower['buyer_name'] }}</span>
                                                                         <span class="text-gray-400">{{ $follower['quantity'] }} 件</span>
-                                                                        @if(!empty($follower['paid_at']))
+                                                                        @if(!empty($follower['is_paid']))
                                                                             <span class="inline-flex items-center rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5 text-[10px] font-bold">已付款</span>
                                                                         @else
                                                                             <span class="inline-flex items-center rounded-full bg-red-50 text-red-500 px-2 py-0.5 text-[10px] font-bold">未付款</span>
@@ -1938,7 +1966,7 @@
                                     </div>
                                 @empty
                                     <div class="text-gray-400 text-sm text-center py-8 border border-dashed border-blue-200 rounded-xl">
-                                        目前沒有已出貨的代購貼文商品管理資料。
+                                        目前沒有已出貨的代購團商品管理資料。
                                     </div>
                                 @endforelse
                             </div>
@@ -1946,7 +1974,7 @@
                         </section>
                     </div>
 
-                    <!-- 分頁三：我的收藏請購清單 (覆蓋顯示) -->
+                    <!-- 分頁三：我的收藏請託單 (覆蓋顯示) -->
                     <div x-show="activeTab === 'favorites'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4">
                         <section id="favorites" class="bg-white rounded-2xl shadow-sm border border-pink-100 p-6">
                             <h3 class="text-lg font-bold text-pink-600 mb-6">我的收藏請託單</h3>

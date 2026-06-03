@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('post_products', function (Blueprint $table) {
             $table->id();
 
-            // 關聯到代購貼文 (AgentPost)
+            // 關聯到代購團 (AgentPost)
             // 如果貼文被刪除，底下的商品也會一併刪除 (cascade)
             $table->foreignId('agent_post_id')->constrained('agent_posts')->onDelete('cascade');
 

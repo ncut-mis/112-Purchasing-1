@@ -10,33 +10,22 @@ class HomeController extends Controller
 {
     public function index()
     {
-        // 撈取最新的 6 筆代購貼文 (必須是開放狀態)
+        // 撈取最新的 6 筆代購團 (必須是開放狀態)
         $posts = AgentPost::with('user') 
             ->where('status', 'open')
             ->latest()
             ->take(6)
             ->get();
 
-        // 撈取最新的 8 筆請購清單
+        // 撈取最新的 8 筆請託單
 
-        $totalOpenPosts = max(AgentPost::where('status', 'open')->count(), 1);
+        AgentPost::recalculateHotScores();
 
         $hotPosts = AgentPost::with(['user', 'products'])
-            ->withCount(['favorites', 'orders'])
             ->where('status', 'open')
-            ->get()
-            ->map(function (AgentPost $post) use ($totalOpenPosts) {
-                $favoriteRatio = min(($post->favorites_count / $totalOpenPosts) * 100, 100);
-                $orderRatio = min(($post->orders_count / $totalOpenPosts) * 100, 100);
-
-                $score = (int) round(($favoriteRatio * 0.55) + ($orderRatio * 0.45));
-                $post->hot_score = max(0, min(100, $score));
-
-                return $post;
-            })
-            ->sortByDesc('hot_score')
+            ->orderByDesc('hot_score')
             ->take(6)
-            ->values();
+            ->get();
 
         $requests = RequestList::with('user')
             ->where('status', 'pending')
@@ -56,7 +45,7 @@ class HomeController extends Controller
     }
 
     /**
-     * 搜尋代購貼文 (首頁搜尋表單使用)
+     * 搜尋代購團 (首頁搜尋表單使用)
      */
     public function search(Request $request)
     {
@@ -96,22 +85,13 @@ class HomeController extends Controller
 
             $totalOpenPosts = max(AgentPost::where('status', 'open')->count(), 1);
 
+        AgentPost::recalculateHotScores();
+
         $hotPosts = AgentPost::with(['user', 'products'])
-            ->withCount(['favorites', 'orders'])
             ->where('status', 'open')
-            ->get()
-            ->map(function (AgentPost $post) use ($totalOpenPosts) {
-                $favoriteRatio = min(($post->favorites_count / $totalOpenPosts) * 100, 100);
-                $orderRatio = min(($post->orders_count / $totalOpenPosts) * 100, 100);
-
-                $score = (int) round(($favoriteRatio * 0.55) + ($orderRatio * 0.45));
-                $post->hot_score = max(0, min(100, $score));
-
-                return $post;
-            })
-            ->sortByDesc('hot_score')
+            ->orderByDesc('hot_score')
             ->take(6)
-            ->values();
+            ->get();
         
         $requests = RequestList::with('user')
             ->where('status', 'pending')

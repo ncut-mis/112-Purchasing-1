@@ -107,7 +107,7 @@ class FollowController extends Controller
 
         // 只有在資料表存在時才執行正式查詢
         if (Schema::hasTable('follows')) {
-            // 抓取我追蹤的人，並預載入申請資訊與「活躍中」的代購貼文
+            // 抓取我追蹤的人，並預載入申請資訊與「活躍中」的代購團
             $followings = $user->followings()
                 ->with(['agentApplication', 'agentPosts' => function($q) {
                     $q->where('status', 'open')->latest();

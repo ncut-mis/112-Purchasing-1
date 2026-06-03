@@ -35,11 +35,7 @@
                         <div class="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                             <div class="flex items-center space-x-5">
                                 <div class="h-14 w-14 flex-shrink-0 rounded-full bg-amber-50 flex items-center justify-center border-2 border-white shadow-sm ring-1 ring-slate-100">
-                                    @if($quote->user->avatar)
-                                        <img src="{{ asset('storage/' . $quote->user->avatar) }}" class="h-full w-full rounded-full object-cover">
-                                    @else
-                                        <i class="bi bi-person-fill text-2xl text-amber-300"></i>
-                                    @endif
+                                    <img src="{{ $quote->user->avatar_url }}" class="h-full w-full rounded-full object-cover">
                                 </div>
                                 <div>
                                     <div class="text-lg font-bold text-slate-900 group-hover:text-amber-600 transition-colors">{{ $quote->user->name }}</div>

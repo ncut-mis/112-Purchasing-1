@@ -11,7 +11,7 @@
             <div class="flex flex-col md:flex-row items-center md:items-end gap-6">
                 <!-- 頭像 -->
                 <div class="relative -mb-16 md:-mb-24">
-                    <img src="{{ $agent->avatar ? asset('storage/' . $agent->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode($agent->name) . '&background=10b981&color=fff&size=200' }}" 
+                    <img src="{{ $agent->avatar_url }}" 
                          class="w-40 h-40 md:w-56 md:h-56 rounded-full border-8 border-white shadow-xl object-cover bg-white">
                     <div class="absolute bottom-4 right-4 w-8 h-8 bg-green-500 border-4 border-white rounded-full"></div>
                 </div>
@@ -77,10 +77,10 @@
                 </section>
             </div>
 
-            <!-- 右側：代購貼文 (agent_posts) -->
+            <!-- 右側：代購團 (agent_posts) -->
             <div class="lg:col-span-2 space-y-6">
                 <h3 class="text-2xl font-black text-gray-800 flex items-center gap-3 mb-6">
-                    <i class="bi bi-megaphone text-emerald-500"></i> 已發布代購貼文
+                    <i class="bi bi-megaphone text-emerald-500"></i> 已發布代購團
                 </h3>
 
                 @forelse($agent->agentPosts as $post)
@@ -127,7 +127,7 @@
                 @empty
                     <div class="bg-gray-50 rounded-3xl p-12 text-center border-2 border-dashed border-gray-200">
                         <i class="bi bi-inbox text-4xl text-gray-300 mb-4 block"></i>
-                        <p class="text-gray-400 font-medium">目前暫無發布中的代購貼文</p>
+                        <p class="text-gray-400 font-medium">目前暫無發布中的代購團</p>
                     </div>
                 @endforelse
             </div>

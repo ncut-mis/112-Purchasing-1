@@ -15,7 +15,7 @@ class HistoryController extends Controller
         $user = Auth::user();
         $agentHistorySearch = $request->input('agent_history_search');
 
-        // 1. 抓取：代購貼文
+        // 1. 抓取：代購團
         $completedPosts = AgentPost::where('user_id', $user->id)
             ->where('status', 'completed') 
             ->with(['postProducts']) 
@@ -25,10 +25,10 @@ class HistoryController extends Controller
             ->latest('updated_at')
             ->get();
 
-        // 2. 抓取：已結案請購清單
-       // 2. 抓取：我作為代購，且已經順利結案(completed)的請購清單
-        // 2. 抓取：我作為代購（people 欄位記錄著我的 ID），且已經順利結案的請購清單
-// 2. 抓取：已接請購清單
+        // 2. 抓取：已結案請託單
+       // 2. 抓取：我作為代購，且已經順利結案(completed)的請託單
+        // 2. 抓取：我作為代購（people 欄位記錄著我的 ID），且已經順利結案的請託單
+// 2. 抓取：已接請託單
         $agentHistoryOrders = RequestList::where('people', $user->id)
             // 💡 確保你的第二筆資料在庫裡的 status 確實是 completed。如果 matched 也算完成，可以用 whereIn('status', ['completed', 'matched'])
             ->where('status', 'completed') 

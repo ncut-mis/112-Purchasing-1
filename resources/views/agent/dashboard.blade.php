@@ -3,6 +3,8 @@
         $keyword = $keyword ?? request('q', '');
         $selectedCountry = $selectedCountry ?? request('country', 'all');
         $selectedTime = $selectedTime ?? request('time', 'all');
+        $activeBuyerFilterNames = collect($activeBuyerFilterNames ?? []);
+        $activeBuyerFilterLabel = $activeBuyerFilterNames->implode('、');
         // 確保分頁物件存在，避免報錯
         $requestLists = $requestLists ?? new \Illuminate\Pagination\LengthAwarePaginator([], 0, 12);
         
@@ -53,6 +55,9 @@
         quoteRemarks: '',
         loading: false,
 
+        hasActiveLogistics: @json($hasActiveLogistics ?? false),
+        logisticsReminder: '您目前還未設定物流或啟用物流，請至物流設定，設定完物流再報價。',
+
         get totalQuote() {
             if (!this.selectedRequest || !this.selectedRequest.items) return 0;
             return this.selectedRequest.items.reduce((sum, item) => {
@@ -63,6 +68,13 @@
         },
 
         openDetail(data) {
+
+        if (!this.hasActiveLogistics) {
+                alert(this.logisticsReminder);
+                return;
+            }
+
+
             const itemsWithPrivateFields = data.items.map(item => ({
                 ...item,
                 agent_quote: ''
@@ -129,6 +141,10 @@
                     this.closeAll();
                     window.location.reload();
                 } else {
+                    if (data.logistics_url && confirm((data.message || '送出失敗') + '\n\n是否前往物流設定？')) {
+                        window.location.href = data.logistics_url;
+                        return;
+                    }
                     throw new Error(data.message || '送出失敗');
                 }
             })
@@ -139,6 +155,19 @@
     }" @keydown.escape.window="closeAll()" class="py-12 bg-gray-50 min-h-screen">
         
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+             @unless($hasActiveLogistics ?? false)
+                <div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-800 shadow-sm">
+                    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <p class="font-black"><i class="bi bi-truck me-1"></i> 尚未設定啟用中的物流</p>
+                            <p class="mt-1 text-sm">送出報價前請先新增並啟用物流，請購人接受報價後即可直接結帳，不需要另外提醒您補設定。</p>
+                        </div>
+                        <a href="{{ route('logistics.index') }}" class="inline-flex items-center justify-center rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-amber-600">
+                            立即設定物流
+                        </a>
+                    </div>
+                </div>
+            @endunless
             <!-- 篩選區 -->
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8 space-y-6">
                      @if(request()->has('search_buyer_id'))
@@ -150,11 +179,12 @@
                                 </span>
                             </div>
                             
-                            <a href="{{ route('agent.dashboard') }}" 
-                            class="inline-flex items-center px-4 py-2 bg-white border border-indigo-300 rounded-lg text-xs font-semibold text-indigo-700 shadow-sm hover:bg-indigo-100 transition">
-                                <i class="bi bi-x-circle-fill me-1.5 text-indigo-500"></i>
-                                {{ __('清除篩選（顯示全部）') }}
-                            </a>
+                            <form action="{{ route('agent.dashboard.clear') }}" method="POST">
+                                @csrf
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    清除篩選條件
+                                </button>
+                            </form>
                         </div>
                     @endif
                 
@@ -191,8 +221,20 @@
             </div>
 
 
-            <div class="flex items-center justify-between mb-6">
-                <h3 class="text-lg font-bold text-gray-800">最新請託需求</h3>
+           <div class="flex flex-col gap-3 mb-6 md:flex-row md:items-center md:justify-between">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <h3 class="text-lg font-bold text-gray-800">最新請託需求</h3>
+                    @if($activeBuyerFilterLabel !== '')
+                        <form action="{{ route('agent.dashboard.clear') }}" method="POST">
+                            @csrf
+                            <button type="submit"
+                                    class="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-bold text-indigo-700 shadow-sm transition hover:bg-indigo-100 hover:text-indigo-900">
+                                <i class="bi bi-x-circle-fill"></i>
+                                清除請託人【{{ $activeBuyerFilterLabel }}】搜尋結果
+                            </button>
+                        </form>
+                    @endif
+                </div>
                 <span class="text-sm text-gray-400">找到 {{ $requestLists->total() }} 個符合條件的請託</span>
             </div>
 

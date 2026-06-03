@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -33,6 +35,11 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'avatar',
+    ];
+
+    protected $appends = [
+        'avatar_url',
     ];
 
     /**
@@ -46,6 +53,74 @@ class User extends Authenticatable
             // 確保從資料庫讀取時自動轉為 PHP 陣列，避免前端顯示亂碼
             'purchasable_countries' => 'array', 
         ];
+    }
+
+    public function getAvatarUrlAttribute(): string
+    {
+        if (empty($this->avatar)) {
+            return $this->generatePlaceholderAvatar();
+        }
+
+        if (is_string($this->avatar) && preg_match('#^(https?://|data:image/)#i', $this->avatar)) {
+            return $this->avatar;
+        }
+
+        if (is_string($this->avatar) && $this->isPublicStoragePath($this->avatar)) {
+            $path = $this->normalizePublicStoragePath($this->avatar);
+            /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
+            $disk = Storage::disk('public');
+            return $disk->url($path);
+        }
+
+        if (is_string($this->avatar)) {
+            $mime = $this->detectImageMimeType($this->avatar) ?? 'image/png';
+            return 'data:' . $mime . ';base64,' . base64_encode($this->avatar);
+        }
+
+        return $this->generatePlaceholderAvatar();
+    }
+
+    private function isPublicStoragePath(string $value): bool
+    {
+        return preg_match('#^(?:/)?(?:storage/|public/)?[\w\-./]+\.[a-z0-9]{2,4}$#i', $value) === 1;
+    }
+
+    private function normalizePublicStoragePath(string $value): string
+    {
+        $normalized = ltrim($value, '/');
+
+        if (Str::startsWith($normalized, 'storage/')) {
+            $normalized = Str::after($normalized, 'storage/');
+        }
+
+        if (Str::startsWith($normalized, 'public/')) {
+            $normalized = Str::after($normalized, 'public/');
+        }
+
+        return $normalized;
+    }
+
+    private function detectImageMimeType(string $value): ?string
+    {
+        if (! function_exists('finfo_open')) {
+            return null;
+        }
+
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+
+        if (! $finfo) {
+            return null;
+        }
+
+        $mime = finfo_buffer($finfo, $value);
+        finfo_close($finfo);
+
+        return $mime;
+    }
+
+    private function generatePlaceholderAvatar(): string
+    {
+        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name ?? 'User') . '&background=10b981&color=fff';
     }
 
     /*

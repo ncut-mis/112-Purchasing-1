@@ -3,30 +3,27 @@
 namespace App\Http\Controllers;
 
 use App\Models\RequestList;
+use App\Models\Favorite;
+use App\Models\Logistics;
+use App\Models\AgentNotification;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Favorite;
 
 class AgentDashboardController extends Controller
 {
-    /**
-     * 顯示代購人接單大廳 (已整合小鈴鐺點擊特定買家篩選功能)
-     */
     public function index(Request $request)
     {
-        // 1. 初始化查詢
         $query = RequestList::with(['items', 'user', 'offers'])
-        // 狀態：顯示等待中 (pending) 與 有人報價但尚未成交 (offered) 的單子
-        ->whereIn('status', ['pending', 'offered']) 
-        // 時間：截止日期必須大於或等於今天 (未過期)
-        ->whereDate('deadline', '>=', now()->toDateString())
-        // 排除已成交的單子 (people 欄位為空表示還沒人接單)
-        ->whereNull('people')
-        ->latest();
+            ->whereIn('status', ['pending', 'offered'])
+            ->whereDate('deadline', '>=', now()->toDateString())
+            ->whereNull('people')
+            ->latest();
 
-        // 2. 處理關鍵字搜尋
+        // 關鍵字搜尋
         $keyword = trim((string) $request->query('q', ''));
+
         if ($keyword !== '') {
             $query->where(function ($q) use ($keyword) {
                 $q->where('title', 'like', "%{$keyword}%")
@@ -37,20 +34,14 @@ class AgentDashboardController extends Controller
             });
         }
 
-        // 🎯 【新增核心邏輯】：處理從小鈴鐺「前往查看」帶過來的買家篩選
-        // 只要網址後方有 ?search_buyer_id=X ，大廳就只會顯示該買家的清單
-        $searchBuyerId = $request->query('search_buyer_id');
-        if ($searchBuyerId) {
-            $query->where('user_id', $searchBuyerId);
-        }
-
-        // 3. 修正點：將 'location' 改為 'country'
+        // 國家篩選
         $country = $request->query('country');
+
         if ($country && $country !== 'all') {
             $query->where('country', $country);
         }
 
-        // 4. 處理時間篩選
+        // 時間篩選
         $selectedTime = $request->query('time', 'all');
         $today = Carbon::today();
 
@@ -65,27 +56,81 @@ class AgentDashboardController extends Controller
                 ->whereDate('deadline', '<=', Carbon::now()->endOfWeek(Carbon::SUNDAY));
         }
 
-        // 5. 執行查詢與分頁
+        // ===== 小鈴鐺勾選篩選 =====
+        $selectedNotifications = AgentNotification::with('buyer')
+            ->where('agent_id', Auth::id())
+            ->where('is_selected', true)
+            ->get();
+
+        $selectedBuyerIds = $selectedNotifications
+            ->pluck('buyer_id')
+            ->unique()
+            ->values()
+            ->all();
+
+        $activeBuyerFilterNames = $selectedNotifications
+            ->pluck('buyer.name')
+            ->filter()
+            ->unique()
+            ->values();
+
+        if (!empty($selectedBuyerIds)) {
+            $query->whereIn('user_id', $selectedBuyerIds);
+        }
+
+        // 支援既有通知連結帶入 search_buyer_id 的搜尋情境。
+        $searchBuyerId = $request->query('search_buyer_id');
+
+        if ($searchBuyerId) {
+            $query->where('user_id', $searchBuyerId);
+
+            if ($activeBuyerFilterNames->isEmpty()) {
+                $buyerName = User::whereKey($searchBuyerId)->value('name');
+
+                if ($buyerName) {
+                    $activeBuyerFilterNames = collect([$buyerName]);
+                }
+            }
+        }
+
         $requests = $query->paginate(12)->withQueryString();
 
         $favoritedRequestListIds = Auth::check()
-            ? Favorite::query()
-                ->where('user_id', Auth::id())
+            ? Favorite::where('user_id', Auth::id())
                 ->where('favoriteable_type', RequestList::class)
                 ->pluck('favoriteable_id')
                 ->map(fn ($id) => (int) $id)
                 ->all()
             : [];
 
-        // 6. 回傳視圖
+        $hasActiveLogistics = Auth::check()
+            ? Logistics::where('user_id', Auth::id())
+                ->where('status', true)
+                ->exists()
+            : false;
+
         return view('agent.dashboard', [
             'requests' => $requests,
-            'requestLists' => $requests, // 保持相容性
+            'requestLists' => $requests,
             'favoritedRequestListIds' => $favoritedRequestListIds,
             'selectedCountry' => $country ?? 'all',
             'selectedTime' => $selectedTime,
             'keyword' => $keyword,
-            'searchBuyerId' => $searchBuyerId, // 💡 傳給前端，未來如果想做「清除篩選」按鈕可以用
+            'hasActiveLogistics' => $hasActiveLogistics,
+            'activeBuyerFilterNames' => $activeBuyerFilterNames,
         ]);
     }
+
+  public function clearFilter()
+{
+    // 1. 記錄執行狀態 (檢查 storage/logs/laravel.log)
+    \Log::info('清除按鈕已觸發，使用者 ID: ' . auth()->id());
+
+    // 2. 清除資料庫
+    \App\Models\AgentNotification::where('agent_id', auth()->id())
+        ->update(['is_selected' => false]);
+
+    // 3. 強制重導向至 dashboard
+    return redirect()->route('agent.dashboard');
+}
 }

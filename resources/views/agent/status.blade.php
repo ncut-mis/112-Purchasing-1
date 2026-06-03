@@ -46,7 +46,7 @@
                                 <i class="bi bi-check-circle-fill"></i>
                             </div>
                             <h3 class="text-2xl font-bold text-gray-800 mt-4">恭喜！申請已通過</h3>
-                            <p class="text-gray-500 mt-2">您現在已經具備代購人身分，可以開始發布代購貼文了。</p>
+                            <p class="text-gray-500 mt-2">您現在已經具備代購人身分，可以開始發布代購團了。</p>
                             <div class="mt-6">
                                 <a href="#" class="btn btn-success rounded-pill px-6 fw-bold">前往發布貼文</a>
                             </div>
