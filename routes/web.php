@@ -394,4 +394,5 @@ Route::get('/agent/buyer/{id}', [App\Http\Controllers\RequestListController::cla
 
 // 確保您在 web.php 最後面寫的是 Route::post
 Route::post('/agent/dashboard/clear', [AgentDashboardController::class, 'clearFilter'])
+    ->middleware(['auth', 'verified'])
     ->name('agent.dashboard.clear');

@@ -6,6 +6,7 @@ use App\Models\RequestList;
 use App\Models\Favorite;
 use App\Models\Logistics;
 use App\Models\AgentNotification;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -56,14 +57,40 @@ class AgentDashboardController extends Controller
         }
 
         // ===== 小鈴鐺勾選篩選 =====
-        $selectedBuyerIds = AgentNotification::where('agent_id', auth()->id())
+        $selectedNotifications = AgentNotification::with('buyer')
+            ->where('agent_id', Auth::id())
             ->where('is_selected', true)
+            ->get();
+
+        $selectedBuyerIds = $selectedNotifications
             ->pluck('buyer_id')
             ->unique()
-            ->toArray();
+            ->values()
+            ->all();
+
+        $activeBuyerFilterNames = $selectedNotifications
+            ->pluck('buyer.name')
+            ->filter()
+            ->unique()
+            ->values();
 
         if (!empty($selectedBuyerIds)) {
             $query->whereIn('user_id', $selectedBuyerIds);
+        }
+
+        // 支援既有通知連結帶入 search_buyer_id 的搜尋情境。
+        $searchBuyerId = $request->query('search_buyer_id');
+
+        if ($searchBuyerId) {
+            $query->where('user_id', $searchBuyerId);
+
+            if ($activeBuyerFilterNames->isEmpty()) {
+                $buyerName = User::whereKey($searchBuyerId)->value('name');
+
+                if ($buyerName) {
+                    $activeBuyerFilterNames = collect([$buyerName]);
+                }
+            }
         }
 
         $requests = $query->paginate(12)->withQueryString();
@@ -90,6 +117,7 @@ class AgentDashboardController extends Controller
             'selectedTime' => $selectedTime,
             'keyword' => $keyword,
             'hasActiveLogistics' => $hasActiveLogistics,
+            'activeBuyerFilterNames' => $activeBuyerFilterNames,
         ]);
     }
 

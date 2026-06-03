@@ -3,6 +3,8 @@
         $keyword = $keyword ?? request('q', '');
         $selectedCountry = $selectedCountry ?? request('country', 'all');
         $selectedTime = $selectedTime ?? request('time', 'all');
+        $activeBuyerFilterNames = collect($activeBuyerFilterNames ?? []);
+        $activeBuyerFilterLabel = $activeBuyerFilterNames->implode('、');
         // 確保分頁物件存在，避免報錯
         $requestLists = $requestLists ?? new \Illuminate\Pagination\LengthAwarePaginator([], 0, 12);
         
@@ -219,8 +221,20 @@
             </div>
 
 
-            <div class="flex items-center justify-between mb-6">
-                <h3 class="text-lg font-bold text-gray-800">最新請託需求</h3>
+           <div class="flex flex-col gap-3 mb-6 md:flex-row md:items-center md:justify-between">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <h3 class="text-lg font-bold text-gray-800">最新請託需求</h3>
+                    @if($activeBuyerFilterLabel !== '')
+                        <form action="{{ route('agent.dashboard.clear') }}" method="POST">
+                            @csrf
+                            <button type="submit"
+                                    class="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-bold text-indigo-700 shadow-sm transition hover:bg-indigo-100 hover:text-indigo-900">
+                                <i class="bi bi-x-circle-fill"></i>
+                                清除請託人【{{ $activeBuyerFilterLabel }}】搜尋結果
+                            </button>
+                        </form>
+                    @endif
+                </div>
                 <span class="text-sm text-gray-400">找到 {{ $requestLists->total() }} 個符合條件的請託</span>
             </div>
 
