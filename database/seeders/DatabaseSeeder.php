@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
         // 確保這裡叫 RandomPostSeeder 而不是 PostSeeder[cite: 2, 3]
         RandomPostSeeder::class,
         AgentApplicationSeeder::class,
+        AgentLogisticsSeeder::class,
         RequestListSeeder::class,
         people::class,
         AgentPostFavoriteSeeder::class,
