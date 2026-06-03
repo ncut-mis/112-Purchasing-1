@@ -81,7 +81,6 @@ Route::get('/admin/request-items/{requestItem}/image', [AdminAuthController::cla
 
 Route::delete('/admin/request-lists/{requestList}', [AdminAuthController::class, 'deleteRequestList'])->middleware('admin.auth')->name('admin.request-lists.delete');
 Route::delete('/admin/agent-posts/{agentPost}', [AdminAuthController::class, 'deleteAgentPost'])->middleware('admin.auth')->name('admin.agent-posts.delete');
-Route::post('/request-list/{requestList}/chat-read', [RequestListChatController::class, 'markAsRead'])->name('request-list.chat.read');
 
 Route::patch('/admin/reports/{report}/approve', [AdminAuthController::class, 'approveReport'])->middleware('admin.auth')->name('admin.reports.approve');
 Route::patch('/admin/reports/{report}/reject', [AdminAuthController::class, 'rejectReport'])->middleware('admin.auth')->name('admin.reports.reject');
@@ -283,7 +282,7 @@ Route::middleware('auth')->group(function () {
 });
 
 
-Route::post('/request-list/{requestList}/chat-read', [RequestListChatController::class, 'markAsRead'])->name('request-list.chat.read');
+
 
 
 

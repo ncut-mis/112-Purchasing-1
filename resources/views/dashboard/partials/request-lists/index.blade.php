@@ -1145,76 +1145,8 @@ document.addEventListener('DOMContentLoaded', function () {
         setTimeout(() => setBuyerChatBadge(parseInt(id), count), 100);
     });
 
-    // ── Pusher 連線（請託單聊天用）────────────────────────────────
-    const pusher = new Pusher('{{ config("broadcasting.connections.pusher.key") }}', {
-        cluster: '{{ config("broadcasting.connections.pusher.options.cluster") }}',
-        forceTLS: true,
-        authEndpoint: '/broadcasting/auth',
-        auth: { headers: { 'X-CSRF-TOKEN': CSRF } }
-    });
-
-    const channel = pusher.subscribe('private-chat.' + MY_ID);
-
-    // 收到新訊息（請託單聊天）
-    channel.bind('message.sent', function (data) {
-        if (!data.requestListId) return;
-        if (data.senderId === MY_ID) return; // 自己發的不重複處理
-
-        // box ID 用 senderId（代購人）找
-        const boxId = `request-chat-messages-${data.requestListId}-${data.senderId}`;
-        const box = document.getElementById(boxId);
-
-        // 判斷聊天室是否開著
-        const modal = document.getElementById(`request-chat-modal-${data.requestListId}`);
-        const isOpen = modal && !modal.classList.contains('hidden');
-
-        if (box) {
-            // 移除空訊息提示
-            const emptyTip = document.getElementById(`empty-tip-${data.requestListId}-${data.senderId}`);
-            if (emptyTip) emptyTip.remove();
-
-            const row = document.createElement('div');
-            row.className = 'mb-3 flex justify-start';
-            row.innerHTML = `
-                <div class="max-w-[75%]">
-                    <div class="rounded-xl border px-3 py-2 bg-white border-slate-200">
-                        <p class="text-xs text-slate-500"></p>
-                        <p class="mt-1 text-sm text-slate-800 break-words"></p>
-                    </div>
-                    <p class="mt-1 text-xs text-slate-500"></p>
-                </div>`;
-            row.querySelector('.text-xs.text-slate-500').textContent = data.userName;
-            row.querySelector('.break-words').textContent = data.messageContent;
-            row.querySelectorAll('p')[2].textContent = data.time;
-            box.appendChild(row);
-            box.scrollTop = box.scrollHeight;
-        }
-
-        if (isOpen) {
-            // 聊天室開著，立即標記已讀並廣播
-            fetch(`/request-list/${data.requestListId}/chat/read`, {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
-            }).catch(() => {});
-            clearBuyerChatBadge(data.requestListId);
-        } else {
-            // 聊天室關閉，顯示未讀紅點
-            const current = buyerUnreadCounts[data.requestListId] || 0;
-            setBuyerChatBadge(data.requestListId, current + 1);
-        }
-    });
-
-    // 收到已讀通知
-    channel.bind('message.read', function (data) {
-        if (!data.requestListId) return;
-        const boxId = `request-chat-messages-${data.requestListId}-${data.readerId}`;
-        const box = document.getElementById(boxId);
-        if (!box) return;
-        box.querySelectorAll('.msg-read-status').forEach(el => {
-            el.style.color = '#10b981';
-            el.textContent = '已讀';
-        });
-    });
+    // Pusher 訂閱與 message.sent/message.read 處理由 dashboard_blade.php 統一負責
+    // index_blade 只負責送出訊息，不重複綁定事件
 
     // 請託人開啟聊天室時清除 badge 並標記已讀
     function openRequestChatModalAndClear(requestListId, agentId) {
@@ -1246,8 +1178,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const sendUrl       = input.dataset.sendUrl;
         const receiverId    = input.dataset.receiverId;
 
-        input.value = '';
+        // 先停用按鈕防止重複送出，但不清空 input（等成功後再清）
         btn.disabled = true;
+        const originalBtnText = btn.textContent;
+        btn.textContent = '送出中...';
 
         // 帶 X-Socket-ID 讓 toOthers() 排除自己，避免 Pusher 廣播重複
         const socketId = (typeof pusher !== 'undefined' && pusher?.connection?.socket_id) ? pusher.connection.socket_id : '';
@@ -1263,13 +1197,13 @@ document.addEventListener('DOMContentLoaded', function () {
             body: JSON.stringify({ body: text, receiver_id: parseInt(receiverId) }),
         })
         .then(r => {
-            if (!r.ok) { btn.disabled = false; return Promise.reject('send_failed'); }
+            if (!r.ok) return Promise.reject('send_failed');
             return r.json();
         })
         .then(msg => {
-            const name = msg.name ?? msg.sender_name ?? msg.userName ?? '';
-            const text = msg.text ?? msg.body ?? msg.message ?? '';
-            const time = msg.time ?? msg.created_at ?? '';
+            const msgName = msg.name ?? msg.sender_name ?? msg.userName ?? '';
+            const msgText = msg.text ?? msg.body ?? msg.message ?? '';
+            const msgTime = msg.time ?? msg.created_at ?? '';
 
             const box = document.getElementById(`request-chat-messages-${requestListId}-${agentId}`);
             if (!box) return;
@@ -1293,15 +1227,23 @@ document.addEventListener('DOMContentLoaded', function () {
                         <span class="msg-read-status" style="color:#94a3b8">未讀</span>
                     </p>
                 </div>`;
-            row.querySelectorAll('p')[0].textContent = name;
-            row.querySelectorAll('p')[1].textContent = text;
-            row.querySelectorAll('span')[0].textContent = time;
+            row.querySelectorAll('p')[0].textContent = msgName;
+            row.querySelectorAll('p')[1].textContent = msgText;
+            row.querySelectorAll('span')[0].textContent = msgTime;
             box.appendChild(row);
             box.scrollTop = box.scrollHeight;
-            btn.disabled = false;
+
+            // 成功後才清空 input
+            input.value = '';
             input.focus();
         })
-        .catch(() => { btn.disabled = false; });
+        .catch(() => {
+            alert('訊息送出失敗，請稍後再試。');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.textContent = originalBtnText || '送出';
+        });
     }
 
     // 綁定送出按鈕與 Enter 鍵

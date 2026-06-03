@@ -2159,53 +2159,7 @@
             messagesBox.scrollTop = messagesBox.scrollHeight;
         }
 
-        document.addEventListener('submit', async (event) => {
-            const form = event.target.closest('.agent-request-chat-form');
-            if (!form) {
-                return;
-            }
-
-            event.preventDefault();
-
-            const input = form.querySelector('input[name="body"]');
-            const submitButton = form.querySelector('button[type="submit"]');
-            const requestListId = form.dataset.requestListId;
-            const messageText = (input?.value || '').trim();
-
-            if (!submitButton || !messageText) {
-                return;
-            }
-
-            submitButton.disabled = true;
-            const originalText = submitButton.textContent;
-            submitButton.textContent = '送出中...';
-
-            try {
-                const response = await fetch(form.action, {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content'),
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                    body: new FormData(form),
-                });
-
-                const payload = await response.json().catch(() => ({}));
-                if (!response.ok) {
-                    throw new Error(payload?.message || '訊息送出失敗');
-                }
-
-                appendAgentRequestChatMessage(requestListId, payload);
-                input.value = '';
-                input.focus();
-            } catch (error) {
-                alert(error.message || '訊息送出失敗，請稍後再試。');
-            } finally {
-                submitButton.disabled = false;
-                submitButton.textContent = originalText || '送出';
-            }
-        });
+        // 訊息送出由 sendAgentRequestChat() 統一處理，避免重複
 
         document.addEventListener('keydown', (event) => {
             if (event.key !== 'Escape') {
@@ -2322,9 +2276,15 @@
         });
 
         // ── fetch 即時送出 ────────────────────────────────────
+        // 防止重複送出的 flag
+        const _sendingFlags = {};
+
         function sendAgentRequestChat(input, btn) {
             const text = input.value.trim();
             if (!text) return;
+            const _flagKey = `${input.dataset.requestListId}-${input.dataset.receiverId}`;
+            if (_sendingFlags[_flagKey]) return;
+            _sendingFlags[_flagKey] = true;
             const requestListId = input.dataset.requestListId;
             const receiverId    = input.dataset.receiverId;
             const sendUrl       = input.dataset.sendUrl;
@@ -2377,11 +2337,17 @@
                 box.appendChild(row);
                 box.scrollTop = box.scrollHeight;
                 btn.disabled = false;
+                delete _sendingFlags[`${requestListId}-${receiverId}`];
                 input.focus();
             })
-            .catch(() => { btn.disabled = false; });
+            .catch(() => {
+                btn.disabled = false;
+                delete _sendingFlags[`${requestListId}-${receiverId}`];
+            });
         }
 
+        // 用 event delegation 避免重複綁定（因為同 ID 的按鈕可能出現在多個 tab）
+        const _boundSendBtns = new Set();
         document.querySelectorAll('.agent-request-chat-send-btn').forEach(btn => {
             btn.addEventListener('click', function () {
                 const input = document.querySelector(

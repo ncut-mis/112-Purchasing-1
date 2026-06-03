@@ -874,12 +874,16 @@
             const token = document.querySelector('meta[name=csrf-token]')?.getAttribute('content');
             if (!token || !requestListId) return;
 
+            // 帶 X-Socket-ID：讓後端 toOthers() 廣播 message.read 給代購人，請託人自己不會重複收到
+            const socketId = window.pusher?.connection?.socket_id ?? '';
+
             fetch(`/request-list/${requestListId}/chat/read`, {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
                     'X-CSRF-TOKEN': token,
                     'X-Requested-With': 'XMLHttpRequest',
+                    'X-Socket-ID': socketId,
                 },
             }).catch(() => {});
         }
@@ -887,6 +891,12 @@
         function openRequestChatModal(id, agentId = null) {
             const modal = document.getElementById(`request-chat-modal-${id}`);
             if (!modal) return;
+
+            // 確保 modal 在 body 最上層，不被其他元素遮擋
+            if (modal.parentElement !== document.body) {
+                document.body.appendChild(modal);
+            }
+
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             document.body.classList.add('overflow-hidden');
@@ -1079,7 +1089,7 @@
         });
 
         // ── Pusher 即時接收訊息 ───────────────────────────────
-        const pusher = new Pusher('{{ config("broadcasting.connections.pusher.key") }}', {
+        window.pusher = new Pusher('{{ config("broadcasting.connections.pusher.key") }}', {
             cluster: '{{ config("broadcasting.connections.pusher.options.cluster") }}',
             forceTLS: true,
             authEndpoint: '/broadcasting/auth',
@@ -1090,7 +1100,7 @@
             }
         });
 
-        const myChannel = pusher.subscribe('private-chat.{{ Auth::id() }}');
+        const myChannel = window.pusher.subscribe('private-chat.{{ Auth::id() }}');
         myChannel.bind('message.sent', function (data) {
             // 只處理請託單聊天（有 requestListId）
             if (!data.requestListId) return;
@@ -1128,7 +1138,7 @@
             const isChatOpen = modal && !modal.classList.contains('hidden');
 
             if (isChatOpen) {
-                // 聊天室開著 → 立刻標記已讀
+                // 聊天室開著 → 立刻標記已讀（API 會廣播 message.read 回給代購人）
                 markRequestChatAsRead(data.requestListId);
             } else {
                 // 聊天室沒開 → 更新未讀紅點
@@ -1146,6 +1156,28 @@
                     noticeBadge.classList.remove('hidden');
                 }
             }
+        });
+
+        // ── 收到代購人的「已讀」通知 → 即時把請託人自己發的訊息「未讀」改成「已讀」────
+        myChannel.bind('message.read', function (data) {
+            if (!data.requestListId) return;
+
+            // 找到對應的聊天訊息容器（同時相容有/無 agentId 的 box id）
+            const boxes = document.querySelectorAll(
+                `[id^="request-chat-messages-${data.requestListId}"]`
+            );
+
+            boxes.forEach(box => {
+                // 把這個 box 內所有「未讀」span 全部換成「已讀」
+                box.querySelectorAll('.msg-read-status').forEach(el => {
+                    if (el.textContent.trim() === '未讀') {
+                        el.textContent = '已讀';
+                        el.style.color = '#10b981';
+                        el.classList.remove('text-slate-400');
+                        el.classList.add('text-emerald-500');
+                    }
+                });
+            });
         });
 
     </script>
