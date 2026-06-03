@@ -105,10 +105,18 @@ class people extends Seeder
         foreach ($agents as $user) {
             
             $myCountriesString = trim((string)$user->purchasable_countries);
-            
+            $myCountries = [];
+
             if ($myCountriesString !== '') {
-                $myCountries = explode(',', $myCountriesString);
-            } else {
+                $decoded = json_decode($myCountriesString, true);
+                if (is_array($decoded) && !empty($decoded)) {
+                    $myCountries = array_values(array_filter(array_map('trim', $decoded), fn($value) => $value !== ''));
+                } else {
+                    $myCountries = array_values(array_filter(array_map('trim', explode(',', $myCountriesString)), fn($value) => $value !== ''));
+                }
+            }
+
+            if (empty($myCountries)) {
                 $myCountries = (array) array_rand(array_flip($fallbackCountries), 2);
             }
 

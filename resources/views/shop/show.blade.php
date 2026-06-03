@@ -11,7 +11,7 @@
             <div class="flex flex-col md:flex-row items-center md:items-end gap-6">
                 <!-- 頭像 -->
                 <div class="relative -mb-16 md:-mb-24">
-                    <img src="{{ $agent->avatar ? asset('storage/' . $agent->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode($agent->name) . '&background=10b981&color=fff&size=200' }}" 
+                    <img src="{{ $agent->avatar_url }}" 
                          class="w-40 h-40 md:w-56 md:h-56 rounded-full border-8 border-white shadow-xl object-cover bg-white">
                     <div class="absolute bottom-4 right-4 w-8 h-8 bg-green-500 border-4 border-white rounded-full"></div>
                 </div>

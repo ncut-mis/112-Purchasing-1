@@ -62,11 +62,11 @@ class ProfileController extends Controller
 
         // 2. 處理頭像檔案上傳
         if ($request->hasFile('avatar')) {
-            if ($user->avatar) {
+            if ($user->avatar && is_string($user->avatar) && strlen($user->avatar) <= 1024 && preg_match('/^[\x20-\x7E]+$/', $user->avatar)) {
                 Storage::disk('public')->delete($user->avatar);
             }
-            $path = $request->file('avatar')->store('avatars', 'public');
-            $user->avatar = $path;
+
+            $user->avatar = file_get_contents($request->file('avatar')->getRealPath());
         }
 
         // 3. 【核心修正】：直接將驗證後的 nickname 寫入資料庫的 name 欄位

@@ -61,6 +61,34 @@
         }
         .post-card:hover { transform: translateY(-5px); }
 
+        /* 熱門卡片樣式：紅色發光漸層 + 火焰 HOT 標籤 */
+        .post-card.hot {
+            border: 1px solid rgba(255,80,80,0.9);
+            box-shadow: 0 8px 40px rgba(255,60,60,0.18), 0 0 30px rgba(255,80,80,0.12) inset;
+            background: linear-gradient(180deg, #fff 0%, #fff 60%, rgba(255,240,240,0.6) 100%);
+        }
+
+        .hot-badge {
+            position: absolute;
+            left: 12px;
+            bottom: 12px;
+            background: linear-gradient(90deg,#ff6b6b,#ff3b3b);
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            box-shadow: 0 6px 20px rgba(255,80,80,0.25);
+            display: inline-flex;
+            gap: 6px;
+            align-items: center;
+            z-index: 22;
+        }
+
+        .hot-badge .bi-fire {
+            transform: scale(1.05);
+        }
+
         .post-card.is-own-post {
             cursor: default;
             opacity: 0.96;
@@ -250,10 +278,17 @@
                 @endphp
                 <div class="col-12 col-sm-6 col-lg-4">
                     {{-- 卡片主體 --}}
-                    <div class="card post-card js-post-card {{ $isOwner ? 'is-own-post' : '' }}"
+                    @php $isHot = in_array((int) $post->id, $hotPostIds ?? [], true); @endphp
+                    <div class="card post-card js-post-card {{ $isOwner ? 'is-own-post' : '' }} {{ $isHot ? 'hot' : '' }}"
                          @if(!$isOwner) data-order-modal-id="orderModal{{ $post->id }}" @endif>
                         
                         <div class="card-slider-container position-relative">
+                            @if(!empty($isHot))
+                                <div class="hot-badge">
+                                    <i class="bi bi-fire me-0.2"></i>
+                                    <span>HOT</span>
+                                </div>
+                            @endif
                             <span class="badge-country">{{ $post->country }}</span>
                             <span class="badge-status">接單中</span>
 

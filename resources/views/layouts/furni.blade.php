@@ -56,7 +56,7 @@
                     @auth
                         <li>
                             <a class="nav-link" href="{{ route('dashboard') }}">
-                                <img src="{{ auth()->user()->avatar ?? asset('images/user.svg') }}" 
+                                <img src="{{ auth()->user()->avatar_url }}" 
                                      alt="用戶頭像" width="24" height="24" class="rounded-circle">
                             </a>
                         </li>

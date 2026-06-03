@@ -105,7 +105,7 @@
                     <div class="flex flex-col items-center p-4 bg-gray-50 rounded-2xl">
                         <a href="{{ route('agent.profile.edit') }}" class="relative group cursor-pointer mb-3">
                             <!-- 頭像主體 -->
-                            <img src="{{ Auth::user()->avatar ? asset('storage/' . Auth::user()->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode(Auth::user()->name) . '&background=6366f1&color=fff' }}" 
+                            <img src="{{ Auth::user()->avatar_url }}" 
                                  class="w-20 h-20 rounded-full border-4 border-white shadow-sm transition duration-300 group-hover:brightness-50 object-cover">
                             
                             <!-- 懸停顯示的淺淺 "設定" 文字與圖示 -->

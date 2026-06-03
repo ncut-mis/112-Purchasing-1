@@ -394,11 +394,7 @@
                                         ? \App\Models\User::find($requestList->people)
                                         : null;
                                     $displayAgent = $assignedAgentUser ?: $activeAgent;
-                                    $agentAvatar = $displayAgent && $displayAgent->avatar
-                                        ? asset('storage/' . $displayAgent->avatar)
-                                        : ($displayAgent
-                                            ? 'https://ui-avatars.com/api/?name=' . urlencode($displayAgent->name) . '&background=2563eb&color=fff&size=128'
-                                            : null);
+                                    $agentAvatar = $displayAgent ? $displayAgent->avatar_url : null;
 
                                     $deadlineDisplayDate = optional($requestList->deadline)->format('Y-m-d');
                                     $countdownEndAt = optional($requestList->deadline)->format('Y-m-d') ? optional($requestList->deadline)->format('Y-m-d') . ' 23:59:00' : null;

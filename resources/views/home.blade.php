@@ -295,6 +295,10 @@
             </div>
         @endif
 
+        @php
+            $hotPostIds = collect($hotPosts ?? collect())->pluck('id')->map(fn($id) => (int) $id)->all();
+        @endphp
+
         <div class="row g-4">
             @forelse($agentPosts as $agentPost)
                 @php
@@ -306,6 +310,7 @@
 
                     $isFavorited = in_array((int) $agentPost->id, $favoritedAgentPostIds ?? [], true);
                     $isOwner = auth()->check() && (int) auth()->id() === (int) $agentPost->user_id;
+                    $isHotLatest = in_array((int) $agentPost->id, $hotPostIds, true);
                 @endphp
 
                 <div class="col-md-6 col-lg-4">
@@ -318,6 +323,12 @@
                             <span class="position-absolute top-0 start-0 m-3 badge rounded-pill bg-dark-subtle text-dark" style="z-index: 10;">
                                 {{ $agentPost->country }}{{ $agentPost->city ? '・' . $agentPost->city : '' }}
                             </span>
+
+                            @if($isHotLatest)
+                                <span class="position-absolute bottom-0 start-0 m-3 badge bg-danger shadow-sm rounded-pill px-3 py-2" style="z-index: 10;">
+                                    <i class="bi bi-fire me-1"></i> HOT
+                                </span>
+                            @endif
 
                             {{-- 狀態徽章 --}}
                             <span class="position-absolute top-0 end-0 m-3 badge rounded-pill bg-success" style="z-index: 10;">

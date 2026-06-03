@@ -472,6 +472,15 @@ class AgentPostController extends Controller
                    ->paginate(12)
                    ->withQueryString();
 
+    // 重新計算並取得熱門貼文的 ID（前端用來標示 HOT 卡片）
+    \App\Models\AgentPost::recalculateHotScores();
+    $hotPostIds = \App\Models\AgentPost::where('status', 'open')
+                    ->orderByDesc('hot_score')
+                    ->take(6)
+                    ->pluck('id')
+                    ->map(fn($id) => (int) $id)
+                    ->all();
+
     $favoritedAgentPostIds = Auth::check()
         ? Favorite::query()
             ->where('user_id', Auth::id())
@@ -481,6 +490,6 @@ class AgentPostController extends Controller
             ->all()
         : [];
 
-    return view('store.index', compact('posts', 'favoritedAgentPostIds'));
+    return view('store.index', compact('posts', 'favoritedAgentPostIds', 'hotPostIds'));
 }
 }

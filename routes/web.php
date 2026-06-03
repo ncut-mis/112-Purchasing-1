@@ -95,24 +95,13 @@ Route::get('/', function (Request $request) {
         return app(HomeController::class)->search($request);
     }
 
- $totalOpenPosts = max(AgentPost::where('status', 'open')->count(), 1);
+AgentPost::recalculateHotScores();
 
     $hotPosts = AgentPost::with(['user', 'products'])
-        ->withCount(['favorites', 'orders'])
         ->where('status', 'open')
-        ->get()
-        ->map(function (AgentPost $post) use ($totalOpenPosts) {
-            $favoriteRatio = min(($post->favorites_count / $totalOpenPosts) * 100, 100);
-            $orderRatio = min(($post->orders_count / $totalOpenPosts) * 100, 100);
-
-            $score = (int) round(($favoriteRatio * 0.55) + ($orderRatio * 0.45));
-            $post->hot_score = max(0, min(100, $score));
-
-            return $post;
-        })
-        ->sortByDesc('hot_score')
+        ->orderByDesc('hot_score')
         ->take(6)
-        ->values();
+        ->get();
 
     $agentPosts = AgentPost::with(['user', 'products'])
         ->where('status', 'open')
