@@ -35,7 +35,17 @@
                     </div>
                     <div>
                         <p class="text-sm text-gray-400">服務總評價</p>
-                        <h4 class="text-2xl font-bold text-gray-800">4.9 / 5</h4>
+                        @php
+                            $avgRating = \App\Models\Review::where('reviewee_id', Auth::id())->avg('rating');
+                            $reviewCount = \App\Models\Review::where('reviewee_id', Auth::id())->count();
+                            $avgRatingDisplay = $reviewCount > 0 ? number_format($avgRating, 1) : '-';
+                        @endphp
+                        <h4 class="text-2xl font-bold text-gray-800">{{ $avgRatingDisplay }} / 5</h4>
+                        @if($reviewCount > 0)
+                            <p class="text-xs text-gray-400 mt-0.5">共 {{ $reviewCount }} 則評價</p>
+                        @else
+                            <p class="text-xs text-gray-400 mt-0.5">尚無評價</p>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -938,6 +948,11 @@
                                             <div class="min-w-0">
                                                 <div class="flex items-center gap-2 flex-wrap">
                                                     <h4 class="text-base font-bold text-gray-800 truncate">{{ $requestList->title }}</h4>
+                                                    @if($canShipQuote)
+                                                        <span class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-700">已付款</span>
+                                                    @else
+                                                        <span class="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-bold text-red-500">未付款</span>
+                                                    @endif
                                                 </div>
                                                 <p class="mt-1 text-xs text-gray-500">
                                                     請託人：{{ $requestList->user->name ?? '未知會員' }} ・

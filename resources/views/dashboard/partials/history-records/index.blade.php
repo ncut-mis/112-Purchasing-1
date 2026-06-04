@@ -153,15 +153,36 @@
                                 <p class="mt-1 text-sm font-semibold text-slate-700">{{ optional($historyRecord['occurred_at'])->format('Y-m-d H:i') ?? '-' }}</p>
                             </div>
                             @if($isRequestList)
-                                <div class="rounded-xl bg-slate-50 px-4 py-3 sm:col-span-2">
-                                    <p class="text-xs text-slate-400">地區與備註</p>
-                                    <p class="mt-1 text-sm text-slate-700">
-                                        {{ $historyRecord['country'] ?: '-' }} {{ $historyRecord['city'] ?: '' }}
-                                        @if(!empty($recordModel->note))
-                                            ｜ {{ $recordModel->note }}
-                                        @endif
-                                    </p>
+                                @if($historyRecord['country'])
+                                <div class="rounded-xl bg-slate-50 px-4 py-3">
+                                    <p class="text-xs text-slate-400">代購地區</p>
+                                    <p class="mt-1 text-sm font-semibold text-slate-700">{{ $historyRecord['country'] }} {{ $historyRecord['city'] ?: '' }}</p>
                                 </div>
+                                @endif
+                                @if(!empty($recordModel->deadline))
+                                <div class="rounded-xl bg-slate-50 px-4 py-3">
+                                    <p class="text-xs text-slate-400">截止日期</p>
+                                    <p class="mt-1 text-sm font-semibold text-slate-700">{{ optional($recordModel->deadline)->format('Y-m-d') }}</p>
+                                </div>
+                                @endif
+                                @if(!empty($recordModel->store_name))
+                                <div class="rounded-xl bg-slate-50 px-4 py-3 sm:col-span-2">
+                                    <p class="text-xs text-slate-400">店家名稱</p>
+                                    <p class="mt-1 text-sm font-semibold text-slate-700">{{ $recordModel->store_name }}</p>
+                                </div>
+                                @endif
+                                @if(!empty($recordModel->detail_address))
+                                <div class="rounded-xl bg-slate-50 px-4 py-3 sm:col-span-2">
+                                    <p class="text-xs text-slate-400">詳細地址</p>
+                                    <p class="mt-1 text-sm font-semibold text-slate-700">{{ $recordModel->detail_address }}</p>
+                                </div>
+                                @endif
+                                @if(!empty($recordModel->note))
+                                <div class="rounded-xl bg-slate-50 px-4 py-3 sm:col-span-2">
+                                    <p class="text-xs text-slate-400">備註</p>
+                                    <p class="mt-1 text-sm text-slate-700 whitespace-pre-line">{{ $recordModel->note }}</p>
+                                </div>
+                                @endif
                             @else
                                 <div class="rounded-xl bg-slate-50 px-4 py-3 sm:col-span-2">
                                     <p class="text-xs text-slate-400">訂單資訊</p>
@@ -172,29 +193,51 @@
                             @endif
                         </div>
 
+                        {{-- 商品清單（含圖片） --}}
                         <section class="mt-4 rounded-xl border border-slate-200 p-4">
-                            <h5 class="text-sm font-bold text-slate-700">商品清單</h5>
-                            <ul class="mt-3 space-y-2 text-sm text-slate-600">
-                                @if($isRequestList)
-                                    @forelse($recordModel->items as $item)
-                                        <li class="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                                            <span class="truncate pr-4">{{ $item->product_name ?? $item->name ?? '未命名商品' }}</span>
-                                            <span class="shrink-0 text-slate-500">× {{ $item->quantity }}</span>
-                                        </li>
-                                    @empty
-                                        <li class="rounded-lg bg-slate-50 px-3 py-2 text-slate-400">無商品資料</li>
-                                    @endforelse
-                                @else
-                                    @forelse($recordModel->items as $item)
-                                        <li class="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                                            <span class="truncate pr-4">{{ $item->name }}</span>
-                                            <span class="shrink-0 text-slate-500">× {{ $item->quantity }}</span>
-                                        </li>
-                                    @empty
-                                        <li class="rounded-lg bg-slate-50 px-3 py-2 text-slate-400">無商品資料</li>
-                                    @endforelse
-                                @endif
-                            </ul>
+                            <h5 class="text-sm font-bold text-slate-700 mb-3">商品清單</h5>
+                            @if($isRequestList)
+                                @forelse($recordModel->items as $item)
+                                    <div class="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2.5 mb-2 last:mb-0">
+                                        {{-- 商品圖片 --}}
+                                        <div class="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-300">
+                                            @if($item->reference_image)
+                                                <img src="{{ route('request-list.item.image', $item) }}" alt="{{ $item->name }}" class="h-full w-full object-cover">
+                                            @else
+                                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                                </svg>
+                                            @endif
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-sm font-semibold text-slate-700 truncate">{{ $item->product_name ?? $item->name ?? '未命名商品' }}</p>
+                                            <div class="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-500">
+                                                <span>數量：{{ $item->quantity }}</span>
+                                                @if(!empty($item->expected_price))
+                                                    <span>期望單價：NT$ {{ number_format((float)$item->expected_price, 0) }}</span>
+                                                @endif
+                                                @if(!empty($item->specification))
+                                                    <span>規格：{{ $item->specification }}</span>
+                                                @endif
+                                            </div>
+                                            @if(!empty($item->reference_url))
+                                                <a href="{{ $item->reference_url }}" target="_blank" class="mt-0.5 inline-block text-xs text-blue-500 hover:underline truncate max-w-full">參考連結 ↗</a>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @empty
+                                    <p class="text-sm text-slate-400 py-2">無商品資料</p>
+                                @endforelse
+                            @else
+                                @forelse($recordModel->items as $item)
+                                    <div class="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 mb-2 last:mb-0">
+                                        <span class="text-sm text-slate-700 truncate pr-4">{{ $item->name }}</span>
+                                        <span class="shrink-0 text-sm text-slate-500">× {{ $item->quantity }}</span>
+                                    </div>
+                                @empty
+                                    <p class="text-sm text-slate-400 py-2">無商品資料</p>
+                                @endforelse
+                            @endif
                         </section>
                     </div>
                 </div>
