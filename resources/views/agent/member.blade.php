@@ -1375,6 +1375,9 @@
             <div>
                 <h3 class="text-lg font-bold text-amber-600">代購歷史紀錄</h3>
                 <p class="text-sm text-gray-500">查看您已完成的代購團務與請託單紀錄。</p>
+            </div>
+  
+            <form method="GET" class="flex flex-col sm:flex-row gap-2">
                 <input type="hidden" name="tab" value="agent-history">
                 <input type="text" name="agent_history_search" value="{{ $agentHistorySearch ?? '' }}" placeholder="搜尋清單編號 / 貼文標題 / 買家"
                     class="w-full sm:w-72 rounded-xl border border-gray-200 px-4 py-2 text-sm text-gray-700 focus:border-amber-300 focus:ring-amber-200 focus:outline-none">
