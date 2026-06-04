@@ -59,40 +59,104 @@ class OrderController extends Controller
 
         if ($totalQty < 1) return back()->withErrors(['follow_order' => '請至少選擇一項商品。']);
 
-        // 3. 執行交易寫入資料庫
-        DB::transaction(function () use ($request, $agentPost, $selectedItems, $itemsTotal, $currency) {
+        // 3. 執行交易寫入資料庫；未結帳前再次跟同一個代購團時，合併到既有未付款訂單
+        $mergedIntoExistingOrder = false;
+
+        DB::transaction(function () use ($request, $agentPost, $selectedItems, $itemsTotal, $currency, &$mergedIntoExistingOrder) {
             $buyer = $request->user();
 
-           $order = Order::create([
-                'order_no' => 'ORD-' . time() . '-' . $buyer->id,
-                'buyer_id' => $buyer->id,
-                'seller_id' => $agentPost->user_id,
-                'source_type' => AgentPost::class,
-                'source_id' => $agentPost->id,
-                
-                // 這裡務必同時指定兩個欄位，確保資料庫不會報錯
-                'total_amount' => $itemsTotal, 
-                'items_total'  => $itemsTotal, 
-                
-                'currency' => $currency,
-                'status' => 'pending_payment',
-                'recipient_data' => ['name' => $buyer->name, 'email' => $buyer->email],
-                'note' => "跟單來源：{$agentPost->title}",
-            ]);
+            $existingOrders = Order::with('items')
+                ->where('buyer_id', $buyer->id)
+                ->where('seller_id', $agentPost->user_id)
+                ->where('source_type', AgentPost::class)
+                ->where('source_id', $agentPost->id)
+                ->where('status', 'pending_payment')
+                ->whereNull('paid_at')
+                ->lockForUpdate()
+                ->oldest()
+                ->get();
+
+            $order = $existingOrders->first();
+
+            if ($order) {
+                $mergedIntoExistingOrder = true;
+
+                foreach ($existingOrders->skip(1) as $duplicateOrder) {
+                    foreach ($duplicateOrder->items as $duplicateItem) {
+                        $orderItem = $order->items->firstWhere('product_id', $duplicateItem->product_id);
+
+                        if ($orderItem) {
+                            $orderItem->quantity += $duplicateItem->quantity;
+                            $orderItem->subtotal = $orderItem->price * $orderItem->quantity;
+                            $orderItem->save();
+                        } else {
+                            $order->items()->create([
+                                'product_id' => $duplicateItem->product_id,
+                                'name' => $duplicateItem->name,
+                                'options' => $duplicateItem->options,
+                                'price' => $duplicateItem->price,
+                                'quantity' => $duplicateItem->quantity,
+                                'subtotal' => $duplicateItem->subtotal,
+                            ]);
+                        }
+                    }
+
+                    $duplicateOrder->items()->delete();
+                    $duplicateOrder->delete();
+                    $order->load('items');
+                }
+            } else {
+                $order = Order::create([
+                    'order_no' => 'ORD-' . time() . '-' . $buyer->id,
+                    'buyer_id' => $buyer->id,
+                    'seller_id' => $agentPost->user_id,
+                    'source_type' => AgentPost::class,
+                    'source_id' => $agentPost->id,
+
+                    // 這裡務必同時指定兩個欄位，確保資料庫不會報錯
+                    'total_amount' => $itemsTotal,
+                    'items_total'  => $itemsTotal,
+
+                    'currency' => $currency,
+                    'status' => 'pending_payment',
+                    'recipient_data' => ['name' => $buyer->name, 'email' => $buyer->email],
+                    'note' => "跟單來源：{$agentPost->title}",
+                ]);
+            }
 
             foreach ($selectedItems as $item) {
-                $order->items()->create([
-                    'product_id' => $item['product']->id,
-                    'name' => $item['product']->name,
-                    'price' => $item['price'],
-                    'quantity' => $item['quantity'],
-                    'subtotal' => $item['subtotal'],
-                ]);
+                $orderItem = $order->items->firstWhere('product_id', $item['product']->id);
+
+                if ($orderItem) {
+                    $orderItem->quantity += $item['quantity'];
+                    $orderItem->price = $item['price'];
+                    $orderItem->subtotal = $orderItem->price * $orderItem->quantity;
+                    $orderItem->save();
+                } else {
+                    $order->items()->create([
+                        'product_id' => $item['product']->id,
+                        'name' => $item['product']->name,
+                        'price' => $item['price'],
+                        'quantity' => $item['quantity'],
+                        'subtotal' => $item['subtotal'],
+                    ]);
+                    $order->load('items');
+                }
+
                 $item['product']->increment('sold_quantity', $item['quantity']);
             }
+
+            $itemsTotal = $order->items()->sum('subtotal');
+            $order->update([
+                'items_total' => $itemsTotal,
+                'total_amount' => $itemsTotal + (float) ($order->shipping_fee ?? 0) + (float) ($order->platform_fee ?? 0),
+                'currency' => $currency,
+            ]);
         });
 
-        return redirect()->route('cart.index')->with('status', '跟單成功！');
+        return redirect()
+            ->route('cart.index')
+            ->with('status', $mergedIntoExistingOrder ? '已合併到既有未付款跟單！' : '跟單成功！');
     }
     public function cancel(Request $request, Order $order)
     {
