@@ -174,7 +174,7 @@ class QuoteController extends Controller
             return back()->with('error', '只有已退回的報價才能修改。');
         }
 
-        $requestList = $quote->requestList()->with('items:id,request_list_id')->firstOrFail();
+        $requestList = $quote->requestList()->with('items:id,request_list_id,quantity')->firstOrFail();
         $deadline = optional($requestList->deadline)->format('Y-m-d');
 
         $validated = $request->validate([
@@ -184,17 +184,20 @@ class QuoteController extends Controller
             'items.*.agent_quote' => 'required|numeric|min:0',
         ]);
 
-          $itemIds = $requestList->items->pluck('id')->all();
+        $requestItems = $requestList->items->keyBy('id');
         $total = 0;
 
-        DB::transaction(function () use ($quote, $validated, $itemIds, &$total) {
+        DB::transaction(function () use ($quote, $validated, $requestItems, &$total) {
             foreach ($validated['items'] as $requestItemId => $itemData) {
-                if (!in_array((int) $requestItemId, $itemIds, true)) {
+                $requestItem = $requestItems->get((int) $requestItemId);
+
+                if (! $requestItem) {
                     continue;
                 }
 
                 $unitPrice = (float) $itemData['agent_quote'];
-                $total += $unitPrice;
+                $quantity = max((int) ($requestItem->quantity ?? 1), 1);
+                $total += $unitPrice * $quantity;
 
                 QuoteItem::updateOrCreate(
                     [
