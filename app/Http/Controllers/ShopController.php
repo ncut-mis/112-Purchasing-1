@@ -48,7 +48,9 @@ class ShopController extends Controller
             'agentPosts' => function ($postQuery) {
                 $postQuery->where('status', 'open')->latest();
             },
-        ]); // 預載入關聯，且彈窗只顯示接單中的代購團
+        ])
+        ->withAvg('receivedReviews as average_rating', 'rating')
+        ->withCount('receivedReviews as reviews_count'); // 預載入關聯，且彈窗只顯示接單中的代購團與平均評價
 
         // 2. 【核心修正】：直接在資料庫查詢層過濾掉目前登入的代購人自己
         // 這樣可以確保後端傳出去的資料筆數與前端統計人數 100% 同步，且不影響分頁

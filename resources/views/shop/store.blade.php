@@ -39,6 +39,28 @@
                 return [];
             }
         },
+        getRatingStars(rating) {
+            const score = Number(rating) || 0;
+
+            return Array.from({ length: 5 }, (_, index) => {
+                const starValue = index + 1;
+
+                if (score >= starValue) return 'bi-star-fill';
+                if (score >= starValue - 0.5) return 'bi-star-half';
+
+                return 'bi-star';
+            });
+        },
+
+        getRatingLabel(rating, count) {
+            const total = Number(count) || 0;
+
+            if (total === 0) {
+                return '尚無評價';
+            }
+
+            return `平均評價 ${(Number(rating) || 0).toFixed(1)} 星`;
+        },
 
         // 跳轉至「大廳 (首頁)」並搜尋特定貼文
         goToPostSearch(title, postId) {
@@ -180,6 +202,20 @@
 
                             <h4 class="text-xl font-black text-gray-800 group-hover:text-emerald-600 transition">{{ $agent->nickname ?? $agent->name }}</h4>
                             <span class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mt-1">PRO AGENT</span>
+                             @php
+                                $averageRating = (float) ($agent->average_rating ?? 0);
+                                $roundedRating = round($averageRating * 2) / 2;
+                            @endphp
+                            <div class="mt-3 flex items-center justify-center gap-1 text-amber-400" aria-label="{{ $agent->reviews_count ? '平均評價 '.number_format($averageRating, 1).' 星' : '尚無評價' }}">
+                                @for($star = 1; $star <= 5; $star++)
+                                    @php
+                                        $iconClass = $roundedRating >= $star
+                                            ? 'bi-star-fill'
+                                            : ($roundedRating >= $star - 0.5 ? 'bi-star-half' : 'bi-star');
+                                    @endphp
+                                    <i class="bi {{ $iconClass }} text-base {{ $agent->reviews_count ? '' : 'text-gray-200' }}"></i>
+                                @endfor
+                            </div>
 
                             <div class="flex flex-wrap justify-center gap-2 mt-4 mb-6 min-h-[32px]">
                                 @php
@@ -262,6 +298,11 @@
                             <div class="flex flex-wrap justify-center md:justify-start gap-2">
                                 <span class="px-3 py-1 bg-white/20 rounded-full text-[10px] font-bold border border-white/30 uppercase tracking-widest">Certified Agent</span>
                                 <span class="px-3 py-1 bg-emerald-600 rounded-full text-[10px] font-bold border border-emerald-500" x-text="(activeAgent?.agent_application?.country || '台灣') + ' 駐點'"></span>
+                            </div>
+                            <div class="mt-3 flex items-center justify-center md:justify-start gap-1 text-amber-300" :aria-label="getRatingLabel(activeAgent?.average_rating, activeAgent?.reviews_count)">
+                                <template x-for="(icon, index) in getRatingStars(activeAgent?.average_rating)" :key="index">
+                                    <i class="bi text-lg" :class="[icon, activeAgent?.reviews_count ? '' : 'text-white/30']"></i>
+                                </template>
                             </div>
                         </div>
                         

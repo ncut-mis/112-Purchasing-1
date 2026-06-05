@@ -185,6 +185,13 @@ class User extends Authenticatable
     {
         return $this->hasMany(Favorite::class);
     }
+    /**
+     * 收到的評價
+     */
+    public function receivedReviews(): HasMany
+    {
+        return $this->hasMany(Review::class, 'reviewee_id');
+    }
 
     /**
      * 代購申請紀錄
