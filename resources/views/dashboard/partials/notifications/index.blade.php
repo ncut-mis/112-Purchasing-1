@@ -238,8 +238,8 @@
                                     <template x-for="post in (selectedAgent.agent_posts || [])" :key="post.id">
                                         <div @click="goToPostSearch(post.title, post.id)"
                                              class="group flex gap-5 p-5 rounded-[2rem] border border-gray-100 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all duration-300 cursor-pointer">
-                                            <div class="w-24 h-24 bg-gray-100 rounded-2xl flex-shrink-0 overflow-hidden relative shadow-sm">
-                                                <img :src="post.cover_image_url || 'https://placehold.co/200x200?text=No+Image'" class="w-full h-full object-cover">
+                                            <div class="w-24 h-24 bg-emerald-50 text-emerald-500 rounded-2xl flex-shrink-0 flex items-center justify-center border border-emerald-100 shadow-sm group-hover:bg-emerald-100 transition">
+                                                <i class="bi bi-bag-heart-fill text-4xl"></i>
                                             </div>
                                             <div class="flex-1 min-w-0">
                                                 <div class="flex justify-between items-start mb-1">

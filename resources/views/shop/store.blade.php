@@ -357,13 +357,8 @@
                                     <!-- 加入點擊事件：點擊貼文卡片跳轉至首頁搜尋 -->
                                     <div @click="goToPostSearch(post.title, post.id)" 
                                          class="group flex gap-4 p-4 rounded-3xl border border-gray-100 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all duration-300 cursor-pointer">
-                                        <div class="w-20 h-20 bg-gray-100 rounded-2xl flex-shrink-0 overflow-hidden relative">
-                                            <template x-if="post.cover_image_url">
-                                                <img :src="post.cover_image_url" class="w-full h-full object-cover">
-                                            </template>
-                                            <div x-show="!post.cover_image_url" class="w-full h-full flex items-center justify-center text-gray-300 bg-gray-100">
-                                                <i class="bi bi-image"></i>
-                                            </div>
+                                        <div class="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-2xl flex-shrink-0 flex items-center justify-center border border-emerald-100 group-hover:bg-emerald-100 transition">
+                                            <i class="bi bi-bag-heart-fill text-3xl"></i>
                                         </div>
                                         <div class="flex-1 min-w-0">
                                             <div class="flex justify-between items-start">
