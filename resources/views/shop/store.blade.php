@@ -146,7 +146,7 @@
                                 <option value="日本" {{ request('country') == '日本' ? 'selected' : '' }}>JP 日本</option>
                                 <option value="韓國" {{ request('country') == '韓國' ? 'selected' : '' }}>KR 韓國</option>
                                 <option value="美國" {{ request('country') == '美國' ? 'selected' : '' }}>US 美國</option>
-                                <option value="歐洲" {{ request('country') == '英國' ? 'selected' : '' }}>EU 英國</option>
+                                <option value="英國" {{ request('country') == '英國' ? 'selected' : '' }}>UK 英國</option>
                             </select>
                         </div>
     

@@ -56,17 +56,14 @@ class ShopController extends Controller
             $query->where('id', '!=', Auth::id());
         }
 
-        // 3. 處理國家篩選 (例如：日本、韓國、美國)
-        if ($country = $request->input('country')) {
-            $query->where('purchasable_countries', 'like', "%{$country}%");
-        }
+          // 3. 先保存國家篩選條件，等資料取出後再解析 JSON 內容精準比對
+        $country = $request->input('country');
 
-        // 4. 處理代購人姓名、暱稱、或個人簡介的關鍵字搜尋
+        // 4. 處理代購人名稱或個人簡介的關鍵字搜尋
         if ($search = $request->input('search')) {
             $searchTerm = "%{$search}%";
             $query->where(function($q) use ($searchTerm) {
                 $q->where('name', 'like', $searchTerm)
-                  ->orWhere('nickname', 'like', $searchTerm)
                   ->orWhere('bio', 'like', $searchTerm);
             });
         }
@@ -74,7 +71,65 @@ class ShopController extends Controller
         // 5. 撈取符合條件的所有代購人（交由前端 Blade 搭配 Alpine.js 進行每頁 12 筆的滾動加載）
         $agents = $query->get();
 
+        if ($country) {
+            $agents = $agents->filter(function (User $agent) use ($country) {
+                return $this->agentServesCountry($agent, $country);
+            })->values();
+        }
+
         // 6. 將過濾後的代購人集合傳遞給前台 views/shop/store.blade.php 渲染
         return view('shop.store', compact('agents'));
+    }
+
+    /**
+     * 判斷代購人是否支援指定國家。
+     */
+    private function agentServesCountry(User $agent, string $country): bool
+    {
+        $countries = $this->normalizePurchasableCountries($agent->purchasable_countries);
+
+        foreach ($this->countrySearchTerms($country) as $searchCountry) {
+            if (in_array($searchCountry, $countries, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 將舊版篩選值與目前實際儲存的國家名稱互相對應。
+     */
+    private function countrySearchTerms(string $country): array
+    {
+        return match ($country) {
+            '歐洲' => ['歐洲', '英國'],
+            '英國' => ['英國', '歐洲'],
+            default => [$country],
+        };
+    }
+
+    /**
+     * 將可代購國家欄位正規化成陣列。
+     *
+     * 舊資料可能是 JSON 字串、被重複 JSON 編碼的字串，或已經被 Eloquent cast 成陣列。
+     */
+    private function normalizePurchasableCountries(mixed $countriesData): array
+    {
+        while (is_string($countriesData)) {
+            $decoded = json_decode($countriesData, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return [];
+            }
+
+            $countriesData = $decoded;
+        }
+
+        if (! is_array($countriesData)) {
+            return [];
+        }
+
+        return array_values(array_filter($countriesData, fn ($country) => is_string($country) && $country !== ''));
     }
 }
