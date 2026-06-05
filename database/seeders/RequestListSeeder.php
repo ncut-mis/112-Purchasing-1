@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Quote;
 use App\Models\QuoteItem;
+use App\Models\Logistics;
 use App\Models\RequestList;
 use App\Models\User;
 use Carbon\Carbon;
@@ -59,6 +60,7 @@ class RequestListSeeder extends Seeder
         $this->deleteExistingScenarioData($buyer);
 
         $agentPool = $agents->values();
+        $this->ensureActiveLogisticsForAgents($agentPool);
         $scenarioBaseDate = Carbon::now()->startOfDay();
 
         $scenarios = [
@@ -353,6 +355,32 @@ class RequestListSeeder extends Seeder
         }
 
         return $requestList;
+    }
+
+    /**
+     * 測試員固定情境中的請託單若有代購人報價，該代購人必須至少有一筆啟用中的物流設定。
+     */
+    private function ensureActiveLogisticsForAgents($agents): void
+    {
+        foreach ($agents as $agent) {
+            $hasActiveLogistics = Logistics::where('user_id', $agent->id)
+                ->where('status', true)
+                ->exists();
+
+            if ($hasActiveLogistics) {
+                continue;
+            }
+
+            Logistics::create([
+                'user_id' => $agent->id,
+                'name' => '測試宅配物流',
+                'status' => true,
+                'ship_type' => '宅配',
+                'payment_method' => '線上付款',
+                'available_times' => ['全週'],
+                'temp_layer' => '常溫',
+            ]);
+        }
     }
 
     private function createQuotesForScenario(

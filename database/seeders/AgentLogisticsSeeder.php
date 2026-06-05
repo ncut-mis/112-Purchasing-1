@@ -56,7 +56,7 @@ class AgentLogisticsSeeder extends Seeder
                 Logistics::create([
                     'user_id' => $agent->id,
                     'name' => $profile['name'],
-                    'status' => rand(0, 1), // 隨機啟用或停用
+                    'status' => $i === 0 ? true : (bool) rand(0, 1), // 每位代購人至少保留一筆啟用物流
                     'ship_type' => $profile['ship_type'],
                     'payment_method' => $profile['payment_method'],
                     'available_times' => $profile['available_times'],

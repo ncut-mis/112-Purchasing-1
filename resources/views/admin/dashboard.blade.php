@@ -460,7 +460,7 @@
                             <div class="border rounded-3 p-3 bg-light-subtle">
                                 <p class="mb-2"><strong>國家：</strong>{{ $reportable->country ?? '未提供' }}</p>
                                 <p class="mb-2"><strong>貼文標題：</strong>{{ $reportable->title ?? '未提供' }}</p>
-                                <p class="mb-2"><strong>銷售期間：</strong>
+                                <p class="mb-2"><strong>可跟團時段：</strong>
                                     {{ optional($reportable->start_date)->format('Y-m-d') ?? '未提供' }}
                                     -
                                     {{ optional($reportable->end_date)->format('Y-m-d') ?? '未提供' }}

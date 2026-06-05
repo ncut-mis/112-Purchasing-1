@@ -195,7 +195,7 @@
                                 <div class="rounded-3 bg-light px-3 py-2 border" style="border-color: #eef1f4 !important;">
                                     <div class="d-flex align-items-center text-secondary small">
                                         <i class="bi bi-calendar-event me-2"></i>
-                                        <span>預計代購時段：{{ optional($popPost->start_date)->format('Y/m/d') }} - {{ optional($popPost->end_date)->format('Y/m/d') }}</span>
+                                        <span>可跟團時段：{{ optional($popPost->start_date)->format('Y/m/d') }} - {{ optional($popPost->end_date)->format('Y/m/d') }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -462,7 +462,7 @@
                                 <div class="rounded-3 bg-light px-3 py-2 border" style="border-color: #eef1f4 !important;">
                                     <div class="d-flex align-items-center text-secondary small">
                                         <i class="bi bi-calendar-event me-2"></i>
-                                        <span>預計代購時段：{{ optional($agentPost->start_date)->format('Y/m/d') }} - {{ optional($agentPost->end_date)->format('Y/m/d') }}</span>
+                                        <span>可跟團時段：{{ optional($agentPost->start_date)->format('Y/m/d') }} - {{ optional($agentPost->end_date)->format('Y/m/d') }}</span>
                                     </div>
                                 </div>
                             </div>
