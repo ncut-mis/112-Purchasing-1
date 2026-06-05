@@ -37,7 +37,13 @@
                 </div>
             </div>
             <div class="col-lg-6 text-center d-none d-lg-block">
-                <img src="https://images.unsplash.com/photo-1483985988355-763728e1935b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Shopping" class="img-fluid rounded-4 shadow-lg" style="transform: rotate(-3deg);">
+                 @php
+                    $shopBackgroundPath = resource_path('images/shopbackground.png');
+                    $shopBackgroundSrc = file_exists($shopBackgroundPath)
+                        ? 'data:image/png;base64,' . base64_encode(file_get_contents($shopBackgroundPath))
+                        : asset('images/why-choose-us-img.jpg');
+                @endphp
+                <img src="{{ $shopBackgroundSrc }}" alt="Shopping" class="img-fluid rounded-4 shadow-lg" style="transform: rotate(-3deg);">
             </div>
         </div>
     </div>
