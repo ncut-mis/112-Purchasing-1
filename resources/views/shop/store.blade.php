@@ -107,7 +107,7 @@
         <!-- 頂部標題區 -->
         <div class="bg-emerald-800 py-16">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <h1 class="text-4xl font-black text-white mb-4">找代購</h1>
+                <h1 class="text-4xl font-black text-white mb-4">尋找代購人</h1>
                 <p class="text-emerald-100 opacity-80">
                     @if(request('country'))
                         正在瀏覽 <span class="text-yellow-400 underline">{{ request('country') }}</span> 的代購職人 (共有 {{ $displayCount }} 位)
