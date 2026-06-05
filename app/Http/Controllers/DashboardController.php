@@ -23,6 +23,8 @@ class DashboardController extends Controller
         if (Schema::hasTable('follows')) {
             $followings = $user->followings()
                 ->with(['agentApplication', 'agentPosts'])
+                ->withAvg('receivedReviews as average_rating', 'rating')
+                ->withCount('receivedReviews as reviews_count')
                 ->latest('follows.created_at')
                 ->get();
         }

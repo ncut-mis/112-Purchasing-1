@@ -10,6 +10,23 @@
         if (Array.isArray(data)) return data;
         try { return JSON.parse(data); } catch (e) { return []; }
     },
+    getRatingStars(rating) {
+        const score = Number(rating) || 0;
+
+        return Array.from({ length: 5 }, (_, index) => {
+            const starValue = index + 1;
+
+            if (score >= starValue) return 'bi-star-fill';
+            if (score >= starValue - 0.5) return 'bi-star-half';
+
+            return 'bi-star';
+        });
+    },
+
+    getRatingScore(rating, count) {
+        const total = Number(count) || 0;
+        return total ? ((Number(rating) || 0).toFixed(1) + ' / 5') : '- / 5';
+    },
 
     // 開啟檔案彈窗
     openProfile(agent) {
@@ -106,9 +123,28 @@
                             {{ $agent->nickname ?? $agent->name }}
                         </h4>
                         
-                        <div class="inline-flex items-center gap-1.5 text-[11px] font-bold text-amber-700 bg-amber-50 px-3 py-1 rounded-full border border-amber-100 mb-4">
+                        <div class="inline-flex items-center gap-1.5 text-[11px] font-bold text-amber-700 bg-amber-50 px-3 py-1 rounded-full border border-amber-100 mb-3">
                             <i class="bi bi-geo-alt-fill"></i>
                             <span>{{ $agent->agentApplication->country ?? '全球代購' }} 駐點</span>
+                        </div>
+
+                        @php
+                            $averageRating = (float) ($agent->average_rating ?? 0);
+                            $roundedRating = round($averageRating * 2) / 2;
+                            $ratingText = $agent->reviews_count ? number_format($averageRating, 1).' / 5' : '- / 5';
+                        @endphp
+                        <div class="flex items-center justify-center gap-2 mb-4" aria-label="{{ $agent->reviews_count ? '平均評價 '.$ratingText : '尚無評價' }}">
+                            <div class="flex items-center gap-0.5 text-amber-400">
+                                @for($star = 1; $star <= 5; $star++)
+                                    @php
+                                        $iconClass = $roundedRating >= $star
+                                            ? 'bi-star-fill'
+                                            : ($roundedRating >= $star - 0.5 ? 'bi-star-half' : 'bi-star');
+                                    @endphp
+                                    <i class="bi {{ $iconClass }} text-sm {{ $agent->reviews_count ? '' : 'text-gray-200' }}"></i>
+                                @endfor
+                            </div>
+                            <span class="text-xs font-black text-gray-700">{{ $ratingText }}</span>
                         </div>
 
                         <p class="text-sm text-gray-400 line-clamp-2 italic px-2 mb-6">
@@ -193,6 +229,16 @@
                                 <div class="flex flex-wrap justify-center md:justify-start gap-2">
                                     <span class="px-3 py-1 bg-white/20 rounded-full text-[10px] font-bold border border-white/30 uppercase tracking-widest">Certified Agent</span>
                                     <span class="px-3 py-1 bg-emerald-600 rounded-full text-[10px] font-bold border border-emerald-500" x-text="(selectedAgent.agent_application?.country || '台灣') + ' 駐點'"></span>
+                                </div>
+                                <div class="mt-3 flex items-center justify-center md:justify-start gap-2" :aria-label="Number(selectedAgent.reviews_count) > 0 ? `平均評價 ${getRatingScore(selectedAgent.average_rating, selectedAgent.reviews_count)}` : '尚無評價'">
+                                    <div class="flex items-center gap-1 text-amber-300">
+                                        <template x-for="(icon, index) in getRatingStars(selectedAgent.average_rating)" :key="index">
+                                            <i class="bi text-lg" :class="[icon, selectedAgent.reviews_count ? '' : 'text-white/30']"></i>
+                                        </template>
+                                    </div>
+                                    <span class="text-sm font-black text-white" x-text="getRatingScore(selectedAgent.average_rating, selectedAgent.reviews_count)"></span>
+                                
+                                
                                 </div>
                             </div>
 

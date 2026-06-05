@@ -34,7 +34,7 @@
                         <i class="bi bi-star-fill"></i>
                     </div>
                     <div>
-                        <p class="text-sm text-gray-400">服務總評價</p>
+                        <p class="text-sm text-gray-400">服務平均評價</p>
                         @php
                             $avgRating = \App\Models\Review::where('reviewee_id', Auth::id())->avg('rating');
                             $reviewCount = \App\Models\Review::where('reviewee_id', Auth::id())->count();

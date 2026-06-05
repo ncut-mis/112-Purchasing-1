@@ -112,6 +112,8 @@ class FollowController extends Controller
                 ->with(['agentApplication', 'agentPosts' => function($q) {
                     $q->where('status', 'open')->latest();
                 }])
+                ->withAvg('receivedReviews as average_rating', 'rating')
+                ->withCount('receivedReviews as reviews_count')
                 ->latest('follows.created_at')
                 ->paginate(12);
         }
