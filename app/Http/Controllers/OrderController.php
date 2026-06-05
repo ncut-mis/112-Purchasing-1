@@ -16,6 +16,10 @@ class OrderController extends Controller
             return back()->withErrors(['follow_order' => '不能跟自己的貼文下單。']);
         }
 
+        if ($agentPost->isBeforeFollowPeriod()) {
+            return back()->withErrors(['follow_order' => '還未到可跟團的時段請耐心等待。']);
+        }
+
         if ($agentPost->status !== 'open') {
             return back()->withErrors(['follow_order' => '此貼文目前不開放跟單。']);
         }

@@ -221,7 +221,7 @@
                                                 $statusLabel = match($post->status) {
                                                     'draft'     => '編輯中',
                                                     'open'      => '進行中',
-                                                    'closed'    => '已截單',
+                                                    'closed'    => '關閉中',
                                                     'shipped'   => '已出貨',
                                                     'arrivaled' => '已到貨',
                                                     'completed' => '已完成',
@@ -233,6 +233,7 @@
                                                     'shipped'   => 'text-blue-600 bg-blue-50',
                                                     'arrivaled' => 'text-indigo-600 bg-indigo-50',
                                                     'completed' => 'text-gray-500 bg-gray-100',
+                                                    'closed'    => 'text-red-600 bg-red-50',
                                                     default     => 'text-green-600 bg-green-50',
                                                 };
                                             @endphp
@@ -269,7 +270,7 @@
                                     <button type="button" class="modal-close-btn absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
                                     <h4 class="text-xl font-bold text-gray-800 mb-2">{{ $post->title }}</h4>
                                     <p class="text-sm text-gray-500 mb-1">國家：{{ $post->country }}</p>
-                                     <p class="text-sm text-gray-500 mb-1">狀態：{{ $post->status === 'draft' ? '編輯中' : ($post->status === 'open' ? '進行中' : $post->status) }}</p>
+                                     <p class="text-sm text-gray-500 mb-1">狀態：{{ $post->status === 'draft' ? '編輯中' : ($post->status === 'open' ? '進行中' : ($post->status === 'closed' ? '關閉中' : $post->status)) }}</p>
                                     <p class="text-sm text-gray-500 mb-1">可跟團時段：{{ optional($post->start_date)->format('Y-m-d') }} ~ {{ optional($post->end_date)->format('Y-m-d') }}</p>
                                     <p class="text-sm text-gray-500 mb-1 whitespace-pre-line">描述訊息：{{ $post->description }}</p>
                                     <div class="mt-6 border-t pt-4">
@@ -1679,7 +1680,7 @@
                                         $statusLabel = match($postStatus) {
                                             'draft'     => '編輯中',
                                             'open'      => '進行中',
-                                            'closed'    => '已截單',
+                                            'closed'    => '關閉中',
                                             'shipped'   => '已出貨',
                                             'arrivaled' => '已到貨',
                                             'completed' => '已完成',
@@ -1691,6 +1692,7 @@
                                             'shipped'   => 'bg-blue-50 text-blue-600',
                                             'arrivaled' => 'bg-indigo-50 text-indigo-600',
                                             'completed' => 'bg-gray-100 text-gray-500',
+                                            'closed'    => 'bg-red-50 text-red-600',
                                             default     => 'bg-emerald-50 text-emerald-600',
                                         };
                                         $postOrders = $post ? $ordersByPostId->get($post->id, collect()) : collect();
@@ -1871,7 +1873,7 @@
                                         $statusLabel = match($postStatus) {
                                             'draft'     => '編輯中',
                                             'open'      => '進行中',
-                                            'closed'    => '已截單',
+                                            'closed'    => '關閉中',
                                             'shipped'   => '已出貨',
                                             'arrivaled' => '已到貨',
                                             'completed' => '已完成',
@@ -1883,6 +1885,7 @@
                                             'shipped'   => 'bg-blue-50 text-blue-600',
                                             'arrivaled' => 'bg-indigo-50 text-indigo-600',
                                             'completed' => 'bg-gray-100 text-gray-500',
+                                            'closed'    => 'bg-red-50 text-red-600',
                                             default     => 'bg-emerald-50 text-emerald-600',
                                         };
                                     @endphp

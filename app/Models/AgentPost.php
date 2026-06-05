@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Builder;
+
 class AgentPost extends Model
 {
     use HasFactory, SoftDeletes;
@@ -34,6 +36,28 @@ class AgentPost extends Model
         'estimated_shipping_date' => 'date',
         'hot_score' => 'integer',
     ];
+
+
+    public function scopePublicVisible(Builder $query): Builder
+    {
+        return $query->where(function (Builder $query) {
+            $query->where('status', 'open')
+                ->orWhere(function (Builder $query) {
+                    $query->where('status', 'closed')
+                        ->whereDate('start_date', '>', today());
+                });
+        });
+    }
+
+    public function isBeforeFollowPeriod(): bool
+    {
+        return $this->start_date !== null && today()->lt($this->start_date);
+    }
+
+    public function shouldOpenForSubmission(): bool
+    {
+        return ! $this->isBeforeFollowPeriod();
+    }
 
     // 關聯設定：這篇貼文屬於哪個使用者 (代購人)
     public function user(): BelongsTo

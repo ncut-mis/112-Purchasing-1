@@ -77,7 +77,8 @@
                     ];
                     $scoreBadgeColor = $scoreBadgeColors[$index] ?? '#ffffff';
                     $scoreTextColor = $index < 3 ? '#1f2937' : '#374151';
-                     $isHotPostOwner = auth()->check() && (int) auth()->id() === (int) $popPost->user_id;
+                    $isHotPostOwner = auth()->check() && (int) auth()->id() === (int) $popPost->user_id;
+                    $isHotPostNotStarted = $popPost->isBeforeFollowPeriod();
                 @endphp
                 <div class="col-md-6 col-lg-4">
                     <div class="card border-0 shadow-lg rounded-4 overflow-hidden position-relative hover-lift transition">
@@ -211,13 +212,13 @@
                                              <button class="btn btn-sm rounded-pill px-3 btn-secondary disabled">無法跟團</button>
                                         </button>
                                     @else
-                                        <button type="button" class="btn btn-sm btn-danger rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#hotFollowOrderModal-{{ $popPost->id }}">
+                                        <button type="button" class="btn btn-sm btn-danger rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#{{ $isHotPostNotStarted ? 'hotNotStartedModal-' . $popPost->id : 'hotFollowOrderModal-' . $popPost->id }}">
                                             <i class="bi bi-fire me-1"></i> 我要跟團
                                         </button>
                                     @endif
                                 @else
                                     <a href="{{ route('login') }}" class="text-danger fw-bold text-decoration-none" style="font-size: 12px;">
-                                        <button type="button" class="btn btn-sm btn-danger rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#hotFollowOrderModal-{{ $popPost->id }}">
+                                        <button type="button" class="btn btn-sm btn-danger rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#{{ $isHotPostNotStarted ? 'hotNotStartedModal-' . $popPost->id : 'hotFollowOrderModal-' . $popPost->id }}">
                                             <i class="bi bi-fire me-1"></i> 我要跟團
                                         </button>
                                     </a>
@@ -228,7 +229,11 @@
                 </div>
                  @auth
                     @unless($isHotPostOwner)
-                        @include('partials.follow-order-modal', ['agentPost' => $popPost, 'modalId' => 'hotFollowOrderModal-' . $popPost->id])
+                        @if($isHotPostNotStarted)
+                            @include('partials.not-started-follow-modal', ['agentPost' => $popPost, 'modalId' => 'hotNotStartedModal-' . $popPost->id])
+                        @else
+                            @include('partials.follow-order-modal', ['agentPost' => $popPost, 'modalId' => 'hotFollowOrderModal-' . $popPost->id])
+                        @endif
                     @endunless
                 @endauth
             @empty
@@ -311,6 +316,7 @@
                     $isFavorited = in_array((int) $agentPost->id, $favoritedAgentPostIds ?? [], true);
                     $isOwner = auth()->check() && (int) auth()->id() === (int) $agentPost->user_id;
                     $isHotLatest = in_array((int) $agentPost->id, $hotPostIds, true);
+                    $isAgentPostNotStarted = $agentPost->isBeforeFollowPeriod();
                 @endphp
 
                 <div class="col-md-6 col-lg-4">
@@ -331,8 +337,8 @@
                             @endif
 
                             {{-- 狀態徽章 --}}
-                            <span class="position-absolute top-0 end-0 m-3 badge rounded-pill bg-success" style="z-index: 10;">
-                                {{ $agentPost->status === 'open' ? '接單中' : $agentPost->status }}
+                             <span class="position-absolute top-0 end-0 m-3 badge rounded-pill {{ $isAgentPostNotStarted ? 'bg-danger' : 'bg-success' }}" style="z-index: 10;">
+                                {{ $isAgentPostNotStarted ? '關閉中' : ($agentPost->status === 'open' ? '接單中' : $agentPost->status) }}
                             </span>
 
                             @if($latestImages->isNotEmpty())
@@ -479,7 +485,7 @@
                                     @if((int) auth()->id() === (int) $agentPost->user_id)
                                         <button class="btn btn-sm rounded-pill px-3 btn-secondary disabled">無法跟團</button>
                                     @else
-                                        <button type="button" class="btn btn-sm btn-primary-custom rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#followOrderModal-{{ $agentPost->id }}">我要跟團</button>
+                                        <button type="button" class="btn btn-sm btn-primary-custom rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#{{ $isAgentPostNotStarted ? 'notStartedModal-' . $agentPost->id : 'followOrderModal-' . $agentPost->id }}">我要跟團</button>
                                     @endif
                                 @else
                                     <a href="{{ route('login') }}" class="btn btn-sm btn-primary-custom rounded-pill px-3">
@@ -491,7 +497,11 @@
                     </div>
                 </div>
 
-                 @include('partials.follow-order-modal', ['agentPost' => $agentPost, 'modalId' => 'followOrderModal-' . $agentPost->id])
+                 @if($isAgentPostNotStarted)
+                    @include('partials.not-started-follow-modal', ['agentPost' => $agentPost, 'modalId' => 'notStartedModal-' . $agentPost->id])
+                @else
+                    @include('partials.follow-order-modal', ['agentPost' => $agentPost, 'modalId' => 'followOrderModal-' . $agentPost->id])
+                @endif
                 {{-- 檢舉貼文 Modal --}}
                 <div class="modal fade" id="reportAgentPostModal-{{ $agentPost->id }}" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">

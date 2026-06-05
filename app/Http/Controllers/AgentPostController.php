@@ -150,10 +150,14 @@ class AgentPostController extends Controller
         }
 
         $agentPost->update([
-            'status' => 'open',
+            'status' => $agentPost->shouldOpenForSubmission() ? 'open' : 'closed',
         ]);
 
-        return redirect()->route('agent.member')->with('status', '代購團已送出並上架！');
+        $message = $agentPost->shouldOpenForSubmission()
+            ? '代購團已送出並上架！'
+            : '代購團已送出，可跟團時段尚未開始，目前為關閉中。';
+
+        return redirect()->route('agent.member')->with('status', $message);
     }
 
     // 出貨：將已付款等待出貨的跟團訂單狀態改為 shipped
@@ -446,7 +450,7 @@ class AgentPostController extends Controller
         public function index(Request $request)
 {
     // 1. 初始化查詢，預載入 user 與 products 關聯
-    $query = AgentPost::where('status', 'open')
+    $query = AgentPost::publicVisible()
                 ->with(['user', 'products']);
 
     // 2. 寬鬆搜尋邏輯
@@ -474,7 +478,7 @@ class AgentPostController extends Controller
 
     // 重新計算並取得熱門貼文的 ID（前端用來標示 HOT 卡片）
     \App\Models\AgentPost::recalculateHotScores();
-    $hotPostIds = \App\Models\AgentPost::where('status', 'open')
+    $hotPostIds = \App\Models\AgentPost::publicVisible()
                     ->orderByDesc('hot_score')
                     ->take(6)
                     ->pluck('id')

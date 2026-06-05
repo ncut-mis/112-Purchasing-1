@@ -97,13 +97,13 @@ Route::get('/', function (Request $request) {
 AgentPost::recalculateHotScores();
 
     $hotPosts = AgentPost::with(['user', 'products'])
-        ->where('status', 'open')
+        ->publicVisible()
         ->orderByDesc('hot_score')
         ->take(6)
         ->get();
 
     $agentPosts = AgentPost::with(['user', 'products'])
-        ->where('status', 'open')
+        ->publicVisible()
         ->latest()
         ->take(6)
         ->get();

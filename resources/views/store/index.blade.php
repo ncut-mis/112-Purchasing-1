@@ -117,7 +117,7 @@
         /* 卡片上方的標籤：提高層級確保在圖片之上 */
         .badge-country { position: absolute; top: 15px; left: 15px; background: rgba(255,255,255,0.9); color: #333; font-weight: bold; font-size: 0.75rem; padding: 5px 12px; border-radius: 50px; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
         .badge-status { position: absolute; top: 15px; right: 15px; background: #198754; color: #fff; font-size: 0.75rem; padding: 5px 12px; border-radius: 50px; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
-
+        .badge-status.bg-danger { background: #dc3545 !important; }
         /* 卡片圖片 Slider 容器與圖片 */
         .card-slider-container {
             height: 200px; /* 稍微加高一點讓卡片更好看 */
@@ -275,6 +275,7 @@
                 @php
                     $isOwner = auth()->check() && (int) auth()->id() === (int) $post->user_id;
                     $isFavorited = in_array((int) $post->id, $favoritedAgentPostIds ?? [], true);
+                    $isPostNotStarted = $post->isBeforeFollowPeriod();
                 @endphp
                 <div class="col-12 col-sm-6 col-lg-4">
                     {{-- 卡片主體 --}}
@@ -290,7 +291,7 @@
                                 </div>
                             @endif
                             <span class="badge-country">{{ $post->country }}</span>
-                            <span class="badge-status">接單中</span>
+                            <span class="badge-status {{ $isPostNotStarted ? 'bg-danger' : '' }}">{{ $isPostNotStarted ? '關閉中' : '接單中' }}</span>
 
                              @if($isOwner)
                                 <span class="position-absolute bottom-0 start-0 m-3 badge rounded-pill bg-warning text-dark" style="z-index: 11;">
@@ -372,7 +373,7 @@
                 <div class="modal fade" id="orderModal{{ $post->id }}" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog modal-xl modal-dialog-centered">
                         
-                         <form action="{{ route('orders.store', $post) }}" method="POST" class="modal-content border-0 shadow-lg overflow-hidden follow-order-form" style="border-radius: 12px;">
+                         <form action="{{ route('orders.store', $post) }}" method="POST" class="modal-content border-0 shadow-lg overflow-hidden follow-order-form" data-not-started="{{ $isPostNotStarted ? '1' : '0' }}" data-not-started-modal-id="notStartedStoreModal{{ $post->id }}" style="border-radius: 12px;">
                             @csrf
                             <input type="hidden" name="agent_post_id" value="{{ $post->id }}">
 
@@ -519,6 +520,10 @@
                     </div>
                 </div>
                   @endunless
+
+                @if($isPostNotStarted)
+                    @include('partials.not-started-follow-modal', ['agentPost' => $post, 'modalId' => 'notStartedStoreModal' . $post->id])
+                @endif
 
                 @auth
                     @unless($isOwner)
@@ -746,6 +751,24 @@
                     } finally {
                         submitBtn.disabled = false;
                         submitBtn.textContent = '提交檢舉';
+                    }
+                });
+            });
+
+            document.querySelectorAll('.follow-order-form[data-not-started="1"]').forEach(form => {
+                form.addEventListener('submit', (event) => {
+                    event.preventDefault();
+
+                    const modalId = form.dataset.notStartedModalId;
+                    const modalEl = modalId ? document.getElementById(modalId) : null;
+                    if (modalEl && typeof bootstrap !== 'undefined') {
+                        const currentModalEl = form.closest('.modal');
+                        if (currentModalEl) {
+                            bootstrap.Modal.getOrCreateInstance(currentModalEl).hide();
+                        }
+                        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                    } else {
+                        alert('還未到可跟團的時段請耐心等待。');
                     }
                 });
             });

@@ -10,9 +10,9 @@ class HomeController extends Controller
 {
     public function index()
     {
-        // 撈取最新的 6 筆代購團 (必須是開放狀態)
-        $posts = AgentPost::with('user') 
-            ->where('status', 'open')
+        // 撈取最新的 6 筆代購團
+        $agentPosts = AgentPost::with(['user', 'products'])
+            ->publicVisible()
             ->latest()
             ->take(6)
             ->get();
@@ -22,7 +22,7 @@ class HomeController extends Controller
         AgentPost::recalculateHotScores();
 
         $hotPosts = AgentPost::with(['user', 'products'])
-            ->where('status', 'open')
+            ->publicVisible()
             ->orderByDesc('hot_score')
             ->take(6)
             ->get();
@@ -41,7 +41,7 @@ class HomeController extends Controller
                 ->all()
             : [];
 
-        return view('home', compact('posts', 'requests', 'favoritedAgentPostIds'));
+        return view('home', compact('agentPosts', 'hotPosts', 'requests', 'favoritedAgentPostIds'));
     }
 
     /**
@@ -51,7 +51,7 @@ class HomeController extends Controller
     {
         $query = AgentPost::withCount('products')
             ->with('user')
-             ->where('status', 'open')
+             ->publicVisible()
             ->latest();
 
          // 若有指定貼文 ID，優先精準篩選，避免同名/相似標題造成多筆誤中
@@ -88,7 +88,7 @@ class HomeController extends Controller
         AgentPost::recalculateHotScores();
 
         $hotPosts = AgentPost::with(['user', 'products'])
-            ->where('status', 'open')
+            ->publicVisible()
             ->orderByDesc('hot_score')
             ->take(6)
             ->get();
