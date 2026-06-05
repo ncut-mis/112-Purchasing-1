@@ -66,14 +66,14 @@
                         <button type="button" 
                           onclick="openFollowChoiceModal('{{ $favoriteAgentPost->id }}', '{{ $favoriteAgentPost->title }}', '{{ route('agent.posts.search', ['search' => $favoriteAgentPost->title]) }}')"
                           class="shrink-0 text-[0.9rem] font-semibold text-pink-500 transition hover:text-pink-600 hover:underline">
-                          在此跟單或至首頁跟單
+                          在此跟團或至首頁跟團
                         </button>
 
                         <button
                             type="button"
                             class="dashboard-favorite-toggle inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-pink-100 bg-white text-pink-500 shadow-sm transition hover:bg-pink-50"
                             data-agent-post-id="{{ $favoriteAgentPost->id }}"
-                            aria-label="取消收藏貼文"
+                            aria-label="取消收藏代購團"
                             aria-pressed="true"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-6 w-6">
@@ -114,7 +114,7 @@
 
                                 <h4 id="favorite-unfavorite-modal-title" class="mt-6 text-[2rem] font-bold tracking-tight text-slate-800">確定取消收藏？</h4>
                                 <p class="mt-4 text-lg leading-8 text-slate-400">
-                                    取消後，此貼文將從您的收藏夾中移除。
+                                    取消後，此代購團將從您的收藏夾中移除。
                                 </p>
 
                                 <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
