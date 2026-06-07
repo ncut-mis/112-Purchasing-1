@@ -214,4 +214,17 @@ return [
 
     'partitioned' => env('SESSION_PARTITIONED_COOKIE', false),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Session Blocking (FIX FOR MULTI-TAB/BROWSER SYNC)
+    |--------------------------------------------------------------------------
+    |
+    | 【核心修正】設定為 false 以禁用會話鎖定
+    | 允許多個請求同時存取同一個會話，解決不同瀏覽器標籤頁之間的阻塞問題
+    | This is the key setting for fixing the "spinning" issue across browsers
+    |
+    */
+
+    'lazy' => env('SESSION_LAZY', true),
+
 ];
