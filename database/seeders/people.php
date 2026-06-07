@@ -102,8 +102,10 @@ class people extends Seeder
                 ->exists();
 
             $postStatus = $hasEnabledLogistics ? 'open' : 'draft';
+            $forceEditingForSpecialAgent = in_array($user->id, [2, 3, 4,5], true);
 
             for ($i = 0; $i < 2; $i++) {
+                $status = ($forceEditingForSpecialAgent && $i === 0) ? 'draft' : $postStatus;
 
                 $chosenCountry = $myCountries[array_rand($myCountries)];
 
@@ -126,7 +128,7 @@ class people extends Seeder
                     'start_date' => Carbon::now()->subDays(rand(0, 2)),
                     'end_date' => Carbon::now()->addDays(rand(3, 10)),
                     'estimated_shipping_date' => Carbon::now()->addDays(rand(10, 20)),
-                    'status' => $postStatus,
+                    'status' => $status,
                     'cover_image' => null,
                 ]);
 

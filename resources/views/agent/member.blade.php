@@ -193,7 +193,7 @@
                              <div>
                                 <h3 class="text-lg font-bold text-gray-800">我的代購團</h3>
                             </div>
-                            <a href="{{ route('agent.posts.create') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-700 transition">+發布代購團</a>
+                            <a href="{{ route('agent.posts.create') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-700 transition">+建立代購團</a>
                         </div>
 
                         @if (session('status'))
@@ -259,7 +259,7 @@
                                 </div>
                             @empty
                                 <div class="col-span-2 p-8 border border-dashed border-gray-200 rounded-2xl text-center text-sm text-gray-400">
-                                    尚未發布代購團，點擊右上角「+ 發布代購團」開始建立。
+                                    尚未建立代購團，點擊右上角「+ 建立代購團」開始建立。
                                 </div>
                             @endforelse
                         </div>
@@ -1477,7 +1477,7 @@
                         <i class="bi bi-collection text-2xl"></i>
                     </div>
                     <p class="text-sm text-amber-700 font-semibold">尚未有已完成的代購團開團紀錄。</p>
-                    <p class="mt-1 text-xs text-amber-500">當您自己發布的代購團結束或結案後，紀錄將會顯示於此。</p>
+                    <p class="mt-1 text-xs text-amber-500">當您自己建立的代購團結束或結案後，紀錄將會顯示於此。</p>
                 </div>
             @else
                 <div class="space-y-4">

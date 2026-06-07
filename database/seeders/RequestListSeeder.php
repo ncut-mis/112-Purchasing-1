@@ -15,7 +15,7 @@ class RequestListSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->command->info('開始建立特定測試情境資料 (測試員)...');
+        $this->command->info('開始建立特定測試情境資料 (郭庭瑋)...');
         $testBuyer = $this->generateFixedScenarios();
 
         $this->command->info('開始建立隨機請託單資料 (其他使用者)...');
@@ -32,7 +32,7 @@ class RequestListSeeder extends Seeder
         $buyer = User::updateOrCreate(
             ['email' => 'helper@example.com'],
             [
-                'name' => '測試員',
+                'name' => '郭庭瑋',
                 'password' => Hash::make('12345678'),
                 'role' => 'buyer',
             ]
@@ -66,7 +66,7 @@ class RequestListSeeder extends Seeder
         $scenarios = [
             [
                 'status' => 'editing',
-                'title' => '【測試】編輯中請託單-日本藥妝草稿',
+                'title' => '日本藥妝請託單',
                 'country' => 'jp',
                 'store_name' => '松本清 新宿三丁目店',
                 'detail_address' => '東京都新宿區新宿3丁目',
@@ -79,7 +79,7 @@ class RequestListSeeder extends Seeder
             ],
             [
                 'status' => 'pending',
-                'title' => '【測試】等待報價請託單-韓國美妝',
+                'title' => '韓國美妝請託單',
                 'country' => 'kr',
                 'store_name' => 'Olive Young 明洞旗艦店',
                 'detail_address' => '首爾市中區明洞路',
@@ -92,7 +92,7 @@ class RequestListSeeder extends Seeder
             ],
             [
                 'status' => 'offered',
-                'title' => '【測試】代購人已報價請託單-美國保健品',
+                'title' => '美國保健品請託單',
                 'country' => 'us',
                 'store_name' => 'CVS Pharmacy',
                 'detail_address' => 'Los Angeles, CA',
@@ -106,54 +106,8 @@ class RequestListSeeder extends Seeder
                 ],
             ],
             [
-                'status' => 'matched',
-                'title' => '【測試】已確認代購人請託單-英國紅茶',
-                'country' => 'gb',
-                'store_name' => 'Fortnum & Mason',
-                'detail_address' => '181 Piccadilly, London',
-                'deadline' => $scenarioBaseDate->copy()->addDays(8),
-                'note' => '測試用已確認代購人：請購人已接受報價，但尚未結帳。',
-                'quote_count' => min(3, $agentPool->count()),
-                'accepted_quote_index' => 0,
-                'items' => [
-                    ['name' => '皇家伯爵茶 250g', 'quantity' => 2, 'expected_price' => 760],
-                    ['name' => '經典餅乾禮盒', 'quantity' => 1, 'expected_price' => 980],
-                ],
-            ],
-            [
-                'status' => 'wait-for-ship',
-                'title' => '【測試】等待出貨請託單-日本伴手禮',
-                'country' => 'jp',
-                'store_name' => '東京車站一番街',
-                'detail_address' => '東京都千代田區丸之內',
-                'deadline' => $scenarioBaseDate->copy()->addDays(6),
-                'note' => '測試用等待出貨：請購人已結帳，代購人可以出貨。',
-                'quote_count' => min(2, $agentPool->count()),
-                'accepted_quote_index' => 0,
-                'items' => [
-                    ['name' => 'NY Perfect Cheese 起司捲', 'quantity' => 2, 'expected_price' => 620],
-                    ['name' => '東京香蕉蛋糕 12入', 'quantity' => 1, 'expected_price' => 520],
-                ],
-            ],
-            [
-                'status' => 'shipped',
-                'title' => '【測試】商品已出貨請託單-韓國專輯',
-                'country' => 'kr',
-                'store_name' => '弘大 K-POP 專賣店',
-                'detail_address' => '首爾市麻浦區西橋洞',
-                'deadline' => $scenarioBaseDate->copy()->addDays(5),
-                'note' => '測試用已出貨：代購人已標記商品出貨。',
-                'quote_count' => min(2, $agentPool->count()),
-                'accepted_quote_index' => 0,
-                'accepted_quote_status' => 'shipped',
-                'items' => [
-                    ['name' => 'K-POP 官方專輯限定版', 'quantity' => 2, 'expected_price' => 650],
-                    ['name' => '官方應援手燈', 'quantity' => 1, 'expected_price' => 1800],
-                ],
-            ],
-            [
                 'status' => 'arrivaled',
-                'title' => '【測試】商品已到貨請託單-美國零食',
+                'title' => '美國零食與包包請託單',
                 'country' => 'us',
                 'store_name' => 'Trader Joe\'s',
                 'detail_address' => 'New York, NY',
@@ -169,7 +123,7 @@ class RequestListSeeder extends Seeder
             ],
             [
                 'status' => 'expired',
-                'title' => '【測試】已過期請託單-日本零食',
+                'title' => '日本零食請託單',
                 'country' => 'jp',
                 'store_name' => '日本便利商店',
                 'detail_address' => '東京市區',
@@ -198,7 +152,7 @@ class RequestListSeeder extends Seeder
             }
         }
 
-        $this->command->info('成功建立測試員請託單情境！');
+        $this->command->info('成功建立郭庭瑋請託單情境！');
         return $buyer;
     }
 
@@ -209,7 +163,7 @@ class RequestListSeeder extends Seeder
      */
     private function generateRandomRequests(?int $excludeBuyerId = null): void
     {
-        // 抓取所有模擬的使用者，並排除前述的測試員及 ID=1 的管理員
+        // 抓取所有模擬的使用者，並排除前述的郭庭瑋及 ID=1 的管理員
         $query = User::where('id', '>', 1);
         if ($excludeBuyerId) {
             $query->where('id', '!=', $excludeBuyerId);
@@ -358,7 +312,7 @@ class RequestListSeeder extends Seeder
     }
 
     /**
-     * 測試員固定情境中的請託單若有代購人報價，該代購人必須至少有一筆啟用中的物流設定。
+     * 郭庭瑋固定情境中的請託單若有代購人報價，該代購人必須至少有一筆啟用中的物流設定。
      */
     private function ensureActiveLogisticsForAgents($agents): void
     {

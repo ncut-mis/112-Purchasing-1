@@ -17,7 +17,7 @@ class RandomPostSeeder extends Seeder
         $testUser = User::updateOrCreate(
             ['email' => 'helper@example.com'],
             [
-                'name' => '測試員',
+                'name' => '郭庭瑋',
                 'password' => $fixedPassword,
                 'role' => 'buyer',
             ]
