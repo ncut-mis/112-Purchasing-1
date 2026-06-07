@@ -33,6 +33,9 @@ class AgentPostOrderSeeder extends Seeder
                 continue;
             }
 
+            // 為每個買家收集本回合的訂單，以便按比例分配狀態
+            $buyerOrders = [];
+
             foreach ($candidatePosts as $post) {
                 $isPopular = in_array($post->id, $popularPostIds, true);
                 $probability = $isPopular ? 42 : 10;
@@ -97,8 +100,7 @@ class AgentPostOrderSeeder extends Seeder
                 $platformFee = (int) round($itemsTotal * 0.03);
                 $totalAmount = $itemsTotal + $shippingFee + $platformFee;
 
-                $order = Order::create([
-                    'order_no' => sprintf('SEED%s%05d', now()->format('YmdHis'), ++$seedCounter),
+                $buyerOrders[] = [
                     'buyer_id' => $buyer->id,
                     'seller_id' => $post->user_id,
                     'source_type' => AgentPost::class,
@@ -108,33 +110,148 @@ class AgentPostOrderSeeder extends Seeder
                     'platform_fee' => $platformFee,
                     'total_amount' => $totalAmount,
                     'currency' => 'TWD',
-                    // 依目前 migration 的 enum：pending_payment, wait-for-ship, shipped, completed, cancelled, refunded, arrivaled
-                    'status' => 'wait-for-ship',
-                    'payment_method' => 'seed_simulated',
-                    'paid_at' => now()->subDays(random_int(0, 14)),
-                    'shipping_method' => 'seed_simulated',
-                    'tracking_number' => 'SEED-TRK-' . strtoupper(substr(md5((string) mt_rand()), 0, 8)),
-                    'recipient_data' => [
-                        'name' => $buyer->name,
-                        'phone' => '09' . random_int(10000000, 99999999),
-                        'address' => 'Seeder 測試地址',
-                    ],
-                    'note' => '熱門代購團跟單比例測試資料',
-                ]);
+                    'order_items' => $orderItemsPayload,
+                    'selected_products' => $selectedProducts,
+                ];
+            }
 
-                $order->items()->createMany($orderItemsPayload);
+            // 現在為該買家的所有訂單分配狀態
+            $this->assignOrderStatuses($buyerOrders, $seedCounter);
+        }
 
-                foreach ($orderItemsPayload as $item) {
-                    $product = $selectedProducts->firstWhere('id', $item['product_id']);
-                    if (! $product) {
-                        continue;
-                    }
+        $this->command?->info('已完成 AgentPost 跟單比例模擬（含多樣化訂單狀態分配）。');
+    }
 
-                    $product->increment('sold_quantity', (int) $item['quantity']);
-                }
+    /**
+     * 為買家的訂單分配多樣的狀態：
+     * - pending_payment (未付款) 1~2 個
+     * - wait-for-ship (待出貨) 2~6 個
+     * - shipped (已出貨) 2~4 個
+     * - arrivaled (已到貨) 1~3 個
+     */
+    private function assignOrderStatuses(array &$buyerOrders, &$seedCounter): void
+    {
+        if (empty($buyerOrders)) {
+            return;
+        }
+
+        $orderCount = count($buyerOrders);
+
+        // 定義狀態分配
+        $statusDistribution = [
+            'pending_payment' => ['min' => 1, 'max' => 2],
+            'wait-for-ship' => ['min' => 2, 'max' => 6],
+            'shipped' => ['min' => 2, 'max' => 4],
+            'arrivaled' => ['min' => 1, 'max' => 3],
+        ];
+
+        // 根據訂單數量進行分配
+        $statusCounts = [];
+        $remainingOrders = $orderCount;
+
+        foreach ($statusDistribution as $status => $range) {
+            $min = $range['min'];
+            $max = $range['max'];
+            
+            if ($remainingOrders <= 0) {
+                $statusCounts[$status] = 0;
+            } elseif ($remainingOrders <= $min) {
+                $statusCounts[$status] = min($remainingOrders, $min);
+                $remainingOrders = 0;
+            } else {
+                // 根據剩餘訂單數量動態決定該狀態分配多少
+                $allocate = random_int($min, min($max, $remainingOrders));
+                $statusCounts[$status] = $allocate;
+                $remainingOrders -= $allocate;
             }
         }
 
-        $this->command?->info('已完成 AgentPost 跟單比例模擬（含熱門貼文高跟單權重）。');
+        // 如果還有剩餘訂單，隨機分配到各狀態
+        if ($remainingOrders > 0) {
+            $statuses = array_keys($statusDistribution);
+            for ($i = 0; $i < $remainingOrders; $i++) {
+                $randomStatus = $statuses[array_rand($statuses)];
+                $statusCounts[$randomStatus]++;
+            }
+        }
+
+        // 打亂訂單順序然後分配狀態
+        shuffle($buyerOrders);
+        $orderIndex = 0;
+        $statuses = array_keys($statusCounts);
+
+        foreach ($statuses as $status) {
+            for ($i = 0; $i < $statusCounts[$status]; $i++) {
+                if ($orderIndex >= count($buyerOrders)) {
+                    break 2;
+                }
+
+                $orderData = $buyerOrders[$orderIndex];
+                $this->createOrderWithStatus(
+                    $orderData,
+                    $status,
+                    ++$seedCounter
+                );
+                $orderIndex++;
+            }
+        }
+    }
+
+    /**
+     * 建立單筆訂單並根據狀態設定相應的時間戳
+     */
+    private function createOrderWithStatus(array $orderData, string $status, int $seedCounter): void
+    {
+        $now = now();
+        $paymentData = [
+            'pending_payment' => ['paid_at' => null],
+            'wait-for-ship' => ['paid_at' => $now->copy()->subDays(random_int(0, 5))],
+            'shipped' => [
+                'paid_at' => $now->copy()->subDays(random_int(3, 8)),
+                'shipped_at' => $now->copy()->subDays(random_int(0, 3)),
+            ],
+            'arrivaled' => [
+                'paid_at' => $now->copy()->subDays(random_int(5, 14)),
+                'shipped_at' => $now->copy()->subDays(random_int(2, 10)),
+            ],
+        ];
+
+        $payment = $paymentData[$status] ?? [];
+
+        $order = Order::create([
+            'order_no' => sprintf('SEED%s%05d', $now->format('YmdHis'), $seedCounter),
+            'buyer_id' => $orderData['buyer_id'],
+            'seller_id' => $orderData['seller_id'],
+            'source_type' => $orderData['source_type'],
+            'source_id' => $orderData['source_id'],
+            'items_total' => $orderData['items_total'],
+            'shipping_fee' => $orderData['shipping_fee'],
+            'platform_fee' => $orderData['platform_fee'],
+            'total_amount' => $orderData['total_amount'],
+            'currency' => $orderData['currency'],
+            'status' => $status,
+            'payment_method' => 'seed_simulated',
+            'shipping_method' => 'seed_simulated',
+            'tracking_number' => 'SEED-TRK-' . strtoupper(substr(md5((string) mt_rand()), 0, 8)),
+            'recipient_data' => [
+                'name' => User::find($orderData['buyer_id'])->name ?? 'Seeder User',
+                'phone' => '09' . random_int(10000000, 99999999),
+                'address' => 'Seeder 測試地址',
+            ],
+            'note' => "Seeder 模擬訂單 - 狀態：{$status}",
+            'paid_at' => $payment['paid_at'] ?? null,
+            'shipped_at' => $payment['shipped_at'] ?? null,
+        ]);
+
+        $order->items()->createMany($orderData['order_items']);
+
+        // 更新商品的已銷售數量
+        foreach ($orderData['order_items'] as $item) {
+            $product = $orderData['selected_products']->firstWhere('id', $item['product_id']);
+            if ($product) {
+                $product->increment('sold_quantity', (int) $item['quantity']);
+            }
+        }
+
     }
 }
