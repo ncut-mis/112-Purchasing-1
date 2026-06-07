@@ -133,13 +133,13 @@
     <div class="flex min-h-screen items-center justify-center p-4 text-center">
         <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeChoiceModal()"></div>
         <div class="relative transform overflow-hidden rounded-2xl bg-white p-6 text-left shadow-xl transition-all sm:w-full sm:max-w-sm">
-            <h3 class="text-center text-lg font-bold text-gray-900 mb-4">請選擇跟單方式</h3>
+            <h3 class="text-center text-lg font-bold text-gray-900 mb-4">請選擇跟團方式</h3>
             <div class="flex flex-col gap-3">
                 <button id="followHereBtn" class="w-full rounded-xl bg-pink-500 py-3 font-bold text-white shadow-sm hover:bg-pink-600 transition">
-                    就在這裡跟單
+                    就在這裡跟團
                 </button>
                 <a id="goToHomeBtn" href="#" class="w-full rounded-xl border border-gray-200 bg-white py-3 text-center font-bold text-gray-700 hover:bg-gray-50 transition">
-                    前往首頁搜尋此貼文
+                    前往首頁搜尋此代購團
                 </a>
                 <button onclick="closeChoiceModal()" class="text-sm text-gray-400 hover:text-gray-600 mt-2">取消</button>
             </div>
