@@ -205,11 +205,11 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             @forelse($myAgentPosts as $post)
                                 <div class="p-4 border border-gray-100 rounded-2xl flex gap-4 hover:border-indigo-200 transition">
-                                    <div class="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-gray-300 overflow-hidden">
+                                    <div class="w-16 h-16 bg-sky-100 rounded-xl flex items-center justify-center overflow-hidden">
                                         @if($post->cover_image_url)
                                             <img src="{{ $post->cover_image_url }}" alt="{{ $post->title }}" class="w-full h-full object-cover">
                                         @else
-                                            <i class="bi bi-image text-xl"></i>
+                                            <i class="bi bi-cart-fill text-2xl text-blue-700"></i>
                                         @endif
                                     </div>
                                     <div class="flex-1 min-w-0">
