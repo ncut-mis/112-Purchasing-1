@@ -17,7 +17,6 @@ class DatabaseSeeder extends Seeder
         people::class,
         AgentPostFavoriteSeeder::class,
         AgentPostOrderSeeder::class,
-        ReviewSeeder::class,
     ]);
 
     AgentPost::recalculateHotScores();
