@@ -1,7 +1,6 @@
 <?php
 
 namespace Database\Seeders;
-
 use App\Models\AgentPost;
 use Illuminate\Database\Seeder;
 
